@@ -1,3 +1,5 @@
+import base64
+
 import pytest
 from pydantic import ValidationError
 
@@ -27,3 +29,61 @@ def test_secrets_are_not_leaked_in_repr():
         app_env="local", wa_verify_token="v", wa_app_secret="topsecret", _env_file=None
     )
     assert "topsecret" not in repr(settings)
+
+
+def test_graph_api_base_url_follows_configured_version():
+    settings = Settings(
+        app_env="local",
+        wa_verify_token="v",
+        wa_app_secret="s",
+        wa_graph_version="v24.0",
+        _env_file=None,
+    )
+    assert settings.wa_graph_base_url == "https://graph.facebook.com/v24.0"
+
+
+def test_graph_version_defaults_to_a_current_release():
+    settings = Settings(app_env="local", wa_verify_token="v", wa_app_secret="s", _env_file=None)
+    assert settings.wa_graph_version == "v25.0"
+
+
+def test_graph_version_rejects_malformed_values():
+    with pytest.raises(ValidationError):
+        Settings(
+            app_env="local",
+            wa_verify_token="v",
+            wa_app_secret="s",
+            wa_graph_version="25",
+            _env_file=None,
+        )
+
+
+VALID_KEY = base64.b64encode(bytes(range(32))).decode()
+
+
+def _deployed(**overrides):
+    base = {
+        "app_env": "prod",
+        "wa_verify_token": "v",
+        "wa_app_secret": "s",
+        "anthropic_api_key": "k",
+        "_env_file": None,
+    }
+    return Settings(**{**base, **overrides})
+
+
+def test_deployed_env_requires_field_key_and_phone_pepper():
+    with pytest.raises(ValidationError, match="FIELD_KEY"):
+        _deployed()
+    with pytest.raises(ValidationError, match="PHONE_PEPPER"):
+        _deployed(field_key=VALID_KEY)
+
+
+def test_deployed_env_accepts_all_required_secrets():
+    settings = _deployed(field_key=VALID_KEY, phone_pepper=VALID_KEY)
+    assert settings.app_env == "prod"
+
+
+def test_malformed_field_key_is_rejected_at_startup():
+    with pytest.raises(ValidationError, match="FIELD_KEY"):
+        _deployed(field_key="a" * 44, phone_pepper=VALID_KEY)
