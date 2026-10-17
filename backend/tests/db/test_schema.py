@@ -139,3 +139,32 @@ async def test_the_same_phone_cannot_register_twice(conn: AsyncConnection):
     with pytest.raises(DBAPIError, match="duplicate key"):
         await conn.execute(insert, params)
     await nested.rollback()
+
+
+async def test_trends_view_is_a_security_barrier(conn: AsyncConnection):
+    row = await conn.execute(
+        text("select reloptions from pg_class where relname = 'public_trends'")
+    )
+
+    assert "security_barrier=true" in row.scalar_one()
+
+
+async def test_published_teacher_count_is_bucketed_so_one_joiner_is_invisible(
+    conn: AsyncConnection,
+):
+    await _seed_teachers(conn, K_ANONYMITY_THRESHOLD + 4, cluster="K24")
+
+    assert await _trend_rows_as_dashboard(conn) == [("K24", K_ANONYMITY_THRESHOLD)]
+
+
+async def test_published_averages_are_coarsely_rounded(conn: AsyncConnection):
+    [first, *rest] = await _seed_teachers(conn, K_ANONYMITY_THRESHOLD, cluster="KR")
+    await conn.execute(
+        text("update teacher_week_stats set met_delta = 1.04 where teacher_id = :id"),
+        {"id": first},
+    )
+    await conn.execute(text("set local role dashboard_ro"))
+
+    row = await conn.execute(text("select avg_improvement from public_trends"))
+
+    assert str(row.scalar_one()) == "1.0"
