@@ -32,6 +32,7 @@ def _contains_phrase(tokens: tuple[str, ...], phrase: tuple[str, ...]) -> bool:
 
 class GlobalIntent(StrEnum):
     DELETE = "delete"
+    WITHDRAW_CONSENT = "withdraw_consent"
     STOP = "stop"
     PRIVACY = "privacy"
     HELP = "help"
@@ -44,6 +45,13 @@ _DELETE = _phrases(
     "delete my data",
     "delete my account",
     "erase my data",
+)
+_WITHDRAW_CONSENT = _phrases(
+    "सहमति वापस",
+    "withdraw consent",
+    "withdraw my consent",
+    "revoke consent",
+    "revoke my consent",
 )
 _PRIVACY = _phrases("कौन देखता है", "कौन देखती है", "who sees", "privacy", "प्राइवेसी")
 # "stop" and "help" are everyday words in a classroom, so they only count as commands when the
@@ -61,6 +69,8 @@ def classify_global(text: str) -> GlobalIntent | None:
     tokens = _tokens(text)
     if _matches_any(tokens, _DELETE):
         return GlobalIntent.DELETE
+    if _matches_any(tokens, _WITHDRAW_CONSENT):
+        return GlobalIntent.WITHDRAW_CONSENT
     if _matches_any(tokens, _PRIVACY):
         return GlobalIntent.PRIVACY
     if len(tokens) <= SHORT_UTTERANCE_MAX_TOKENS:

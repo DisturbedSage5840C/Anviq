@@ -29,6 +29,10 @@ class TeacherSession(Protocol):
 
     async def record_consent(self, version: str, text_sha256: str) -> None: ...
 
+    async def withdraw_consent(self) -> None:
+        """Revoke every active consent. The ledger rows are kept, marked as revoked."""
+        ...
+
     async def erase(self) -> None:
         """Delete the teacher and everything they own, and log the deletion."""
         ...
@@ -44,6 +48,7 @@ class TeacherStore(Protocol):
 class ConsentRecord:
     version: str
     text_sha256: str
+    revoked: bool = False
 
 
 @dataclass(frozen=True)
@@ -78,7 +83,7 @@ class _InMemorySession:
         stored = self.store.teachers.get(self.phone_hash)
         if stored is None:
             return TeacherState()
-        return replace(stored.state, consented=bool(stored.consents))
+        return replace(stored.state, consented=any(not c.revoked for c in stored.consents))
 
     async def save(self, state: TeacherState, wa_id: str) -> None:
         existing = self.store.teachers.get(self.phone_hash)
@@ -95,6 +100,13 @@ class _InMemorySession:
         self.store.teachers[self.phone_hash] = replace(
             existing, consents=(*existing.consents, record)
         )
+
+    async def withdraw_consent(self) -> None:
+        existing = self.store.teachers.get(self.phone_hash)
+        if existing is None:
+            return
+        revoked = tuple(replace(c, revoked=True) for c in existing.consents)
+        self.store.teachers[self.phone_hash] = replace(existing, consents=revoked)
 
     async def erase(self) -> None:
         if self.store.teachers.pop(self.phone_hash, None) is not None:

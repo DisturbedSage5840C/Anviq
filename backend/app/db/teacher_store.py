@@ -105,6 +105,22 @@ class _PostgresSession:
             {"id": teacher_id, "v": version, "sha": text_sha256},
         )
 
+    async def withdraw_consent(self) -> None:
+        await self.conn.execute(
+            text(
+                "update consents set revoked_at = now() where revoked_at is null "
+                "and teacher_id = (select id from teachers where phone_hash = :h)"
+            ),
+            {"h": self.phone_hash},
+        )
+        await self.conn.execute(
+            text(
+                "update teachers set consent_version = null, consent_at = null "
+                "where phone_hash = :h"
+            ),
+            {"h": self.phone_hash},
+        )
+
     async def erase(self) -> None:
         deleted = await self.conn.execute(
             text("delete from teachers where phone_hash = :h"), {"h": self.phone_hash}

@@ -140,6 +140,37 @@ async def test_erasing_an_unknown_teacher_logs_nothing(harness: Harness, phone_h
     assert not await _deletion_logged(harness, phone_hash)
 
 
+async def test_withdrawing_consent_revokes_it_but_keeps_the_ledger_row(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    async with harness.store.locked(phone_hash) as session:
+        await session.withdraw_consent()
+    assert await _consents(harness, phone_hash) == [("v1", "cd" * 32)]
+    assert await _revoked_flags(harness, phone_hash) == [True]
+    assert (await _load(harness, phone_hash)).consented is False
+
+
+async def test_consenting_again_after_a_withdrawal_adds_a_second_active_row(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    async with harness.store.locked(phone_hash) as session:
+        await session.withdraw_consent()
+        await session.record_consent("v1", "ef" * 32)
+    assert await _revoked_flags(harness, phone_hash) == [True, False]
+    assert (await _load(harness, phone_hash)).consented is True
+
+
+async def test_withdrawing_with_nothing_to_withdraw_changes_nothing(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, replace(ENROLLED, consented=False))
+    async with harness.store.locked(phone_hash) as session:
+        await session.withdraw_consent()
+    assert await _consents(harness, phone_hash) == []
+
+
 async def test_opt_out_reminders_turns_the_flag_off(harness: Harness, phone_hash: bytes):
     await _save(harness, phone_hash, ENROLLED)
     async with harness.store.locked(phone_hash) as session:
@@ -216,6 +247,24 @@ async def _consents(h: Harness, phone_hash: bytes) -> list[tuple[str, str]]:
             {"h": phone_hash},
         )
         return [(r[0], r[1]) for r in rows]
+
+
+async def _revoked_flags(h: Harness, phone_hash: bytes) -> list[bool]:
+    """Per consent row, oldest first: has it been revoked?"""
+    if h.memory is not None:
+        stored = h.memory.teachers.get(phone_hash)
+        return [c.revoked for c in stored.consents] if stored else []
+    assert h.engine is not None
+    async with h.engine.connect() as conn:
+        rows = await conn.execute(
+            text(
+                "select c.revoked_at is not null from consents c "
+                "join teachers t on t.id = c.teacher_id where t.phone_hash = :h "
+                "order by c.granted_at, c.id"
+            ),
+            {"h": phone_hash},
+        )
+        return [bool(r[0]) for r in rows]
 
 
 async def _deletion_logged(h: Harness, phone_hash: bytes) -> bool:

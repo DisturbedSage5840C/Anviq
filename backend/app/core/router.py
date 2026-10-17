@@ -15,7 +15,7 @@ from app.core.intents import (
     parse_yes_no,
 )
 
-CONSENT_VERSION = "v1"
+CONSENT_VERSION = "v2"
 
 
 class Phase(StrEnum):
@@ -49,6 +49,11 @@ class RecordConsent:
 
 
 @dataclass(frozen=True)
+class WithdrawConsent:
+    """Mark every active consent as revoked; the ledger rows stay as proof of what was agreed."""
+
+
+@dataclass(frozen=True)
 class EraseTeacher:
     """Delete everything stored about this teacher, including the stub row."""
 
@@ -58,7 +63,7 @@ class OptOutReminders:
     pass
 
 
-Effect = Say | RecordConsent | EraseTeacher | OptOutReminders
+Effect = Say | RecordConsent | WithdrawConsent | EraseTeacher | OptOutReminders
 
 
 @dataclass(frozen=True)
@@ -86,9 +91,24 @@ def handle(state: TeacherState, text: str) -> Transition:
 def _handle_global(state: TeacherState, intent: GlobalIntent) -> Transition:
     if intent is GlobalIntent.DELETE:
         return _ask_delete_confirmation(state)
+    if intent is GlobalIntent.WITHDRAW_CONSENT:
+        return _withdraw_consent(state)
     if intent is GlobalIntent.STOP:
         return _say(state, "stopped", extra=(OptOutReminders(),))
     return _say(state, "privacy" if intent is GlobalIntent.PRIVACY else "help")
+
+
+def _withdraw_consent(state: TeacherState) -> Transition:
+    if not state.consented:
+        # nothing was ever agreed to, so withdrawing is the same as declining at the prompt
+        return _say(TeacherState(), "consent_declined", extra=(EraseTeacher(),))
+    asking_again = replace(state, phase=Phase.ONB_CONSENT, consented=False, resume=None)
+    return _say(
+        asking_again,
+        "consent_withdrawn",
+        "consent_notice",
+        extra=(WithdrawConsent(), OptOutReminders()),
+    )
 
 
 def _ask_delete_confirmation(state: TeacherState) -> Transition:

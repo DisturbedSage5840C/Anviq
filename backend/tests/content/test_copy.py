@@ -53,6 +53,11 @@ def test_consent_notice_names_the_deletion_command_and_what_is_not_kept():
         assert "90" in text
 
 
+@pytest.mark.parametrize(("lang", "command"), [("hi", "सहमति वापस"), ("en", "withdraw consent")])
+def test_consent_notice_tells_teachers_how_to_withdraw(lang: str, command: str):
+    assert command in render("consent_notice", lang)
+
+
 def test_router_key_scrape_is_not_vacuous():
     assert {"welcome", "consent_notice", "deleted"} <= _router_keys()
 
@@ -63,7 +68,11 @@ CONSENT_DIGESTS = {
     "v1": {
         "hi": "6e2613b5863c8ff23b559a7999a38fe14f5bbb8efd5828798499a8613f32e391",
         "en": "3a384f70acdb63daab9dc4b5a91751e971af669dfd378dc51bd36bbf7ae2fd51",
-    }
+    },
+    "v2": {
+        "hi": "a07e9c26f8256732c2e208e5d31a88dd3558f44417fcd66641d460c3dcaff102",
+        "en": "0ed8fd6c3780d6fe3e04b825de36a1a8da7cbaec83ca2c48db76dba3b831ebee",
+    },
 }
 
 

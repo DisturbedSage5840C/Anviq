@@ -8,6 +8,7 @@ from app.core.router import (
     RecordConsent,
     Say,
     TeacherState,
+    WithdrawConsent,
     handle,
 )
 
@@ -155,3 +156,40 @@ def test_state_is_never_mutated():
     start = TeacherState()
     handle(start, "Namaste")
     assert start == TeacherState()
+
+
+ENROLLED = TeacherState(phase=Phase.IDLE, lang="en", grade_band="2", consented=True)
+
+
+def test_withdrawing_consent_revokes_it_stops_reminders_and_asks_again():
+    t = handle(ENROLLED, "withdraw consent")
+
+    assert t.state == TeacherState(Phase.ONB_CONSENT, lang="en", grade_band="2", consented=False)
+    assert t.effects[:2] == (WithdrawConsent(), OptOutReminders())
+    assert _keys(t) == ["consent_withdrawn", "consent_notice"]
+
+
+def test_consenting_again_after_a_withdrawal_records_a_fresh_consent():
+    t = _walk("withdraw consent", "yes", start=ENROLLED)
+
+    assert t.state == ENROLLED
+    assert RecordConsent(version=CONSENT_VERSION) in t.effects
+
+
+def test_withdrawing_while_a_delete_is_pending_drops_the_pending_delete():
+    pending = TeacherState(Phase.DELETE_CONFIRM, "hi", "2", consented=True, resume=Phase.IDLE)
+
+    t = handle(pending, "सहमति वापस")
+
+    assert t.state.phase is Phase.ONB_CONSENT
+    assert t.state.resume is None
+
+
+def test_withdrawing_before_ever_consenting_is_the_same_as_declining():
+    start = TeacherState(Phase.ONB_CONSENT, lang="en", grade_band="2")
+
+    t = handle(start, "withdraw consent")
+
+    assert t.state == TeacherState()
+    assert EraseTeacher() in t.effects
+    assert _keys(t) == ["consent_declined"]

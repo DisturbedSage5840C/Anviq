@@ -135,3 +135,30 @@ async def test_the_sender_id_is_never_the_storage_key(
     await brain.respond(_say("hello"))
 
     assert all(SENDER.encode() not in key for key in store.teachers)
+
+
+async def test_withdrawing_consent_revokes_the_ledger_row_and_shows_the_notice_again(
+    brain: RouterBrain, store: InMemoryTeacherStore
+):
+    await _onboard(brain)
+
+    reply = await brain.respond(_say("withdraw my consent"))
+
+    stored = store.teachers[_hash()]
+    assert [c.revoked for c in stored.consents] == [True]
+    assert stored.state.phase is Phase.ONB_CONSENT
+    assert stored.reminders_opt_in is False
+    assert reply.text == f"{render('consent_withdrawn', 'en')}\n\n{render('consent_notice', 'en')}"
+
+
+async def test_saying_yes_after_withdrawing_starts_a_new_consent(
+    brain: RouterBrain, store: InMemoryTeacherStore
+):
+    await _onboard(brain)
+    await brain.respond(_say("withdraw my consent"))
+
+    await brain.respond(_say("yes"))
+
+    stored = store.teachers[_hash()]
+    assert [c.revoked for c in stored.consents] == [True, False]
+    assert stored.state.phase is Phase.IDLE

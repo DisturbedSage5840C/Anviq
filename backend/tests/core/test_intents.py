@@ -99,3 +99,25 @@ def test_language_choice(text: str, expected: str | None):
 )
 def test_grade_choice(text: str, expected: str | None):
     assert parse_grade(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "सहमति वापस",
+        "मेरी सहमति वापस लो।",
+        "Withdraw consent",
+        "I want to withdraw my consent",
+        "revoke consent",
+    ],
+)
+def test_consent_withdrawal_phrases_are_recognised(text: str):
+    assert classify_global(text) is GlobalIntent.WITHDRAW_CONSENT
+
+
+def test_delete_outranks_withdrawal_when_both_appear():
+    assert classify_global("withdraw consent and delete my data") is GlobalIntent.DELETE
+
+
+def test_a_bare_consent_question_is_not_a_withdrawal():
+    assert classify_global("what is consent") is None

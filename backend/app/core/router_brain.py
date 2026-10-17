@@ -10,6 +10,7 @@ from app.core.router import (
     RecordConsent,
     Say,
     Transition,
+    WithdrawConsent,
     handle,
 )
 from app.core.teacher_store import TeacherSession, TeacherStore
@@ -46,6 +47,8 @@ async def _apply_effects(session: TeacherSession, transition: Transition) -> Non
         match effect:
             case RecordConsent(version):
                 await session.record_consent(version, consent_text_sha256(transition.state.lang))
+            case WithdrawConsent():
+                await session.withdraw_consent()
             case EraseTeacher():
                 await session.erase()
             case OptOutReminders():
