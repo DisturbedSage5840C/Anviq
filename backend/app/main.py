@@ -15,6 +15,7 @@ def create_app(*, settings: Settings | None = None, manage_resources: bool = Tru
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         async with open_resources(settings or get_settings()) as resources:
             app.state.resources = resources
+            app.state.redis = resources.redis
             app.state.inbound_guard = resources.inbound_guard
             app.state.job_queue = resources.job_queue
             yield
