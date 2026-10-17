@@ -8,11 +8,15 @@ import httpx
 from arq import create_pool
 from arq.connections import ArqRedis, RedisSettings
 from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from app.channel.inbound_guard import InboundGuard
 from app.channel.job_queue import ArqJobQueue, JobQueue
 from app.channel.whatsapp_client import WhatsAppClient
 from app.config import Settings
+from app.core.teacher_store import TeacherStore
+from app.db.teacher_store import PostgresTeacherStore
+from app.privacy.keyring import Keyring, load_keyring
 from app.speech.base import STTProvider, TTSProvider
 from app.speech.factory import build_speech
 
@@ -30,13 +34,19 @@ class Resources:
     whatsapp: WhatsAppClient | None
     stt: STTProvider | None
     tts: TTSProvider | None
+    engine: AsyncEngine
+    keyring: Keyring
+    teacher_store: TeacherStore
 
 
 @asynccontextmanager
 async def open_resources(
     settings: Settings, *, conn_retries: int = DEFAULT_CONN_RETRIES
 ) -> AsyncIterator[Resources]:
-    """Open Redis, the arq pool and the HTTP client; close them all on exit.
+    """Open Redis, the arq pool, the HTTP client and the DB engine; close them all on exit.
+
+    The engine connects lazily, so an unreachable database surfaces on /readyz and on the first
+    message rather than at startup.
 
     Raises redis.exceptions.ConnectionError if Redis stays unreachable after `conn_retries`.
     """
@@ -46,6 +56,8 @@ async def open_resources(
     redis = Redis.from_url(settings.redis_url, decode_responses=True)
     http = httpx.AsyncClient(timeout=HTTP_TIMEOUT_S)
     stt, tts = build_speech(settings, http)
+    keyring = load_keyring(settings)
+    engine = create_async_engine(settings.database_url, pool_pre_ping=True)
     try:
         yield Resources(
             redis=redis,
@@ -56,8 +68,12 @@ async def open_resources(
             whatsapp=_build_whatsapp(settings, http),
             stt=stt,
             tts=tts,
+            engine=engine,
+            keyring=keyring,
+            teacher_store=PostgresTeacherStore(engine, keyring.field_cipher),
         )
     finally:
+        await engine.dispose()
         await http.aclose()
         await redis.aclose()
         await arq_pool.aclose()

@@ -60,3 +60,15 @@ def test_build_pipeline_wires_the_coach_voice_for_the_selected_tts(settings: Set
     pipeline = worker.build_pipeline(resources, settings, brain=EchoBrain())
 
     assert pipeline is not None
+
+
+def test_build_brain_runs_the_router_on_the_resources_store_and_pepper():
+    from app.core.router_brain import RouterBrain
+
+    store = object()
+    keyring = type("K", (), {"phone_pepper": bytes(32)})()
+    resources: Any = type("R", (), {"teacher_store": store, "keyring": keyring})()
+
+    brain = worker.build_brain(resources)
+
+    assert isinstance(brain, RouterBrain)

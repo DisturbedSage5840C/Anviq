@@ -2,6 +2,7 @@
 
 from fastapi import Request
 from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.channel.inbound_guard import InboundGuard
 from app.channel.job_queue import JobQueue
@@ -20,3 +21,8 @@ def get_job_queue(request: Request) -> JobQueue:
 def get_redis(request: Request) -> Redis:
     redis: Redis = request.app.state.redis
     return redis
+
+
+def get_engine(request: Request) -> AsyncEngine:
+    engine: AsyncEngine = request.app.state.engine
+    return engine

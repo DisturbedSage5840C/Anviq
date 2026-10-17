@@ -1,5 +1,6 @@
 """Integration test: needs a reachable Redis at REDIS_URL (CI service or docker compose)."""
 
+import os
 import uuid
 
 import httpx
@@ -116,3 +117,32 @@ async def test_app_lifespan_wires_webhook_to_the_real_queue() -> None:
 
     assert response.status_code == 200
     assert message_id in queued
+
+
+needs_database = pytest.mark.skipif(
+    not os.environ.get("DATABASE_URL"), reason="DATABASE_URL not set"
+)
+
+
+@needs_database
+async def test_database_engine_and_teacher_store_are_wired() -> None:
+    from sqlalchemy import text
+
+    async with open_resources(_settings(database_url=_database_url())) as resources:
+        async with resources.engine.connect() as conn:
+            assert (await conn.execute(text("select 1"))).scalar_one() == 1
+        assert resources.teacher_store is not None
+        assert len(resources.keyring.phone_pepper) == 32
+
+
+@needs_database
+async def test_engine_is_disposed_on_exit() -> None:
+    async with open_resources(_settings(database_url=_database_url())) as resources:
+        engine = resources.engine
+
+    assert engine.pool.checkedout() == 0
+    assert resources.engine is engine  # frozen: the same handle, now disposed
+
+
+def _database_url() -> str:
+    return os.environ["DATABASE_URL"]

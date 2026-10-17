@@ -14,7 +14,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.channel.messages import InboundMessage
 from app.channel.pipeline import InboundPipeline
 from app.config import Settings, get_settings
-from app.core.dialogue import Brain, EchoBrain
+from app.core.dialogue import Brain
+from app.core.router_brain import RouterBrain
 from app.resources import Resources, open_resources
 from app.speech.voices import voice_for
 
@@ -44,6 +45,10 @@ def build_pipeline(resources: Resources, settings: Settings, *, brain: Brain) ->
     )
 
 
+def build_brain(resources: Resources) -> Brain:
+    return RouterBrain(resources.teacher_store, resources.keyring.phone_pepper)
+
+
 async def handle_inbound(ctx: dict[str, Any], envelope: dict[str, Any]) -> None:
     pipeline: InboundPipeline = ctx["pipeline"]
     await pipeline.handle(InboundMessage.from_envelope(envelope))
@@ -54,7 +59,7 @@ async def on_startup(ctx: dict[str, Any]) -> None:
     stack = AsyncExitStack()
     resources = await stack.enter_async_context(open_resources(settings))
     ctx["stack"] = stack
-    ctx["pipeline"] = build_pipeline(resources, settings, brain=EchoBrain())
+    ctx["pipeline"] = build_pipeline(resources, settings, brain=build_brain(resources))
 
 
 async def on_shutdown(ctx: dict[str, Any]) -> None:
