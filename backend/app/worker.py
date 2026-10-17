@@ -5,9 +5,12 @@ resource wiring (`open_resources`), so both talk to Redis, WhatsApp and the spee
 through identical clients.
 """
 
+import logging
 from contextlib import AsyncExitStack
+from datetime import UTC, datetime
 from typing import Any
 
+from arq import cron
 from arq.connections import RedisSettings
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -16,6 +19,7 @@ from app.channel.pipeline import InboundPipeline
 from app.config import Settings, get_settings
 from app.core.dialogue import Brain
 from app.core.router_brain import RouterBrain
+from app.privacy.retention import purge_expired
 from app.resources import Resources, open_resources
 from app.speech.voices import voice_for
 
@@ -27,6 +31,8 @@ class _RedisEndpoint(BaseSettings):
 
     redis_url: str = "redis://localhost:6379/0"
 
+
+logger = logging.getLogger(__name__)
 
 COACH_PERSONA = "coach"
 MAX_TRIES = 2
@@ -54,11 +60,25 @@ async def handle_inbound(ctx: dict[str, Any], envelope: dict[str, Any]) -> None:
     await pipeline.handle(InboundMessage.from_envelope(envelope))
 
 
+async def purge_retention(ctx: dict[str, Any]) -> None:
+    """Hourly: delete expired transcripts, empty sessions and mirror clips in one transaction."""
+    resources: Resources = ctx["resources"]
+    async with resources.engine.begin() as conn:
+        report = await purge_expired(conn, now=datetime.now(UTC))
+    logger.info(
+        "retention purge: turns=%d sessions=%d mirror_clips=%d",
+        report.turns,
+        report.sessions,
+        report.mirror_clips,
+    )
+
+
 async def on_startup(ctx: dict[str, Any]) -> None:
     settings = get_settings()
     stack = AsyncExitStack()
     resources = await stack.enter_async_context(open_resources(settings))
     ctx["stack"] = stack
+    ctx["resources"] = resources
     ctx["pipeline"] = build_pipeline(resources, settings, brain=build_brain(resources))
 
 
@@ -68,6 +88,7 @@ async def on_shutdown(ctx: dict[str, Any]) -> None:
 
 class WorkerSettings:
     functions = [handle_inbound]
+    cron_jobs = [cron(purge_retention, minute=0)]
     on_startup = on_startup
     on_shutdown = on_shutdown
     max_tries = MAX_TRIES

@@ -1,12 +1,11 @@
 """Integration tests for the privacy-critical schema. Need a migrated Postgres at DATABASE_URL."""
 
 import os
-from collections.abc import AsyncIterator
 
 import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
-from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncConnection
 
 pytestmark = pytest.mark.skipif(not os.environ.get("DATABASE_URL"), reason="DATABASE_URL not set")
 
@@ -23,19 +22,6 @@ PRIVATE_TABLES = (
     "speech_usage",
 )
 K_ANONYMITY_THRESHOLD = 20
-
-
-@pytest.fixture
-async def conn() -> AsyncIterator[AsyncConnection]:
-    """A connection whose work is always rolled back, so tests leave no rows behind."""
-    engine = create_async_engine(os.environ["DATABASE_URL"])
-    async with engine.connect() as connection:
-        transaction = await connection.begin()
-        try:
-            yield connection
-        finally:
-            await transaction.rollback()
-    await engine.dispose()
 
 
 async def _seed_teachers(conn: AsyncConnection, count: int, *, cluster: str = "C1") -> list[str]:

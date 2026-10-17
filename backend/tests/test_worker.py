@@ -7,6 +7,7 @@ from app.channel.job_queue import HANDLE_INBOUND_JOB
 from app.channel.messages import InboundKind, InboundMessage
 from app.config import Settings
 from app.core.dialogue import EchoBrain
+from app.privacy.retention import PurgeReport
 
 
 class RecordingPipeline:
@@ -72,3 +73,62 @@ def test_build_brain_runs_the_router_on_the_resources_store_and_pepper():
     brain = worker.build_brain(resources)
 
     assert isinstance(brain, RouterBrain)
+
+
+class _FakeTransaction:
+    def __init__(self, log: list[str]) -> None:
+        self._log = log
+
+    async def __aenter__(self) -> str:
+        self._log.append("begin")
+        return "conn"
+
+    async def __aexit__(self, *exc: object) -> None:
+        self._log.append("commit" if exc[0] is None else "rollback")
+
+
+class _FakeEngine:
+    def __init__(self, log: list[str]) -> None:
+        self._log = log
+
+    def begin(self) -> _FakeTransaction:
+        return _FakeTransaction(self._log)
+
+
+async def test_purge_retention_runs_one_purge_in_one_transaction(monkeypatch: pytest.MonkeyPatch):
+    log: list[str] = []
+
+    async def fake_purge(conn: object, *, now: Any) -> PurgeReport:
+        log.append(f"purge:{conn}:{now.tzinfo}")
+        return PurgeReport(turns=3, sessions=1, mirror_clips=2)
+
+    monkeypatch.setattr(worker, "purge_expired", fake_purge)
+    resources: Any = type("R", (), {"engine": _FakeEngine(log)})()
+
+    await worker.purge_retention({"resources": resources})
+
+    assert log == ["begin", "purge:conn:UTC", "commit"]
+
+
+async def test_a_failing_purge_rolls_back_and_lets_the_error_surface(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    log: list[str] = []
+
+    async def failing_purge(conn: object, *, now: Any) -> PurgeReport:
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(worker, "purge_expired", failing_purge)
+    resources: Any = type("R", (), {"engine": _FakeEngine(log)})()
+
+    with pytest.raises(RuntimeError, match="db down"):
+        await worker.purge_retention({"resources": resources})
+
+    assert log == ["begin", "rollback"]
+
+
+def test_retention_purge_is_scheduled_hourly_on_the_hour():
+    (job,) = worker.WorkerSettings.cron_jobs
+
+    assert job.coroutine is worker.purge_retention
+    assert (job.hour, job.minute) == (None, 0)
