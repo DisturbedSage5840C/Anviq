@@ -4,7 +4,9 @@ from pydantic import ValidationError
 from app.config import Settings
 
 
-def test_missing_whatsapp_secrets_fail_at_startup():
+def test_missing_whatsapp_secrets_fail_at_startup(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("WA_VERIFY_TOKEN", raising=False)
+    monkeypatch.delenv("WA_APP_SECRET", raising=False)
     with pytest.raises(ValidationError):
         Settings(app_env="local", _env_file=None)
 
