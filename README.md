@@ -5,7 +5,7 @@ Plan, rehearse with three AI children, teach, reflect. Institutions see only ano
 trends for groups of 20+ teachers.
 
 Built for the hack2skill x ShikshaNext x Anthropic "AI for Foundational Learning" hackathon
-(Challenge 3, Teacher Support), by Team Anviq, Plaksha University.
+(Challenge 3, Teacher Support), by Team BBC(Big Black Claude), Plaksha University.
 
 ## Layout
 
