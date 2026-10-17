@@ -1,0 +1,106 @@
+"""Persistence port for the conversation router, plus an in-memory fake for tests.
+
+One `locked()` block is one message: the store serialises concurrent messages from the same
+teacher and commits or rolls back everything done inside the block together.
+"""
+
+import asyncio
+from collections.abc import AsyncIterator
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
+from dataclasses import dataclass, field, replace
+from typing import Protocol
+
+from app.core.router import TeacherState
+
+DELETION_LOG_PREFIX_BYTES = 8
+
+
+def deletion_log_prefix(phone_hash: bytes) -> str:
+    """The only trace a deletion leaves: enough to prove it happened, not to identify anyone."""
+    return phone_hash[:DELETION_LOG_PREFIX_BYTES].hex()
+
+
+class TeacherSession(Protocol):
+    async def load(self) -> TeacherState: ...
+
+    async def save(self, state: TeacherState, wa_id: str) -> None:
+        """Persist `state`. A NEW teacher has nothing worth keeping, so no row is created."""
+        ...
+
+    async def record_consent(self, version: str, text_sha256: str) -> None: ...
+
+    async def erase(self) -> None:
+        """Delete the teacher and everything they own, and log the deletion."""
+        ...
+
+    async def opt_out_reminders(self) -> None: ...
+
+
+class TeacherStore(Protocol):
+    def locked(self, phone_hash: bytes) -> AbstractAsyncContextManager[TeacherSession]: ...
+
+
+@dataclass(frozen=True)
+class ConsentRecord:
+    version: str
+    text_sha256: str
+
+
+@dataclass(frozen=True)
+class StoredTeacher:
+    state: TeacherState
+    wa_id: str
+    consents: tuple[ConsentRecord, ...] = ()
+    reminders_opt_in: bool = False
+
+
+@dataclass
+class InMemoryTeacherStore:
+    """Test double with the same observable behaviour as the Postgres store."""
+
+    teachers: dict[bytes, StoredTeacher] = field(default_factory=dict)
+    deletion_log: list[str] = field(default_factory=list)
+    _locks: dict[bytes, asyncio.Lock] = field(default_factory=dict)
+
+    @asynccontextmanager
+    async def locked(self, phone_hash: bytes) -> AsyncIterator["_InMemorySession"]:
+        lock = self._locks.setdefault(phone_hash, asyncio.Lock())
+        async with lock:
+            yield _InMemorySession(self, phone_hash)
+
+
+@dataclass(frozen=True)
+class _InMemorySession:
+    store: InMemoryTeacherStore
+    phone_hash: bytes
+
+    async def load(self) -> TeacherState:
+        stored = self.store.teachers.get(self.phone_hash)
+        if stored is None:
+            return TeacherState()
+        return replace(stored.state, consented=bool(stored.consents))
+
+    async def save(self, state: TeacherState, wa_id: str) -> None:
+        existing = self.store.teachers.get(self.phone_hash)
+        if existing is None:
+            if state == TeacherState():
+                return
+            self.store.teachers[self.phone_hash] = StoredTeacher(state=state, wa_id=wa_id)
+            return
+        self.store.teachers[self.phone_hash] = replace(existing, state=state, wa_id=wa_id)
+
+    async def record_consent(self, version: str, text_sha256: str) -> None:
+        existing = self.store.teachers[self.phone_hash]
+        record = ConsentRecord(version, text_sha256)
+        self.store.teachers[self.phone_hash] = replace(
+            existing, consents=(*existing.consents, record)
+        )
+
+    async def erase(self) -> None:
+        if self.store.teachers.pop(self.phone_hash, None) is not None:
+            self.store.deletion_log.append(deletion_log_prefix(self.phone_hash))
+
+    async def opt_out_reminders(self) -> None:
+        existing = self.store.teachers.get(self.phone_hash)
+        if existing is not None:
+            self.store.teachers[self.phone_hash] = replace(existing, reminders_opt_in=False)
