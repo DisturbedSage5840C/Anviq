@@ -36,6 +36,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+        working-directory: .
       - run: uv sync --frozen
       - run: uv run ruff check .
       - run: uv run ruff format --check .

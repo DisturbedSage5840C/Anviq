@@ -13,6 +13,8 @@ dependencies = [
   "alembic>=1.14",
   "arq>=0.26",
   "httpx>=0.27",
+  "cryptography>=50.0.2",
+  "redis>=5.3.1",
 ]
 
 [dependency-groups]
@@ -22,6 +24,8 @@ dev = [
   "pytest-cov>=6.0",
   "ruff>=0.8",
   "mypy>=1.13",
+  "respx>=0.23.1",
+  "fakeredis>=2.40.0",
 ]
 
 [tool.pytest.ini_options]
@@ -37,7 +41,7 @@ target-version = "py312"
 select = ["E", "F", "I", "UP", "B", "S"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "S105", "S106"]
+"tests/*" = ["S101", "S105", "S106", "E501"]
 
 [tool.mypy]
 python_version = "3.12"
