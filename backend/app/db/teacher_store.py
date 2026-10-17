@@ -64,14 +64,6 @@ class _PostgresSession:
         )
 
     async def save(self, state: TeacherState, wa_id: str) -> None:
-        params = {
-            "h": self.phone_hash,
-            "wa": self.cipher.encrypt(wa_id, context=WA_ID_CONTEXT),
-            "state": state.phase.value,
-            "lang": state.lang,
-            "grade": state.grade_band,
-            "resume": state.resume.value if state.resume else None,
-        }
         if state.phase is Phase.NEW:
             return  # nothing worth keeping before the teacher has said anything real
         await self.conn.execute(
@@ -84,7 +76,15 @@ class _PostgresSession:
                 "state = excluded.state, resume_state = excluded.resume_state, "
                 "last_active_at = now()"
             ),
-            {**params, "default_lang": DEFAULT_LANG},
+            {
+                "h": self.phone_hash,
+                "wa": self.cipher.encrypt(wa_id, context=WA_ID_CONTEXT),
+                "state": state.phase.value,
+                "lang": state.lang,
+                "default_lang": DEFAULT_LANG,
+                "grade": state.grade_band,
+                "resume": state.resume.value if state.resume else None,
+            },
         )
 
     async def record_consent(self, version: str, text_sha256: str) -> None:
