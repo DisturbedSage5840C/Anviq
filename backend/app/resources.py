@@ -13,6 +13,8 @@ from app.channel.inbound_guard import InboundGuard
 from app.channel.job_queue import ArqJobQueue, JobQueue
 from app.channel.whatsapp_client import WhatsAppClient
 from app.config import Settings
+from app.speech.base import STTProvider, TTSProvider
+from app.speech.factory import build_speech
 
 HTTP_TIMEOUT_S = 20.0
 DEFAULT_CONN_RETRIES = 3
@@ -26,6 +28,8 @@ class Resources:
     inbound_guard: InboundGuard
     job_queue: JobQueue
     whatsapp: WhatsAppClient | None
+    stt: STTProvider | None
+    tts: TTSProvider | None
 
 
 @asynccontextmanager
@@ -41,6 +45,7 @@ async def open_resources(
     arq_pool = await create_pool(redis_settings)
     redis = Redis.from_url(settings.redis_url, decode_responses=True)
     http = httpx.AsyncClient(timeout=HTTP_TIMEOUT_S)
+    stt, tts = build_speech(settings, http)
     try:
         yield Resources(
             redis=redis,
@@ -49,6 +54,8 @@ async def open_resources(
             inbound_guard=InboundGuard(redis),
             job_queue=ArqJobQueue(arq_pool),
             whatsapp=_build_whatsapp(settings, http),
+            stt=stt,
+            tts=tts,
         )
     finally:
         await http.aclose()

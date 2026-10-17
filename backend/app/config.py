@@ -35,6 +35,15 @@ class Settings(BaseSettings):
     model_smart: str = "claude-sonnet-5-5"
     model_offline: str = "claude-opus-5-5"
 
+    # Vendors rename and retire models, so model ids are config, not code.
+    sarvam_api_key: SecretStr | None = None
+    google_speech_api_key: SecretStr | None = None
+    stt_provider: Literal["sarvam", "google"] = "sarvam"
+    tts_provider: Literal["sarvam", "google"] = "sarvam"
+    sarvam_stt_model: str = "saaras:v4"
+    sarvam_tts_model: str = "bulbul:v3"
+    sarvam_tts_sample_rate: int = 24000
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def wa_graph_base_url(self) -> str:
@@ -51,7 +60,15 @@ class Settings(BaseSettings):
             ):
                 if secret is None:
                     raise ValueError(f"{name} is required when APP_ENV={self.app_env}")
+            self._require_speech_keys()
         return self
+
+    def _require_speech_keys(self) -> None:
+        providers = {self.stt_provider, self.tts_provider}
+        if "sarvam" in providers and self.sarvam_api_key is None:
+            raise ValueError(f"SARVAM_API_KEY is required when APP_ENV={self.app_env}")
+        if "google" in providers and self.google_speech_api_key is None:
+            raise ValueError(f"GOOGLE_SPEECH_API_KEY is required when APP_ENV={self.app_env}")
 
     @model_validator(mode="after")
     def validate_key_material(self) -> Self:

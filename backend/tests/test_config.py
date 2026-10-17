@@ -67,6 +67,7 @@ def _deployed(**overrides):
         "wa_verify_token": "v",
         "wa_app_secret": "s",
         "anthropic_api_key": "k",
+        "sarvam_api_key": "k",
         "_env_file": None,
     }
     return Settings(**{**base, **overrides})
@@ -87,3 +88,20 @@ def test_deployed_env_accepts_all_required_secrets():
 def test_malformed_field_key_is_rejected_at_startup():
     with pytest.raises(ValidationError, match="FIELD_KEY"):
         _deployed(field_key="a" * 44, phone_pepper=VALID_KEY)
+
+
+def test_deployed_env_requires_the_selected_speech_provider_key():
+    with pytest.raises(ValidationError, match="SARVAM_API_KEY"):
+        _deployed(field_key=VALID_KEY, phone_pepper=VALID_KEY, sarvam_api_key=None)
+
+
+def test_deployed_env_needs_google_key_only_when_google_is_selected():
+    with pytest.raises(ValidationError, match="GOOGLE_SPEECH_API_KEY"):
+        _deployed(field_key=VALID_KEY, phone_pepper=VALID_KEY, stt_provider="google")
+    settings = _deployed(
+        field_key=VALID_KEY,
+        phone_pepper=VALID_KEY,
+        stt_provider="google",
+        google_speech_api_key="g",
+    )
+    assert settings.stt_provider == "google"
