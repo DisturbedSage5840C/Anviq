@@ -1,0 +1,36 @@
+# Secrets: never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+*.egg-info/
+
+# Node
+node_modules/
+.next/
+
+# Data we must never store or publish
+*.ogg
+*.opus
+*.wav
+*.mp3
+*.m4a
+content/corpus/*.pdf
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
