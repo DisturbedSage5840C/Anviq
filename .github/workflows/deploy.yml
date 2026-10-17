@@ -19,10 +19,15 @@ concurrency:
 
 jobs:
   staging:
+    # workflow_run executes with secrets, so only deploy CI runs that came from a push to this
+    # repo's own main branch, never from a fork or a pull request.
     if: >-
       vars.DEPLOY_ENABLED == 'true' &&
       (github.event_name == 'workflow_dispatch' ||
-       github.event.workflow_run.conclusion == 'success')
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository))
     runs-on: ubuntu-latest
     environment: staging
     defaults:
