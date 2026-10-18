@@ -43,6 +43,31 @@ async def test_send_text_posts_expected_body_and_returns_message_id(client) -> N
 
 
 @respx.mock
+async def test_send_template_posts_a_named_template_in_the_given_language(client) -> None:
+    route = respx.post(f"{BASE}/555/messages").respond(json={"messages": [{"id": "wamid.t"}]})
+
+    message_id = await client.send_template("919800000001", "daily_plan_reminder_hi", "hi")
+
+    assert message_id == "wamid.t"
+    assert json.loads(route.calls.last.request.content) == {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": "919800000001",
+        "type": "template",
+        "template": {"name": "daily_plan_reminder_hi", "language": {"code": "hi"}},
+    }
+
+
+@respx.mock
+@pytest.mark.parametrize("body", [{}, {"messages": []}, {"messages": [{}]}, {"messages": "x"}])
+async def test_a_send_answered_without_a_message_id_is_a_whatsapp_error(client, body) -> None:
+    respx.post(f"{BASE}/555/messages").respond(json=body)
+
+    with pytest.raises(WhatsAppError, match="message id"):
+        await client.send_template("919800000001", "daily_plan_reminder_hi", "hi")
+
+
+@respx.mock
 async def test_send_audio_marks_message_as_voice(client) -> None:
     route = respx.post(f"{BASE}/555/messages").respond(json={"messages": [{"id": "wamid.a"}]})
 

@@ -17,10 +17,20 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.channel.messages import InboundMessage
 from app.channel.pipeline import InboundPipeline
+from app.channel.reminders import (
+    DueReminder,
+    claim_due_reminders,
+    reminder_template,
+    reminder_window,
+    still_reachable,
+)
+from app.channel.whatsapp_client import WhatsAppClient
 from app.config import Settings, get_settings
 from app.core.dialogue import Brain
 from app.core.router_brain import RouterBrain
+from app.db.teacher_store import WA_ID_CONTEXT
 from app.ops.cost_report import build_cost_report, previous_ist_day, render_cost_report
+from app.privacy.crypto import FieldCipher
 from app.privacy.retention import purge_expired
 from app.resources import Resources, open_resources
 from app.speech.voices import voice_for
@@ -41,9 +51,11 @@ class OpsWebhookError(RuntimeError):
     """The cost report could not be delivered. The message never includes the webhook URL."""
 
 
+SENT, FAILED, SKIPPED = "sent", "failed", "skipped"
 COACH_PERSONA = "coach"
 MAX_TRIES = 2
 JOB_TIMEOUT_S = 60
+REMINDER_JOB_TIMEOUT_S = 300  # a claimed batch of sends, not a single inbound message
 
 
 def build_pipeline(resources: Resources, settings: Settings, *, brain: Brain) -> InboundPipeline:
@@ -98,6 +110,46 @@ async def daily_cost_report(ctx: dict[str, Any]) -> None:
     await _post_to_ops_webhook(resources.http, settings.ops_webhook_url.get_secret_value(), message)
 
 
+async def send_daily_reminders(ctx: dict[str, Any]) -> None:
+    """Every quarter hour: send the approved reminder template to teachers whose time has come.
+
+    Teachers are claimed (and stamped as reminded today) in one committed transaction before
+    any send, so a crash or retry can drop a reminder but never message someone twice. One
+    failed teacher never stops the rest, and the log carries counts only, never a number.
+    """
+    resources: Resources = ctx["resources"]
+    whatsapp = resources.whatsapp
+    if whatsapp is None:
+        raise RuntimeError("WA_PHONE_NUMBER_ID and WA_ACCESS_TOKEN are required to send reminders")
+    async with resources.engine.begin() as conn:
+        due = await claim_due_reminders(conn, reminder_window(datetime.now(UTC)))
+    cipher = resources.keyring.field_cipher
+    outcomes = [await _send_reminder(resources, whatsapp, cipher, reminder) for reminder in due]
+    logger.info(
+        "daily reminders: claimed=%d sent=%d failed=%d skipped=%d",
+        len(due),
+        outcomes.count(SENT),
+        outcomes.count(FAILED),
+        outcomes.count(SKIPPED),
+    )
+
+
+async def _send_reminder(
+    resources: Resources, whatsapp: WhatsAppClient, cipher: FieldCipher, reminder: DueReminder
+) -> str:
+    try:
+        async with resources.engine.begin() as conn:
+            reachable = await still_reachable(conn, reminder.teacher_id)
+        if not reachable:
+            return SKIPPED
+        wa_id = cipher.decrypt(reminder.wa_id_enc, context=WA_ID_CONTEXT)
+        await whatsapp.send_template(wa_id, reminder_template(reminder.lang), reminder.lang)
+    except Exception as exc:  # noqa: BLE001 - every teacher is already claimed; one must not lose the rest
+        logger.warning("daily reminder not sent: %s", type(exc).__name__)
+        return FAILED
+    return SENT
+
+
 async def _post_to_ops_webhook(http: httpx.AsyncClient, url: str, message: str) -> None:
     """Post the report. The webhook URL is a credential, so no error may carry it."""
     try:
@@ -137,6 +189,7 @@ class WorkerSettings:
     cron_jobs = [
         cron(purge_retention, minute=0),
         cron(daily_cost_report, hour=2, minute=30),
+        cron(send_daily_reminders, minute={0, 15, 30, 45}, timeout=REMINDER_JOB_TIMEOUT_S),
     ]
     on_startup = on_startup
     on_shutdown = on_shutdown

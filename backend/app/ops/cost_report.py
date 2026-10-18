@@ -1,13 +1,13 @@
 """Daily spend summary for the team: LLM tokens and dollars, speech seconds and characters."""
 
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-IST = timezone(timedelta(hours=5, minutes=30))  # India has no daylight saving
+from app.ist import IST
 
 
 @dataclass(frozen=True)

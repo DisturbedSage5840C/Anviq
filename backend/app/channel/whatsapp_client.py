@@ -75,6 +75,11 @@ class WhatsAppClient:
     async def send_text(self, to: str, body: str) -> str:
         return await self._send_message(to, "text", {"text": {"body": body, "preview_url": False}})
 
+    async def send_template(self, to: str, name: str, language_code: str) -> str:
+        """Send an approved template: the only message Meta allows outside the 24h window."""
+        template = {"name": name, "language": {"code": language_code}}
+        return await self._send_message(to, "template", {"template": template})
+
     async def send_audio(self, to: str, media_id: str) -> str:
         return await self._send_message(to, "audio", {"audio": {"id": media_id, "voice": True}})
 
@@ -141,7 +146,10 @@ class WhatsAppClient:
             )
 
         payload = await self._json(attempt)
-        return str(payload["messages"][0]["id"])
+        try:
+            return str(payload["messages"][0]["id"])
+        except (KeyError, IndexError, TypeError):
+            raise WhatsAppError("WhatsApp accepted the send but returned no message id") from None
 
     async def _fetch_capped(self, url: str) -> bytes:
         chunks: list[bytes] = []

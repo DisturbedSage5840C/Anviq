@@ -3,6 +3,7 @@ import logging
 from datetime import UTC, datetime, time, timedelta
 from decimal import Decimal
 from typing import Any
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -11,9 +12,14 @@ from pydantic import SecretStr
 from app import worker
 from app.channel.job_queue import HANDLE_INBOUND_JOB
 from app.channel.messages import InboundKind, InboundMessage
+from app.channel.reminders import DueReminder, ReminderWindow
+from app.channel.whatsapp_client import WhatsAppError
 from app.config import Settings
 from app.core.dialogue import EchoBrain
-from app.ops.cost_report import IST, CostReport, render_cost_report
+from app.db.teacher_store import WA_ID_CONTEXT
+from app.ist import IST
+from app.ops.cost_report import CostReport, render_cost_report
+from app.privacy.crypto import FieldCipher
 from app.privacy.retention import PurgeReport
 
 
@@ -263,3 +269,199 @@ def test_cost_report_runs_daily_at_0800_ist():
 
     # arq schedules in UTC: 02:30 UTC is 08:00 IST.
     assert (job.hour, job.minute) == (2, 30)
+
+
+WA_ID = "919999999999"
+
+
+class _RecordingWhatsApp:
+    def __init__(self, log: list[str], *, fail_for: set[str] | None = None) -> None:
+        self._log = log
+        self._fail_for = fail_for or set()
+        self.sent: list[tuple[str, str, str]] = []
+
+    async def send_template(self, to: str, name: str, language_code: str) -> str:
+        self._log.append("send")
+        if to in self._fail_for:
+            raise WhatsAppError("Meta rejected the template")
+        self.sent.append((to, name, language_code))
+        return "wamid.out"
+
+
+def _reminder_ctx(
+    log: list[str],
+    whatsapp: _RecordingWhatsApp | None,
+    *,
+    wa_ids: tuple[str, ...] = (WA_ID,),
+    lang: str = "hi",
+) -> tuple[dict[str, Any], list[DueReminder]]:
+    cipher = FieldCipher(bytes(32))
+    due = [
+        DueReminder(
+            teacher_id=uuid4(), lang=lang, wa_id_enc=cipher.encrypt(wa_id, context=WA_ID_CONTEXT)
+        )
+        for wa_id in wa_ids
+    ]
+    keyring: Any = type("K", (), {"field_cipher": cipher})()
+    resources: Any = type(
+        "R", (), {"engine": _FakeEngine(log), "whatsapp": whatsapp, "keyring": keyring}
+    )()
+    return {"resources": resources}, due
+
+
+@pytest.fixture
+def claimed() -> list[ReminderWindow]:
+    return []
+
+
+def _stub_claim(
+    monkeypatch: pytest.MonkeyPatch,
+    log: list[str],
+    due: list[DueReminder],
+    windows: list[ReminderWindow],
+    unreachable: frozenset[object] = frozenset(),
+) -> None:
+    async def fake_claim(conn: object, window: ReminderWindow) -> list[DueReminder]:
+        log.append("claim")
+        windows.append(window)
+        return due
+
+    async def reachable(conn: object, teacher_id: object) -> bool:
+        log.append("check")
+        return teacher_id not in unreachable
+
+    monkeypatch.setattr(worker, "claim_due_reminders", fake_claim)
+    monkeypatch.setattr(worker, "still_reachable", reachable)
+
+
+async def test_a_due_teacher_gets_the_reminder_template_in_their_language(
+    monkeypatch: pytest.MonkeyPatch, claimed: list[ReminderWindow]
+):
+    log: list[str] = []
+    whatsapp = _RecordingWhatsApp(log)
+    ctx, due = _reminder_ctx(log, whatsapp, lang="en")
+    _stub_claim(monkeypatch, log, due, claimed)
+
+    await worker.send_daily_reminders(ctx)
+
+    assert whatsapp.sent == [(WA_ID, "daily_plan_reminder_en", "en")]
+    assert len(claimed) == 1
+
+
+async def test_claims_are_committed_before_any_message_is_sent(
+    monkeypatch: pytest.MonkeyPatch, claimed: list[ReminderWindow]
+):
+    log: list[str] = []
+    ctx, due = _reminder_ctx(log, _RecordingWhatsApp(log))
+    _stub_claim(monkeypatch, log, due, claimed)
+
+    await worker.send_daily_reminders(ctx)
+
+    assert log[:3] == ["begin", "claim", "commit"]
+    assert log.index("send") > log.index("commit")
+
+
+async def test_one_failed_send_does_not_stop_the_other_reminders(
+    monkeypatch: pytest.MonkeyPatch, claimed: list[ReminderWindow]
+):
+    log: list[str] = []
+    whatsapp = _RecordingWhatsApp(log, fail_for={"911111111111"})
+    ctx, due = _reminder_ctx(log, whatsapp, wa_ids=("911111111111", "922222222222"))
+    _stub_claim(monkeypatch, log, due, claimed)
+
+    await worker.send_daily_reminders(ctx)
+
+    assert [to for to, _, _ in whatsapp.sent] == ["922222222222"]
+
+
+async def test_an_undecryptable_number_is_skipped_and_the_rest_still_sent(
+    monkeypatch: pytest.MonkeyPatch, claimed: list[ReminderWindow]
+):
+    log: list[str] = []
+    whatsapp = _RecordingWhatsApp(log)
+    ctx, due = _reminder_ctx(log, whatsapp)
+    broken = DueReminder(teacher_id=uuid4(), lang="hi", wa_id_enc=b"not-a-sealed-value-at-all")
+    _stub_claim(monkeypatch, log, [broken, *due], claimed)
+
+    await worker.send_daily_reminders(ctx)
+
+    assert [to for to, _, _ in whatsapp.sent] == [WA_ID]
+
+
+async def test_the_log_reports_counts_and_never_a_phone_number(
+    monkeypatch: pytest.MonkeyPatch,
+    claimed: list[ReminderWindow],
+    caplog: pytest.LogCaptureFixture,
+):
+    log: list[str] = []
+    whatsapp = _RecordingWhatsApp(log, fail_for={"911111111111"})
+    ctx, due = _reminder_ctx(log, whatsapp, wa_ids=("911111111111", "922222222222"))
+    _stub_claim(monkeypatch, log, due, claimed)
+
+    with caplog.at_level(logging.INFO, logger=worker.logger.name):
+        await worker.send_daily_reminders(ctx)
+
+    assert "claimed=2 sent=1 failed=1" in caplog.text
+    assert "9111" not in caplog.text
+    assert "9222" not in caplog.text
+
+
+async def test_without_whatsapp_credentials_nothing_is_claimed(
+    monkeypatch: pytest.MonkeyPatch, claimed: list[ReminderWindow]
+):
+    log: list[str] = []
+    ctx, due = _reminder_ctx(log, None)
+    _stub_claim(monkeypatch, log, due, claimed)
+
+    with pytest.raises(RuntimeError, match="WA_PHONE_NUMBER_ID"):
+        await worker.send_daily_reminders(ctx)
+
+    assert log == []
+
+
+def test_reminders_are_checked_every_quarter_hour():
+    job = _cron_job(worker.send_daily_reminders)
+
+    assert (job.hour, job.minute) == (None, {0, 15, 30, 45})
+
+
+def test_a_reminder_batch_gets_more_time_than_a_single_inbound_job():
+    job = _cron_job(worker.send_daily_reminders)
+
+    assert job.timeout_s > worker.JOB_TIMEOUT_S
+
+
+async def test_a_teacher_who_withdrew_after_the_claim_is_not_messaged(
+    monkeypatch: pytest.MonkeyPatch, claimed: list[ReminderWindow], caplog: pytest.LogCaptureFixture
+):
+    log: list[str] = []
+    whatsapp = _RecordingWhatsApp(log)
+    ctx, due = _reminder_ctx(log, whatsapp, wa_ids=("911111111111", "922222222222"))
+    _stub_claim(monkeypatch, log, due, claimed, unreachable=frozenset({due[0].teacher_id}))
+
+    with caplog.at_level(logging.INFO, logger=worker.logger.name):
+        await worker.send_daily_reminders(ctx)
+
+    assert [to for to, _, _ in whatsapp.sent] == ["922222222222"]
+    assert "skipped=1" in caplog.text
+
+
+async def test_an_unexpected_error_for_one_teacher_does_not_lose_the_rest_of_the_batch(
+    monkeypatch: pytest.MonkeyPatch, claimed: list[ReminderWindow]
+):
+    log: list[str] = []
+    whatsapp = _RecordingWhatsApp(log)
+    ctx, due = _reminder_ctx(log, whatsapp, wa_ids=("911111111111", "922222222222"))
+    _stub_claim(monkeypatch, log, due, claimed)
+    original = whatsapp.send_template
+
+    async def flaky(to: str, name: str, language_code: str) -> str:
+        if to == "911111111111":
+            raise KeyError("surprise")
+        return await original(to, name, language_code)
+
+    whatsapp.send_template = flaky  # type: ignore[method-assign]
+
+    await worker.send_daily_reminders(ctx)
+
+    assert [to for to, _, _ in whatsapp.sent] == ["922222222222"]
