@@ -16,6 +16,8 @@ VOICE_BITRATE_LADDER_KBPS = (24, 16, 12)
 STT_SAMPLE_RATE = 16000
 PCM_BYTES_PER_SAMPLE = 2
 FFMPEG_TIMEOUT_S = 30.0
+# Decode one second past the limit: enough to see a note is too long, without decoding a bomb.
+DECODE_CAP_SECONDS = MAX_VOICE_SECONDS + 1
 
 
 class AudioError(Exception):
@@ -46,6 +48,8 @@ async def _ffmpeg(data: bytes, *output_args: str) -> bytes:
         "-hide_banner",
         "-loglevel",
         "error",
+        "-protocol_whitelist",
+        "pipe",  # input is only ever stdin; no playlist or concat file may pull in other URLs/files
         "-i",
         "pipe:0",
         *output_args,
@@ -80,7 +84,7 @@ async def to_voice_note(wav: bytes) -> bytes:
 async def prepare_for_stt(audio: bytes) -> PreparedAudio:
     """Decode anything ffmpeg understands to 16 kHz mono WAV and enforce the length limit."""
     pcm = await _ffmpeg(
-        audio, "-ac", "1", "-ar", str(STT_SAMPLE_RATE), "-f", "s16le"
+        audio, "-t", str(DECODE_CAP_SECONDS), "-ac", "1", "-ar", str(STT_SAMPLE_RATE), "-f", "s16le"
     )  # fmt: skip
     duration_s = len(pcm) / (STT_SAMPLE_RATE * PCM_BYTES_PER_SAMPLE)
     if duration_s > MAX_VOICE_SECONDS:

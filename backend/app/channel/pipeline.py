@@ -45,6 +45,30 @@ def language_of(language_code: str) -> str:
     return "en" if language_code.lower().startswith("en") else "hi"
 
 
+async def transcribe_audio(
+    stt: STTProvider, prepare_audio: PrepareAudio, data: bytes
+) -> Transcript | str:
+    """The words in a recording, or the polite refusal to send instead. Shared with the web room."""
+    try:
+        transcript = await stt.transcribe(await prepare_audio(data), lang_hint=None)
+    except AudioTooLongError:
+        return replies.AUDIO_TOO_LONG
+    except (AudioDecodeError, SpeechProviderError):
+        logger.warning("could not transcribe voice note", exc_info=True)
+        return replies.CANNOT_HEAR
+    return transcript if transcript.text.strip() else replies.CANNOT_HEAR
+
+
+def spoken_utterance(sender: str, transcript: Transcript) -> Utterance:
+    return Utterance(
+        sender,
+        transcript.text,
+        language_of(transcript.language_code),
+        via_voice=True,
+        needs_confirmation=needs_confirmation(transcript),
+    )
+
+
 class InboundPipeline:
     def __init__(
         self,
@@ -83,29 +107,14 @@ class InboundPipeline:
             return Utterance(message.sender_wa_id, text, "hi", False, False)
         if self._stt is None:
             return replies.VOICE_UNAVAILABLE
-        transcript = await self._transcribe(message, self._stt)
-        if isinstance(transcript, str):
-            return transcript
-        return Utterance(
-            message.sender_wa_id,
-            transcript.text,
-            language_of(transcript.language_code),
-            via_voice=True,
-            needs_confirmation=needs_confirmation(transcript),
-        )
-
-    async def _transcribe(self, message: InboundMessage, stt: STTProvider) -> Transcript | str:
         try:
             media = await self._whatsapp.download_media(message.media_id or "")
-            transcript = await stt.transcribe(await self._prepare_audio(media.data), lang_hint=None)
-        except AudioTooLongError:
-            return replies.AUDIO_TOO_LONG
         except MediaTooLargeError:
             return replies.MEDIA_TOO_LARGE
-        except (AudioDecodeError, SpeechProviderError):
-            logger.warning("could not transcribe voice note", exc_info=True)
-            return replies.CANNOT_HEAR
-        return transcript if transcript.text.strip() else replies.CANNOT_HEAR
+        transcript = await transcribe_audio(self._stt, self._prepare_audio, media.data)
+        if isinstance(transcript, str):
+            return transcript
+        return spoken_utterance(message.sender_wa_id, transcript)
 
     async def _deliver(self, sender: str, reply: Reply) -> None:
         await self._whatsapp.send_text(sender, reply.text)

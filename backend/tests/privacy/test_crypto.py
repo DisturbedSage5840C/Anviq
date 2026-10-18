@@ -98,3 +98,9 @@ def test_phone_hash_depends_on_the_pepper() -> None:
 
 def test_phone_hash_differs_between_numbers() -> None:
     assert phone_hash(KEY, "919800000001") != phone_hash(KEY, "919800000002")
+
+
+def test_phone_hash_keeps_letters_so_non_phone_ids_do_not_collapse_to_their_digits() -> None:
+    assert phone_hash(KEY, "web:ab12") != phone_hash(KEY, "web:cd12")
+    assert phone_hash(KEY, "web:ab12") != phone_hash(KEY, "919800000001")
+    assert phone_hash(KEY, "web:ab12") != phone_hash(KEY, "12")

@@ -115,6 +115,21 @@ async def test_expired_mirror_clips_are_deleted_and_live_ones_kept(conn: AsyncCo
     assert report.mirror_clips == 1
 
 
+async def test_expired_demo_codes_are_deleted_and_live_ones_kept(conn: AsyncConnection):
+    await conn.execute(text("delete from demo_codes"))
+    for code_hash, expires_at in ((b"expired", NOW - timedelta(minutes=1)), (b"live", NOW + DAY)):
+        await conn.execute(
+            text("insert into demo_codes (code_hash, expires_at, turns_left) values (:h, :at, 5)"),
+            {"h": code_hash, "at": expires_at},
+        )
+
+    report = await purge_expired(conn, now=NOW)
+
+    remaining = (await conn.execute(text("select code_hash from demo_codes"))).scalars().all()
+    assert [bytes(code_hash) for code_hash in remaining] == [b"live"]
+    assert report.demo_codes == 1
+
+
 async def test_purging_never_touches_the_teacher_or_their_progress(conn: AsyncConnection):
     teacher = await _teacher(conn)
     await _clip(conn, teacher, NOW - DAY)
@@ -130,4 +145,6 @@ async def test_a_second_purge_finds_nothing_to_do(conn: AsyncConnection):
 
     await purge_expired(conn, now=NOW)
 
-    assert await purge_expired(conn, now=NOW) == PurgeReport(turns=0, sessions=0, mirror_clips=0)
+    assert await purge_expired(conn, now=NOW) == PurgeReport(
+        turns=0, sessions=0, mirror_clips=0, demo_codes=0
+    )

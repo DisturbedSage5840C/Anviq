@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.channel.inbound_guard import InboundGuard
 from app.channel.job_queue import JobQueue
+from app.web.demo_codes import PostgresDemoCodes
+from app.web.turn import WebTurn
 
 
 def get_inbound_guard(request: Request) -> InboundGuard:
@@ -26,3 +28,13 @@ def get_redis(request: Request) -> Redis:
 def get_engine(request: Request) -> AsyncEngine:
     engine: AsyncEngine = request.app.state.engine
     return engine
+
+
+def get_demo_codes(request: Request) -> PostgresDemoCodes:
+    codes: PostgresDemoCodes = request.app.state.demo_codes
+    return codes
+
+
+def get_web_turn(request: Request) -> WebTurn:
+    turn: WebTurn = request.app.state.web_turn
+    return turn

@@ -3,7 +3,7 @@ import base64
 import pytest
 from pydantic import ValidationError
 
-from app.config import Settings
+from app.config import Settings, WebRoomSettings
 
 
 def test_missing_whatsapp_secrets_fail_at_startup(monkeypatch: pytest.MonkeyPatch):
@@ -105,3 +105,27 @@ def test_deployed_env_needs_google_key_only_when_google_is_selected():
         google_speech_api_key="g",
     )
     assert settings.stt_provider == "google"
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ('["https://a.example"]', ["https://a.example"]),
+        ("https://a.example", ["https://a.example"]),
+        ("https://a.example, https://b.example/", ["https://a.example", "https://b.example"]),
+        ("", []),
+        (" , ", []),
+    ],
+)
+def test_web_origins_accept_json_or_comma_separated_and_never_crash(
+    monkeypatch: pytest.MonkeyPatch, raw: str, expected: list[str]
+):
+    monkeypatch.setenv("WEB_ALLOWED_ORIGINS", raw)
+
+    assert WebRoomSettings(_env_file=None).web_allowed_origins == expected
+
+
+def test_web_origins_default_to_none_allowed(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("WEB_ALLOWED_ORIGINS", raising=False)
+
+    assert WebRoomSettings(_env_file=None).web_allowed_origins == []

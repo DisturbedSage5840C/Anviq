@@ -61,6 +61,10 @@ class FieldCipher:
 
 
 def phone_hash(pepper: bytes, phone: str) -> bytes:
-    """HMAC-SHA256 over the digits of a phone number, so formatting never changes the hash."""
-    digits = _NON_DIGITS.sub("", phone)
-    return hmac.new(pepper, digits.encode(), hashlib.sha256).digest()
+    """HMAC-SHA256 over the digits of a phone number, so formatting never changes the hash.
+
+    An id with letters is not a phone number (the web room's "web:<hex>"), so it is hashed whole:
+    stripping it to its digits would shrink its entropy and let different ids collide.
+    """
+    material = phone if any(char.isalpha() for char in phone) else _NON_DIGITS.sub("", phone)
+    return hmac.new(pepper, material.encode(), hashlib.sha256).digest()

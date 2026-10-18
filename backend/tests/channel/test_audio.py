@@ -1,3 +1,4 @@
+import asyncio
 import io
 import math
 import struct
@@ -65,3 +66,24 @@ async def test_voice_note_that_cannot_fit_the_limit_raises(monkeypatch) -> None:
 
     with pytest.raises(AudioTooLargeError):
         await to_voice_note(make_wav(2.0, rate=24000))
+
+
+async def test_ffmpeg_may_only_read_the_pipe_and_stops_decoding_past_the_length_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    argvs: list[tuple[str, ...]] = []
+    real_exec = asyncio.create_subprocess_exec
+
+    async def spy(*argv: str, **kwargs):
+        argvs.append(argv)
+        return await real_exec(*argv, **kwargs)
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", spy)
+
+    await prepare_for_stt(make_wav(1.0))
+
+    (argv,) = argvs
+    assert argv[argv.index("-protocol_whitelist") + 1] == "pipe"
+    assert argv.index("-protocol_whitelist") < argv.index("-i")
+    assert argv[argv.index("-t") + 1] == str(audio.MAX_VOICE_SECONDS + 1)
+    assert argv.index("-t") > argv.index("-i")

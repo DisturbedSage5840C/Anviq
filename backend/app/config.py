@@ -1,10 +1,11 @@
 """Typed settings. Secrets are validated at startup so a bad deploy fails fast."""
 
+import json
 from functools import lru_cache
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
-from pydantic import Field, SecretStr, computed_field, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, SecretStr, computed_field, field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from app.privacy.crypto import InvalidKeyError, decode_key
 
@@ -88,3 +89,28 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+class WebRoomSettings(BaseSettings):
+    """Just the browser origins allowed to call /web/turn, readable before full Settings load.
+
+    `create_app()` runs at import time, so CORS cannot wait for the required webhook secrets.
+    WEB_ALLOWED_ORIGINS is a JSON list or comma-separated, e.g. https://anviq-demo.vercel.app.
+    Empty: no CORS. It is read at import, so a malformed value must never stop the API starting.
+    """
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", frozen=True)
+
+    web_allowed_origins: Annotated[list[str], NoDecode] = []
+
+    @field_validator("web_allowed_origins", mode="before")
+    @classmethod
+    def _split_origins(cls, raw: object) -> object:
+        if not isinstance(raw, str):
+            return raw
+        if raw.lstrip().startswith("["):
+            try:
+                return [str(origin).rstrip("/") for origin in json.loads(raw)]
+            except ValueError:
+                pass  # not valid JSON: read it as a list anyway rather than stop the API starting
+        return [origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip()]

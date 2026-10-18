@@ -33,7 +33,7 @@ from app.ops.cost_report import build_cost_report, previous_ist_day, render_cost
 from app.privacy.crypto import FieldCipher
 from app.privacy.retention import purge_expired
 from app.resources import Resources, open_resources
-from app.speech.voices import voice_for
+from app.speech.voices import COACH_PERSONA, voice_for
 
 
 class _RedisEndpoint(BaseSettings):
@@ -52,7 +52,6 @@ class OpsWebhookError(RuntimeError):
 
 
 SENT, FAILED, SKIPPED = "sent", "failed", "skipped"
-COACH_PERSONA = "coach"
 MAX_TRIES = 2
 JOB_TIMEOUT_S = 60
 REMINDER_JOB_TIMEOUT_S = 300  # a claimed batch of sends, not a single inbound message
@@ -80,15 +79,16 @@ async def handle_inbound(ctx: dict[str, Any], envelope: dict[str, Any]) -> None:
 
 
 async def purge_retention(ctx: dict[str, Any]) -> None:
-    """Hourly: delete expired transcripts, empty sessions and mirror clips in one transaction."""
+    """Hourly: delete expired transcripts, empty sessions, mirror clips and demo codes."""
     resources: Resources = ctx["resources"]
     async with resources.engine.begin() as conn:
         report = await purge_expired(conn, now=datetime.now(UTC))
     logger.info(
-        "retention purge: turns=%d sessions=%d mirror_clips=%d",
+        "retention purge: turns=%d sessions=%d mirror_clips=%d demo_codes=%d",
         report.turns,
         report.sessions,
         report.mirror_clips,
+        report.demo_codes,
     )
 
 

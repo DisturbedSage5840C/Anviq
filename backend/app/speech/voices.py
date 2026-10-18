@@ -3,6 +3,7 @@
 from app.speech.base import Voice
 
 PERSONAS = ("riya", "aman", "meena", "coach")
+COACH_PERSONA = "coach"
 
 # Bulbul v3 speakers. Meena is the shy child, so she speaks slower.
 _SARVAM = {

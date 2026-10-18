@@ -3,7 +3,7 @@
 Transcripts live 90 days. A session row only carries a derived summary, so it goes once its
 last transcript has. Mirror clips carry their own expiry. Teachers, consents and rubric
 results stay until the teacher asks for deletion. Webhook dedupe ids live in Redis with a TTL,
-so they need no purge here.
+so they need no purge here. Demo codes go once expired.
 """
 
 from dataclasses import dataclass
@@ -20,6 +20,7 @@ class PurgeReport:
     turns: int
     sessions: int
     mirror_clips: int
+    demo_codes: int = 0
 
 
 async def purge_expired(conn: AsyncConnection, *, now: datetime) -> PurgeReport:
@@ -36,7 +37,10 @@ async def purge_expired(conn: AsyncConnection, *, now: datetime) -> PurgeReport:
         cutoff=cutoff,
     )
     mirror_clips = await _delete(conn, "delete from mirror_clips where expires_at < :now", now=now)
-    return PurgeReport(turns=turns, sessions=sessions, mirror_clips=mirror_clips)
+    demo_codes = await _delete(conn, "delete from demo_codes where expires_at < :now", now=now)
+    return PurgeReport(
+        turns=turns, sessions=sessions, mirror_clips=mirror_clips, demo_codes=demo_codes
+    )
 
 
 async def _delete(conn: AsyncConnection, statement: str, **params: datetime) -> int:
