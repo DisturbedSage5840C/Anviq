@@ -1,12 +1,19 @@
+import json
+import logging
+from datetime import UTC, datetime, time, timedelta
+from decimal import Decimal
 from typing import Any
 
+import httpx
 import pytest
+from pydantic import SecretStr
 
 from app import worker
 from app.channel.job_queue import HANDLE_INBOUND_JOB
 from app.channel.messages import InboundKind, InboundMessage
 from app.config import Settings
 from app.core.dialogue import EchoBrain
+from app.ops.cost_report import IST, CostReport, render_cost_report
 from app.privacy.retention import PurgeReport
 
 
@@ -127,8 +134,105 @@ async def test_a_failing_purge_rolls_back_and_lets_the_error_surface(
     assert log == ["begin", "rollback"]
 
 
-def test_retention_purge_is_scheduled_hourly_on_the_hour():
-    (job,) = worker.WorkerSettings.cron_jobs
+def _cron_job(coroutine: Any) -> Any:
+    (job,) = (job for job in worker.WorkerSettings.cron_jobs if job.coroutine is coroutine)
+    return job
 
-    assert job.coroutine is worker.purge_retention
+
+def test_retention_purge_is_scheduled_hourly_on_the_hour():
+    job = _cron_job(worker.purge_retention)
+
     assert (job.hour, job.minute) == (None, 0)
+
+
+WEBHOOK_URL = "https://hooks.example/T000/B000"
+REPORT = CostReport(
+    start=datetime(2026, 10, 16, 18, 30, tzinfo=UTC),
+    end=datetime(2026, 10, 17, 18, 30, tzinfo=UTC),
+    llm_calls=2,
+    llm_in_tok=10,
+    llm_out_tok=5,
+    llm_cost_usd=Decimal("0.5"),
+    stt_seconds=Decimal(3),
+    stt_cost_inr=Decimal(1),
+    tts_chars=Decimal(40),
+    tts_cost_inr=Decimal(1),
+)
+
+
+def _cost_report_ctx(
+    settings: Settings, handler: Any, *, webhook: str | None = WEBHOOK_URL
+) -> dict[str, Any]:
+    http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    resources: Any = type("R", (), {"engine": _FakeEngine([]), "http": http})()
+    url = SecretStr(webhook) if webhook else None
+    return {
+        "resources": resources,
+        "settings": settings.model_copy(update={"ops_webhook_url": url}),
+    }
+
+
+@pytest.fixture
+def seen_windows(monkeypatch: pytest.MonkeyPatch) -> list[tuple[datetime, datetime]]:
+    windows: list[tuple[datetime, datetime]] = []
+
+    async def fake_build(conn: object, *, start: datetime, end: datetime) -> CostReport:
+        windows.append((start, end))
+        return REPORT
+
+    monkeypatch.setattr(worker, "build_cost_report", fake_build)
+    return windows
+
+
+async def test_daily_cost_report_posts_yesterdays_spend_to_the_ops_webhook(
+    settings: Settings, seen_windows: list[tuple[datetime, datetime]]
+):
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200)
+
+    await worker.daily_cost_report(_cost_report_ctx(settings, handler))
+
+    (request,) = requests
+    assert str(request.url) == WEBHOOK_URL
+    assert json.loads(request.content) == {"text": render_cost_report(REPORT)}
+    ((start, end),) = seen_windows
+    assert end - start == timedelta(days=1)
+    assert end.astimezone(IST).time() == time.min
+
+
+async def test_daily_cost_report_without_a_webhook_only_logs(
+    settings: Settings,
+    seen_windows: list[tuple[datetime, datetime]],
+    caplog: pytest.LogCaptureFixture,
+):
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200)
+
+    with caplog.at_level(logging.INFO, logger=worker.logger.name):
+        await worker.daily_cost_report(_cost_report_ctx(settings, handler, webhook=None))
+
+    assert requests == []
+    assert "Anviq spend for" in caplog.text
+
+
+async def test_a_rejected_webhook_lets_the_error_surface(
+    settings: Settings, seen_windows: list[tuple[datetime, datetime]]
+):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500)
+
+    with pytest.raises(httpx.HTTPStatusError):
+        await worker.daily_cost_report(_cost_report_ctx(settings, handler))
+
+
+def test_cost_report_runs_daily_at_0800_ist():
+    job = _cron_job(worker.daily_cost_report)
+
+    # arq schedules in UTC: 02:30 UTC is 08:00 IST.
+    assert (job.hour, job.minute) == (2, 30)

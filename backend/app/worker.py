@@ -19,6 +19,7 @@ from app.channel.pipeline import InboundPipeline
 from app.config import Settings, get_settings
 from app.core.dialogue import Brain
 from app.core.router_brain import RouterBrain
+from app.ops.cost_report import build_cost_report, previous_ist_day, render_cost_report
 from app.privacy.retention import purge_expired
 from app.resources import Resources, open_resources
 from app.speech.voices import voice_for
@@ -73,11 +74,33 @@ async def purge_retention(ctx: dict[str, Any]) -> None:
     )
 
 
+async def daily_cost_report(ctx: dict[str, Any]) -> None:
+    """Daily 08:00 IST: summarise yesterday's LLM and speech spend and send it to the team.
+
+    Without OPS_WEBHOOK_URL the report is only logged. A rejected post raises, so the failure
+    shows up in the worker log instead of the report silently going missing.
+    """
+    resources: Resources = ctx["resources"]
+    settings: Settings = ctx["settings"]
+    start, end = previous_ist_day(datetime.now(UTC))
+    async with resources.engine.begin() as conn:
+        report = await build_cost_report(conn, start=start, end=end)
+    message = render_cost_report(report)
+    logger.info(message)
+    if settings.ops_webhook_url is None:
+        return
+    response = await resources.http.post(
+        settings.ops_webhook_url.get_secret_value(), json={"text": message}
+    )
+    response.raise_for_status()
+
+
 async def on_startup(ctx: dict[str, Any]) -> None:
     settings = get_settings()
     stack = AsyncExitStack()
     resources = await stack.enter_async_context(open_resources(settings))
     ctx["stack"] = stack
+    ctx["settings"] = settings
     ctx["resources"] = resources
     ctx["pipeline"] = build_pipeline(resources, settings, brain=build_brain(resources))
 
@@ -88,7 +111,11 @@ async def on_shutdown(ctx: dict[str, Any]) -> None:
 
 class WorkerSettings:
     functions = [handle_inbound]
-    cron_jobs = [cron(purge_retention, minute=0)]
+    # arq schedules in UTC: 02:30 UTC is 08:00 IST.
+    cron_jobs = [
+        cron(purge_retention, minute=0),
+        cron(daily_cost_report, hour=2, minute=30),
+    ]
     on_startup = on_startup
     on_shutdown = on_shutdown
     max_tries = MAX_TRIES
