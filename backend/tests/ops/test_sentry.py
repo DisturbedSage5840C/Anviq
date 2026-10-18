@@ -106,6 +106,48 @@ def test_breadcrumbs_are_scrubbed_and_http_bodies_dropped():
     assert scrubbed["data"]["body"] == REDACTED
 
 
+def test_http_breadcrumbs_keep_only_the_host_because_the_path_can_be_a_secret():
+    crumb = {
+        "category": "httplib",
+        "data": {
+            "url": "https://hooks.example.com/services/T000/B000/s3cr3t?token=abc#frag",
+            "http.query": "token=abc",
+            "http.fragment": "frag",
+            "http.method": "POST",
+            "status_code": 200,
+        },
+    }
+
+    data = scrub_breadcrumb(crumb, {})["data"]
+
+    assert data["url"] == "https://hooks.example.com"
+    assert "http.query" not in data
+    assert "http.fragment" not in data
+    assert data["http.method"] == "POST"
+    assert data["status_code"] == 200
+
+
+def test_a_breadcrumb_url_that_is_not_a_url_is_redacted_whole():
+    data = scrub_breadcrumb({"data": {"url": "not a url /services/s3cr3t"}}, {})["data"]
+
+    assert data["url"] == REDACTED
+
+
+@pytest.mark.parametrize(
+    "number", ["+14155550123", "442071838750", "919876543210", "0091 98765 43210"]
+)
+def test_any_long_digit_run_is_scrubbed_not_only_indian_mobiles(number: str):
+    event = {"exception": {"values": [{"value": f"cannot reach {number} now"}]}}
+
+    assert number.replace(" ", "") not in str(scrub_event(event, {})).replace(" ", "")
+
+
+def test_ids_that_merely_contain_digits_are_left_alone():
+    event = {"event_id": "a1b2c3d4e5f60718293a4b5c6d7e8f90", "message": "attempt 3 of 12"}
+
+    assert scrub_event(event, {}) == event
+
+
 def test_without_a_dsn_sentry_is_not_started(monkeypatch: pytest.MonkeyPatch):
     calls: list[dict[str, Any]] = []
     monkeypatch.setattr(sentry_sdk, "init", lambda **kwargs: calls.append(kwargs))
