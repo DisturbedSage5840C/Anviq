@@ -129,3 +129,17 @@ def test_web_origins_default_to_none_allowed(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("WEB_ALLOWED_ORIGINS", raising=False)
 
     assert WebRoomSettings(_env_file=None).web_allowed_origins == []
+
+
+def test_sentry_is_off_without_a_dsn_and_the_dsn_is_never_printed():
+    off = Settings(app_env="local", wa_verify_token="v", wa_app_secret="s", _env_file=None)
+    on = Settings(
+        app_env="local",
+        wa_verify_token="v",
+        wa_app_secret="s",
+        sentry_dsn="https://key@o0.ingest.sentry.io/1",
+        _env_file=None,
+    )
+
+    assert off.sentry_dsn is None
+    assert "ingest.sentry.io" not in repr(on)

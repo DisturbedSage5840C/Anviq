@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import health, web_room, whatsapp_webhook
 from app.config import Settings, WebRoomSettings, get_settings
+from app.ops.sentry import init_sentry
 from app.resources import open_resources
 from app.web.demo_codes import PostgresDemoCodes
 from app.web.turn import build_web_turn
@@ -24,6 +25,7 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         active = settings or get_settings()
+        init_sentry(active.sentry_dsn, environment=active.app_env)
         async with open_resources(active) as resources:
             app.state.resources = resources
             app.state.redis = resources.redis

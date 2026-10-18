@@ -1,5 +1,7 @@
 import json
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime, time, timedelta
 from decimal import Decimal
 from typing import Any
@@ -465,3 +467,28 @@ async def test_an_unexpected_error_for_one_teacher_does_not_lose_the_rest_of_the
     await worker.send_daily_reminders(ctx)
 
     assert [to for to, _, _ in whatsapp.sent] == ["922222222222"]
+
+
+async def test_worker_startup_turns_on_error_reporting_with_the_deployed_environment(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    started: list[tuple[object, str]] = []
+    settings: Any = type("S", (), {"sentry_dsn": "dsn", "app_env": "staging"})()
+
+    @asynccontextmanager
+    async def fake_resources(_: object) -> AsyncIterator[object]:
+        yield object()
+
+    monkeypatch.setattr(worker, "get_settings", lambda: settings)
+    monkeypatch.setattr(worker, "open_resources", fake_resources)
+    monkeypatch.setattr(worker, "build_brain", lambda _: object())
+    monkeypatch.setattr(worker, "build_pipeline", lambda *_, **__: object())
+    monkeypatch.setattr(
+        worker, "init_sentry", lambda dsn, *, environment: started.append((dsn, environment))
+    )
+    ctx: dict[str, Any] = {}
+
+    await worker.on_startup(ctx)
+    await worker.on_shutdown(ctx)
+
+    assert started == [("dsn", "staging")]

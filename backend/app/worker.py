@@ -30,6 +30,7 @@ from app.core.dialogue import Brain
 from app.core.router_brain import RouterBrain
 from app.db.teacher_store import WA_ID_CONTEXT
 from app.ops.cost_report import build_cost_report, previous_ist_day, render_cost_report
+from app.ops.sentry import init_sentry
 from app.privacy.crypto import FieldCipher
 from app.privacy.retention import purge_expired
 from app.resources import Resources, open_resources
@@ -171,6 +172,7 @@ def quiet_http_logs() -> None:
 async def on_startup(ctx: dict[str, Any]) -> None:
     quiet_http_logs()
     settings = get_settings()
+    init_sentry(settings.sentry_dsn, environment=settings.app_env)
     stack = AsyncExitStack()
     resources = await stack.enter_async_context(open_resources(settings))
     ctx["stack"] = stack

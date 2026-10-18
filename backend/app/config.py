@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # Slack-style incoming webhook for the daily cost report. Unset: the report is only logged.
     ops_webhook_url: SecretStr | None = None
 
+    # Error reporting stays off without a DSN. Events are PII-scrubbed in app.ops.sentry.
+    sentry_dsn: SecretStr | None = None
+
     # base64 of 32 random bytes each; generate with `openssl rand -base64 32`.
     field_key: SecretStr | None = None
     phone_pepper: SecretStr | None = None
