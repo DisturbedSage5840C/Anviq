@@ -60,3 +60,7 @@ def test_scrubbing_twice_changes_nothing_more():
     once = scrub("Pinky at 9876543210 or a@b.co")
 
     assert scrub(once) == once
+
+
+def test_a_phone_number_written_in_devanagari_digits_is_scrubbed():
+    assert scrub("मेरा नंबर ९८७६५४३२१० है") == "मेरा नंबर [phone] है"
