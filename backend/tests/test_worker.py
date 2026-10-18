@@ -221,14 +221,41 @@ async def test_daily_cost_report_without_a_webhook_only_logs(
     assert "Anviq spend for" in caplog.text
 
 
-async def test_a_rejected_webhook_lets_the_error_surface(
+async def test_a_rejected_webhook_lets_the_error_surface_without_the_secret_url(
     settings: Settings, seen_windows: list[tuple[datetime, datetime]]
 ):
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(500)
 
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(worker.OpsWebhookError) as raised:
         await worker.daily_cost_report(_cost_report_ctx(settings, handler))
+
+    assert "500" in str(raised.value)
+    assert "hooks.example" not in str(raised.value)
+    assert raised.value.__cause__ is None
+    assert raised.value.__suppress_context__
+
+
+async def test_an_unreachable_webhook_surfaces_without_the_secret_url(
+    settings: Settings, seen_windows: list[tuple[datetime, datetime]]
+):
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError(f"cannot reach {request.url}", request=request)
+
+    with pytest.raises(worker.OpsWebhookError) as raised:
+        await worker.daily_cost_report(_cost_report_ctx(settings, handler))
+
+    assert "ConnectError" in str(raised.value)
+    assert "hooks.example" not in str(raised.value)
+    assert raised.value.__suppress_context__
+
+
+def test_http_client_request_logs_are_silenced_so_the_webhook_url_is_not_logged():
+    logging.getLogger("httpx").setLevel(logging.INFO)
+
+    worker.quiet_http_logs()
+
+    assert not logging.getLogger("httpx").isEnabledFor(logging.INFO)
 
 
 def test_cost_report_runs_daily_at_0800_ist():

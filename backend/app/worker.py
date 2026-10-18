@@ -10,6 +10,7 @@ from contextlib import AsyncExitStack
 from datetime import UTC, datetime
 from typing import Any
 
+import httpx
 from arq import cron
 from arq.connections import RedisSettings
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -34,6 +35,11 @@ class _RedisEndpoint(BaseSettings):
 
 
 logger = logging.getLogger(__name__)
+
+
+class OpsWebhookError(RuntimeError):
+    """The cost report could not be delivered. The message never includes the webhook URL."""
+
 
 COACH_PERSONA = "coach"
 MAX_TRIES = 2
@@ -89,13 +95,29 @@ async def daily_cost_report(ctx: dict[str, Any]) -> None:
     logger.info(message)
     if settings.ops_webhook_url is None:
         return
-    response = await resources.http.post(
-        settings.ops_webhook_url.get_secret_value(), json={"text": message}
-    )
-    response.raise_for_status()
+    await _post_to_ops_webhook(resources.http, settings.ops_webhook_url.get_secret_value(), message)
+
+
+async def _post_to_ops_webhook(http: httpx.AsyncClient, url: str, message: str) -> None:
+    """Post the report. The webhook URL is a credential, so no error may carry it."""
+    try:
+        response = await http.post(url, json={"text": message})
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        raise OpsWebhookError(
+            f"ops webhook rejected the report: HTTP {exc.response.status_code}"
+        ) from None
+    except httpx.HTTPError as exc:
+        raise OpsWebhookError(f"ops webhook unreachable: {type(exc).__name__}") from None
+
+
+def quiet_http_logs() -> None:
+    """httpx logs every request URL at INFO; keep the webhook URL out of the worker log."""
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 async def on_startup(ctx: dict[str, Any]) -> None:
+    quiet_http_logs()
     settings = get_settings()
     stack = AsyncExitStack()
     resources = await stack.enter_async_context(open_resources(settings))
