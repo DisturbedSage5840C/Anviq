@@ -6,6 +6,7 @@ from app.content.copy import render
 from app.core.dialogue import Reply, Utterance
 from app.core.router import (
     EraseTeacher,
+    ExportData,
     OptOutReminders,
     RecordConsent,
     Say,
@@ -13,8 +14,9 @@ from app.core.router import (
     WithdrawConsent,
     handle,
 )
-from app.core.teacher_store import TeacherSession, TeacherStore
+from app.core.teacher_store import TeacherExport, TeacherSession, TeacherStore
 from app.privacy.crypto import phone_hash
+from app.privacy.export import render_export
 
 PARAGRAPH_BREAK = "\n\n"
 UNKNOWN_LANG_TTS = "hi"
@@ -36,13 +38,17 @@ class RouterBrain:
             before = await session.load()
             transition = handle(before, utterance.text)
             await session.save(transition.state, utterance.sender_wa_id)
-            await _apply_effects(session, transition)
+            exports = await _apply_effects(session, transition)
         # After an erase the new state has forgotten the language, but the goodbye should not.
         lang = transition.state.lang or before.lang
-        return _compose(transition, lang)
+        return _compose(transition, lang, exports)
 
 
-async def _apply_effects(session: TeacherSession, transition: Transition) -> None:
+async def _apply_effects(
+    session: TeacherSession, transition: Transition
+) -> list[TeacherExport | None]:
+    """Run the writes in order. Returns one entry per ExportData effect (None: nothing stored)."""
+    exports: list[TeacherExport | None] = []
     for effect in transition.effects:
         match effect:
             case RecordConsent(version):
@@ -53,11 +59,20 @@ async def _apply_effects(session: TeacherSession, transition: Transition) -> Non
                 await session.erase()
             case OptOutReminders():
                 await session.opt_out_reminders()
+            case ExportData():
+                exports.append(await session.export())
             case Say():
                 pass  # spoken after the transaction commits, not stored
+    return exports
 
 
-def _compose(transition: Transition, lang: str | None) -> Reply:
+def _compose(
+    transition: Transition, lang: str | None, exports: list[TeacherExport | None]
+) -> Reply:
     keys = [effect.key for effect in transition.effects if isinstance(effect, Say)]
-    text = PARAGRAPH_BREAK.join(render(key, lang) for key in keys)
+    paragraphs = [render(key, lang) for key in keys]
+    paragraphs.extend(
+        render_export(found, lang) if found else render("export_nothing", lang) for found in exports
+    )
+    text = PARAGRAPH_BREAK.join(paragraphs)
     return Reply(text=text, lang=lang or UNKNOWN_LANG_TTS, speak=lang is not None)

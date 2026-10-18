@@ -63,7 +63,12 @@ class OptOutReminders:
     pass
 
 
-Effect = Say | RecordConsent | WithdrawConsent | EraseTeacher | OptOutReminders
+@dataclass(frozen=True)
+class ExportData:
+    """Reply with a summary of everything stored about this teacher. Reads only, never writes."""
+
+
+Effect = Say | RecordConsent | WithdrawConsent | EraseTeacher | OptOutReminders | ExportData
 
 
 @dataclass(frozen=True)
@@ -93,6 +98,8 @@ def _handle_global(state: TeacherState, intent: GlobalIntent) -> Transition:
         return _ask_delete_confirmation(state)
     if intent is GlobalIntent.WITHDRAW_CONSENT:
         return _withdraw_consent(state)
+    if intent is GlobalIntent.EXPORT:
+        return Transition(state, (ExportData(),))
     if intent is GlobalIntent.STOP:
         return _say(state, "stopped", extra=(OptOutReminders(),))
     return _say(state, "privacy" if intent is GlobalIntent.PRIVACY else "help")

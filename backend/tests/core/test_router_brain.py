@@ -151,6 +151,60 @@ async def test_withdrawing_consent_revokes_the_ledger_row_and_shows_the_notice_a
     assert reply.text == f"{render('consent_withdrawn', 'en')}\n\n{render('consent_notice', 'en')}"
 
 
+async def test_export_sends_the_stored_profile_in_the_teachers_language(brain: RouterBrain):
+    await _onboard(brain)
+
+    reply = await brain.respond(_say("send me my data"))
+
+    assert reply.text.startswith(render("export_header", "en"))
+    assert f"{render('export_grade', 'en')}: 2" in reply.text
+    assert f"{render('export_consent', 'en')}: {CONSENT_VERSION}" in reply.text
+    assert reply.lang == "en"
+
+
+async def test_export_follows_a_hindi_speaker_into_hindi(brain: RouterBrain):
+    await _onboard(brain, "Hindi")
+
+    reply = await brain.respond(_say("मेरा डेटा भेजो"))
+
+    assert reply.text.startswith(render("export_header", "hi"))
+
+
+async def test_export_never_includes_the_whatsapp_number(brain: RouterBrain):
+    await _onboard(brain)
+
+    reply = await brain.respond(_say("send me my data"))
+
+    assert SENDER not in reply.text
+
+
+async def test_export_changes_nothing_that_is_stored(
+    brain: RouterBrain, store: InMemoryTeacherStore
+):
+    await _onboard(brain)
+    before = dict(store.teachers)
+
+    await brain.respond(_say("send me my data"))
+
+    assert store.teachers == before
+
+
+async def test_export_for_a_stranger_says_nothing_is_stored(brain: RouterBrain):
+    reply = await brain.respond(_say("send me my data"))
+
+    assert reply.text == render("export_nothing", None)
+    assert reply.speak is False
+
+
+async def test_exporting_after_withdrawing_shows_the_consent_as_withdrawn(brain: RouterBrain):
+    await _onboard(brain)
+    await brain.respond(_say("withdraw my consent"))
+
+    reply = await brain.respond(_say("send me my data"))
+
+    assert render("export_revoked", "en") in reply.text
+
+
 async def test_saying_yes_after_withdrawing_starts_a_new_consent(
     brain: RouterBrain, store: InMemoryTeacherStore
 ):

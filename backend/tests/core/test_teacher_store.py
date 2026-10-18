@@ -11,7 +11,13 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from app.core.router import Phase, TeacherState
-from app.core.teacher_store import InMemoryTeacherStore, TeacherStore, deletion_log_prefix
+from app.core.teacher_store import (
+    ConsentRecord,
+    InMemoryTeacherStore,
+    TeacherExport,
+    TeacherStore,
+    deletion_log_prefix,
+)
 from app.db.teacher_store import PostgresTeacherStore
 from app.privacy.crypto import FieldCipher
 
@@ -178,6 +184,69 @@ async def test_opt_out_reminders_turns_the_flag_off(harness: Harness, phone_hash
     assert await _reminders_on(harness, phone_hash) is False
 
 
+async def _export(h: Harness, phone_hash: bytes) -> TeacherExport | None:
+    async with h.store.locked(phone_hash) as session:
+        return await session.export()
+
+
+async def test_export_lists_the_profile_and_consent_history(harness: Harness, phone_hash: bytes):
+    await _save(harness, phone_hash, ENROLLED)
+
+    assert await _export(harness, phone_hash) == TeacherExport(
+        lang="en",
+        grade_band="2",
+        consents=(ConsentRecord("v1", "cd" * 32),),
+        reminders_opt_in=False,
+    )
+
+
+async def test_export_of_an_unknown_teacher_is_none(harness: Harness, phone_hash: bytes):
+    assert await _export(harness, phone_hash) is None
+
+
+async def test_export_keeps_a_withdrawn_consent_visible_as_revoked(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    async with harness.store.locked(phone_hash) as session:
+        await session.withdraw_consent()
+
+    exported = await _export(harness, phone_hash)
+
+    assert exported is not None
+    assert exported.consents == (ConsentRecord("v1", "cd" * 32, revoked=True),)
+
+
+async def test_export_has_no_language_before_one_was_chosen(harness: Harness, phone_hash: bytes):
+    await _save(harness, phone_hash, TeacherState(Phase.ONB_LANG))
+
+    exported = await _export(harness, phone_hash)
+
+    assert exported is not None
+    assert exported.lang is None
+
+
+async def test_export_reports_reminders_after_they_are_switched_on(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    await _turn_reminders_on(harness, phone_hash)
+
+    exported = await _export(harness, phone_hash)
+
+    assert exported is not None
+    assert exported.reminders_opt_in is True
+
+
+async def test_exporting_changes_nothing(harness: Harness, phone_hash: bytes):
+    await _save(harness, phone_hash, ENROLLED)
+
+    await _export(harness, phone_hash)
+
+    assert await _load(harness, phone_hash) == ENROLLED
+    assert await _consents(harness, phone_hash) == [("v1", "cd" * 32)]
+
+
 async def test_concurrent_messages_from_one_teacher_are_serialised(
     harness: Harness, phone_hash: bytes
 ):
@@ -291,4 +360,18 @@ async def _reminders_on(h: Harness, phone_hash: bytes) -> bool:
                     {"h": phone_hash},
                 )
             ).scalar_one()
+        )
+
+
+async def _turn_reminders_on(h: Harness, phone_hash: bytes) -> None:
+    if h.memory is not None:
+        h.memory.teachers[phone_hash] = replace(
+            h.memory.teachers[phone_hash], reminders_opt_in=True
+        )
+        return
+    assert h.engine is not None
+    async with h.engine.begin() as conn:
+        await conn.execute(
+            text("update teachers set reminders_opt_in = true where phone_hash = :h"),
+            {"h": phone_hash},
         )

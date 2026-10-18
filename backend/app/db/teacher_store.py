@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from app.core.router import Phase, TeacherState
-from app.core.teacher_store import deletion_log_prefix
+from app.core.teacher_store import ConsentRecord, TeacherExport, deletion_log_prefix
 from app.privacy.crypto import FieldCipher
 
 DEFAULT_LANG = "hi"  # teachers.lang is NOT NULL; the real choice arrives one step after the stub
@@ -137,4 +137,30 @@ class _PostgresSession:
         await self.conn.execute(
             text("update teachers set reminders_opt_in = false where phone_hash = :h"),
             {"h": self.phone_hash},
+        )
+
+    async def export(self) -> TeacherExport | None:
+        row = (
+            await self.conn.execute(
+                text(
+                    "select id, state, lang, grade_band, reminders_opt_in "
+                    "from teachers where phone_hash = :h"
+                ),
+                {"h": self.phone_hash},
+            )
+        ).first()
+        if row is None:
+            return None
+        consents = await self.conn.execute(
+            text(
+                "select version, text_sha256, revoked_at is not null from consents "
+                "where teacher_id = :id order by granted_at, id"
+            ),
+            {"id": row.id},
+        )
+        return TeacherExport(
+            lang=None if Phase(row.state) in LANGUAGE_UNKNOWN_PHASES else row.lang,
+            grade_band=row.grade_band,
+            consents=tuple(ConsentRecord(r[0], r[1], bool(r[2])) for r in consents),
+            reminders_opt_in=row.reminders_opt_in,
         )

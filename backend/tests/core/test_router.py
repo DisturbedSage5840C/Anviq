@@ -3,6 +3,7 @@ import pytest
 from app.core.router import (
     CONSENT_VERSION,
     EraseTeacher,
+    ExportData,
     OptOutReminders,
     Phase,
     RecordConsent,
@@ -193,3 +194,26 @@ def test_withdrawing_before_ever_consenting_is_the_same_as_declining():
     assert t.state == TeacherState()
     assert EraseTeacher() in t.effects
     assert _keys(t) == ["consent_declined"]
+
+
+@pytest.mark.parametrize("text", ["send me my data", "मेरा डेटा भेजो"])
+def test_asking_for_a_copy_of_the_data_requests_an_export_and_changes_nothing(text: str):
+    t = handle(ENROLLED, text)
+
+    assert t.state == ENROLLED
+    assert t.effects == (ExportData(),)
+
+
+def test_export_is_available_mid_onboarding_without_losing_the_place():
+    start = TeacherState(Phase.ONB_GRADE, lang="hi")
+
+    t = handle(start, "send me my data")
+
+    assert t.state == start
+    assert ExportData() in t.effects
+
+
+def test_export_does_not_delete_anything():
+    t = handle(ENROLLED, "send me my data")
+
+    assert not any(isinstance(e, EraseTeacher) for e in t.effects)

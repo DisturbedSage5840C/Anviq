@@ -39,6 +39,10 @@ class TeacherSession(Protocol):
 
     async def opt_out_reminders(self) -> None: ...
 
+    async def export(self) -> "TeacherExport | None":
+        """Everything stored about the teacher that they may ask to see; None if nothing is."""
+        ...
+
 
 class TeacherStore(Protocol):
     def locked(self, phone_hash: bytes) -> AbstractAsyncContextManager[TeacherSession]: ...
@@ -49,6 +53,16 @@ class ConsentRecord:
     version: str
     text_sha256: str
     revoked: bool = False
+
+
+@dataclass(frozen=True)
+class TeacherExport:
+    """What a teacher is shown when they ask for their data. Deliberately omits the phone number."""
+
+    lang: str | None
+    grade_band: str | None
+    consents: tuple[ConsentRecord, ...]
+    reminders_opt_in: bool
 
 
 @dataclass(frozen=True)
@@ -116,3 +130,14 @@ class _InMemorySession:
         existing = self.store.teachers.get(self.phone_hash)
         if existing is not None:
             self.store.teachers[self.phone_hash] = replace(existing, reminders_opt_in=False)
+
+    async def export(self) -> TeacherExport | None:
+        stored = self.store.teachers.get(self.phone_hash)
+        if stored is None:
+            return None
+        return TeacherExport(
+            lang=stored.state.lang,
+            grade_band=stored.state.grade_band,
+            consents=stored.consents,
+            reminders_opt_in=stored.reminders_opt_in,
+        )

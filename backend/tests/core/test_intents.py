@@ -121,3 +121,26 @@ def test_delete_outranks_withdrawal_when_both_appear():
 
 def test_a_bare_consent_question_is_not_a_withdrawal():
     assert classify_global("what is consent") is None
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "मेरा डेटा भेजो",
+        "मेरा डेटा भेजो।",
+        "मेरा डाटा भेजो",
+        "Send me my data",
+        "please send me my data",
+        "export my data",
+    ],
+)
+def test_export_phrases_are_recognised(text: str):
+    assert classify_global(text) is GlobalIntent.EXPORT
+
+
+def test_delete_outranks_export_when_both_appear():
+    assert classify_global("send me my data and then delete my data") is GlobalIntent.DELETE
+
+
+def test_a_sentence_that_merely_mentions_data_is_not_an_export():
+    assert classify_global("my data is in the register") is None
