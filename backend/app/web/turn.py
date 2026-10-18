@@ -27,8 +27,11 @@ class WebReply:
     text: str
     lang: str
     audio_wav: bytes | None
-    # The coach could not help (unclear audio, voice off): not a real turn, so it is given back.
+    # The coach could not help (unclear audio, voice off).
     refused: bool = False
+    # Nothing paid for ran, so the turn is given back. A refusal after decoding and speech-to-text
+    # keeps its cost, otherwise unusable audio would be a free way to burn that work.
+    free: bool = False
 
 
 class WebTurn:
@@ -54,7 +57,7 @@ class WebTurn:
 
     async def respond_to_audio(self, sender: str, audio: bytes) -> WebReply:
         if self._stt is None:
-            return _refusal(replies.VOICE_UNAVAILABLE)
+            return _refusal(replies.VOICE_UNAVAILABLE, free=True)
         transcript = await transcribe_audio(self._stt, self._prepare_audio, audio)
         if isinstance(transcript, str):
             return _refusal(transcript)
@@ -74,8 +77,8 @@ class WebTurn:
             return None
 
 
-def _refusal(text: str) -> WebReply:
-    return WebReply(text, DEFAULT_LANG, None, refused=True)
+def _refusal(text: str, *, free: bool = False) -> WebReply:
+    return WebReply(text, DEFAULT_LANG, None, refused=True, free=free)
 
 
 def build_web_turn(resources: Resources, settings: Settings) -> WebTurn:

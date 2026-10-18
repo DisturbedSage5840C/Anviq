@@ -5,7 +5,7 @@ code in X-Demo-Code. The declared Content-Type is the media allow-list. Replies 
 the text and a base64 WAV the page can play. Same brain, same privacy rules as WhatsApp.
 
 Order matters: everything that can be refused for free (code shape, media type, size, text) is
-refused before a turn is spent, and a turn that was not really served is given back.
+refused before a turn is spent, and a turn that was refused before any paid work ran is given back.
 """
 
 import asyncio
@@ -98,7 +98,7 @@ async def web_turn(
     except Exception:
         await _give_back(codes, code)
         raise
-    if reply.refused:
+    if reply.free:
         await _give_back(codes, code)
     return _to_response(reply)
 

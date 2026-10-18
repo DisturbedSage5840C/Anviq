@@ -138,11 +138,18 @@ async def test_no_voice_is_made_when_the_brain_says_not_to_speak_or_tts_is_off()
     assert (await mute.respond_to_text(SENDER, "x")).audio_wav is None
 
 
-async def test_refusals_are_marked_so_the_turn_can_be_given_back():
+async def test_both_refusals_are_marked_refused():
     unavailable = await _turn(stt=None).respond_to_audio(SENDER, b"audio")
     unclear = await _turn(stt=_STT(_transcript(text="  "))).respond_to_audio(SENDER, b"audio")
 
     assert (unavailable.refused, unclear.refused) == (True, True)
+
+
+async def test_only_a_refusal_that_cost_nothing_gives_the_turn_back():
+    unavailable = await _turn(stt=None).respond_to_audio(SENDER, b"audio")
+    unclear = await _turn(stt=_STT(_transcript(text="  "))).respond_to_audio(SENDER, b"audio")
+
+    assert (unavailable.free, unclear.free) == (True, False)
 
 
 async def test_a_coach_reply_is_not_marked_refused():
@@ -150,3 +157,4 @@ async def test_a_coach_reply_is_not_marked_refused():
     typed = await _turn().respond_to_text(SENDER, "कल का प्लान")
 
     assert (spoken.refused, typed.refused) == (False, False)
+    assert (spoken.free, typed.free) == (False, False)

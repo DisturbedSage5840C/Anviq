@@ -265,12 +265,20 @@ def test_a_turn_that_fails_gives_the_turn_back_and_still_fails(client, codes, tu
     assert codes.refunds == [GOOD_CODE]
 
 
-def test_a_refusal_the_coach_could_not_help_with_gives_the_turn_back(client, codes, turn):
-    turn.reply = WebReply("आवाज़ साफ़ नहीं आई", "hi", None, refused=True)
+def test_a_refusal_that_cost_nothing_gives_the_turn_back(client, codes, turn):
+    turn.reply = WebReply("आवाज़ अभी बंद है", "hi", None, refused=True, free=True)
 
     body = _post(client).json()
 
     assert (body["refused"], codes.refunds) == (True, [GOOD_CODE])
+
+
+def test_a_refusal_after_paid_work_still_spends_the_turn(client, codes, turn):
+    turn.reply = WebReply("आवाज़ साफ़ नहीं आई", "hi", None, refused=True, free=False)
+
+    body = _post(client).json()
+
+    assert (body["refused"], codes.refunds) == (True, [])
 
 
 def test_a_served_turn_is_not_refunded(client, codes):
