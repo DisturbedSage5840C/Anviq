@@ -17,7 +17,17 @@ Built for the hack2skill x ShikshaNext x Anthropic "AI for Foundational Learning
 | `eval/` | Evaluation harness and datasets |
 | `dashboard/` | Aggregate-only mentor dashboard (k >= 20) |
 | `web-room/` | Browser fallback for the rehearsal room |
-| `docs/` | Architecture, privacy and runbooks |
+| `docs/` | Architecture, privacy, runbook and incident response (see below) |
+
+## Documentation
+
+| Read | When |
+|---|---|
+| [Architecture](docs/architecture.md) | How the pieces fit, and what is built versus still to come |
+| [Data inventory](docs/data-inventory.md) | What we store about a teacher, where, and for how long |
+| [DPIA](docs/DPIA.md) | The privacy risks, what reduces them, and what is left |
+| [Runbook](docs/runbook.md) | Something is broken and you are on call |
+| [Incident response](docs/incident-response.md) | Teacher data may have been exposed |
 
 ## Run locally
 
