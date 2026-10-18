@@ -175,6 +175,20 @@ crash can drop a reminder but never sends one twice. The log line is
 - To block a number entirely, raise it with the incident owner; there is no block list yet.
 - Watch the daily cost digest. A day that costs several times the trailing average is the signal.
 
+## Load testing
+
+Run from `backend/`, against staging only (the script refuses a host with `prod` in it).
+
+- Webhook ack: `WA_APP_SECRET=... uv run python -m scripts.load_test --base-url https://anviq-staging.fly.dev webhook`.
+  Sends signed messages from fake `91999900xxxx` numbers and times the ack (budget p50 0.5 s, p95 1 s).
+  It creates fake teacher rows in staging, and the replies to those numbers fail at Meta. Message ids
+  are fresh each run, so a rerun is not swallowed by the 7-day dedupe.
+- Whole turn: `LOAD_DEMO_CODES=a,b,c uv run python -m scripts.load_test --base-url ... web`.
+  One demo code per simulated teacher, each with at least `--turns` turns left. Budget is the plan's
+  p50 10 s, p95 20 s.
+- Both modes stay under the 60 messages an hour limit (`--turns` is capped at 60). Exit code 1 means
+  a budget was broken; the output names which one.
+
 ## Rotating secrets
 
 Rotate any secret that may have been exposed immediately, then write it up in
