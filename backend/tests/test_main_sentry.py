@@ -24,7 +24,7 @@ def test_api_startup_turns_on_error_reporting(monkeypatch: pytest.MonkeyPatch):
     async def fake_open(_: object):
         yield resources
 
-    settings: Any = SimpleNamespace(sentry_dsn="dsn", app_env="prod")
+    settings: Any = SimpleNamespace(sentry_dsn="dsn", app_env="prod", dashboard_database_url=None)
     monkeypatch.setattr(main, "open_resources", fake_open)
     monkeypatch.setattr(main, "build_web_turn", lambda *_: object())
     monkeypatch.setattr(main, "PostgresDemoCodes", lambda *_: object())

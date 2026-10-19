@@ -10,6 +10,7 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from app.privacy.crypto import InvalidKeyError, decode_key
 
 DEPLOYED_ENVS = ("staging", "prod")
+MIN_DASHBOARD_TOKEN_CHARS = 24
 
 
 class Settings(BaseSettings):
@@ -26,6 +27,13 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://anviq:anviq@localhost:5432/anviq"
     redis_url: str = "redis://localhost:6379/0"
+
+    # The mentor dashboard feed. Both must be set or GET /dashboard/trends answers 503. The URL
+    # logs in as dashboard_ro (select on public_trends only); the token gates the endpoint.
+    dashboard_database_url: SecretStr | None = None
+    dashboard_api_token: SecretStr | None = Field(
+        default=None, min_length=MIN_DASHBOARD_TOKEN_CHARS
+    )
 
     # Slack-style incoming webhook for the daily cost report. Unset: the report is only logged.
     ops_webhook_url: SecretStr | None = None

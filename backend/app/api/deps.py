@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.channel.inbound_guard import InboundGuard
 from app.channel.job_queue import JobQueue
+from app.dashboard.trends import TrendsReader
 from app.web.demo_codes import PostgresDemoCodes
 from app.web.turn import WebTurn
 
@@ -38,3 +39,8 @@ def get_demo_codes(request: Request) -> PostgresDemoCodes:
 def get_web_turn(request: Request) -> WebTurn:
     turn: WebTurn = request.app.state.web_turn
     return turn
+
+
+def get_trends_reader(request: Request) -> TrendsReader | None:
+    reader: TrendsReader | None = getattr(request.app.state, "trends_reader", None)
+    return reader

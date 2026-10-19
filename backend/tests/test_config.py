@@ -143,3 +143,10 @@ def test_sentry_is_off_without_a_dsn_and_the_dsn_is_never_printed():
 
     assert off.sentry_dsn is None
     assert "ingest.sentry.io" not in repr(on)
+
+
+def test_a_short_dashboard_token_is_refused():
+    with pytest.raises(ValidationError, match="at least 24"):
+        Settings(
+            wa_verify_token="v", wa_app_secret="s", dashboard_api_token="short", _env_file=None
+        )
