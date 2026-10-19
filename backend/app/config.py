@@ -35,6 +35,10 @@ class Settings(BaseSettings):
         default=None, min_length=MIN_DASHBOARD_TOKEN_CHARS
     )
 
+    # Demo mode (plan D10): when set, a "14-day" mirror cycle lasts this many minutes so a judge can
+    # watch Day 1 to Day 14 in one sitting. Unset in production.
+    demo_cycle_minutes: int | None = Field(default=None, gt=0)
+
     # Slack-style incoming webhook for the daily cost report. Unset: the report is only logged.
     ops_webhook_url: SecretStr | None = None
 

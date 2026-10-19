@@ -150,3 +150,25 @@ def test_a_short_dashboard_token_is_refused():
         Settings(
             wa_verify_token="v", wa_app_secret="s", dashboard_api_token="short", _env_file=None
         )
+
+
+def _local(**overrides: object) -> Settings:
+    return Settings(
+        app_env="local", wa_verify_token="v", wa_app_secret="s", _env_file=None, **overrides
+    )
+
+
+def test_demo_mode_is_off_unless_asked_for():
+    assert _local().demo_cycle_minutes is None
+
+
+def test_demo_cycle_length_is_read_in_minutes(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("DEMO_CYCLE_MINUTES", "5")
+
+    assert _local().demo_cycle_minutes == 5
+
+
+@pytest.mark.parametrize("minutes", [0, -3])
+def test_a_demo_cycle_must_last_a_positive_number_of_minutes(minutes: int):
+    with pytest.raises(ValidationError, match="demo_cycle_minutes"):
+        _local(demo_cycle_minutes=minutes)
