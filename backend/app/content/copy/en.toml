@@ -36,3 +36,8 @@ export_revoked = "withdrawn"
 export_reminders = "Reminders"
 export_on = "on"
 export_off = "off"
+
+plan_cta = "Want to practise this with the three children? Say yes."
+plan_unavailable = "I could not prepare the plan just now. Please try again in a moment."
+plan_label_answer = "A child may say"
+plan_label_do = "You do"

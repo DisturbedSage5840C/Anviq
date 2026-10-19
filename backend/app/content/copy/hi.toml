@@ -36,3 +36,8 @@ export_revoked = "वापस ली गई"
 export_reminders = "याद दिलाना"
 export_on = "चालू"
 export_off = "बंद"
+
+plan_cta = "क्या आप इसे तीनों बच्चों के साथ अभ्यास करना चाहेंगे? हाँ कहिए।"
+plan_unavailable = "अभी मैं योजना तैयार नहीं कर पाया। कृपया थोड़ी देर बाद फिर कोशिश कीजिए।"
+plan_label_answer = "बच्चा कह सकता है"
+plan_label_do = "आप करें"
