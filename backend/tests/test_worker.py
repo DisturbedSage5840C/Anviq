@@ -477,7 +477,7 @@ async def test_worker_startup_turns_on_error_reporting_with_the_deployed_environ
 
     @asynccontextmanager
     async def fake_resources(_: object) -> AsyncIterator[object]:
-        yield object()
+        yield type("R", (), {"whatsapp": object()})()
 
     monkeypatch.setattr(worker, "get_settings", lambda: settings)
     monkeypatch.setattr(worker, "open_resources", fake_resources)
@@ -492,3 +492,30 @@ async def test_worker_startup_turns_on_error_reporting_with_the_deployed_environ
     await worker.on_shutdown(ctx)
 
     assert started == [("dsn", "staging")]
+
+
+async def test_worker_starts_without_whatsapp_so_the_retention_purge_still_runs(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    settings: Any = type("S", (), {"sentry_dsn": None, "app_env": "staging"})()
+
+    @asynccontextmanager
+    async def fake_resources(_: object) -> AsyncIterator[object]:
+        yield type("R", (), {"whatsapp": None})()
+
+    monkeypatch.setattr(worker, "get_settings", lambda: settings)
+    monkeypatch.setattr(worker, "open_resources", fake_resources)
+    monkeypatch.setattr(worker, "init_sentry", lambda dsn, *, environment: None)
+    ctx: dict[str, Any] = {}
+
+    await worker.on_startup(ctx)
+    await worker.on_shutdown(ctx)
+
+    assert ctx["pipeline"] is None
+
+
+async def test_an_inbound_job_fails_loudly_when_there_is_no_whatsapp_pipeline():
+    ctx: dict[str, Any] = {"pipeline": None}
+
+    with pytest.raises(RuntimeError, match="WA_PHONE_NUMBER_ID"):
+        await worker.handle_inbound(ctx, {})

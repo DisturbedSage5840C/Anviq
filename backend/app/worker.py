@@ -75,7 +75,9 @@ def build_brain(resources: Resources) -> Brain:
 
 
 async def handle_inbound(ctx: dict[str, Any], envelope: dict[str, Any]) -> None:
-    pipeline: InboundPipeline = ctx["pipeline"]
+    pipeline: InboundPipeline | None = ctx["pipeline"]
+    if pipeline is None:
+        raise RuntimeError("WA_PHONE_NUMBER_ID and WA_ACCESS_TOKEN are required to handle inbound")
     await pipeline.handle(InboundMessage.from_envelope(envelope))
 
 
@@ -178,7 +180,18 @@ async def on_startup(ctx: dict[str, Any]) -> None:
     ctx["stack"] = stack
     ctx["settings"] = settings
     ctx["resources"] = resources
-    ctx["pipeline"] = build_pipeline(resources, settings, brain=build_brain(resources))
+    ctx["pipeline"] = _inbound_pipeline_or_none(resources, settings)
+
+
+def _inbound_pipeline_or_none(resources: Resources, settings: Settings) -> InboundPipeline | None:
+    """Without WhatsApp credentials the worker still runs its cron jobs (retention, cost report).
+
+    The browser demo does not use the queue, so a deployment may legitimately have no WhatsApp yet.
+    """
+    if resources.whatsapp is None:
+        logger.warning("WhatsApp is not configured: inbound jobs will fail, cron jobs still run")
+        return None
+    return build_pipeline(resources, settings, brain=build_brain(resources))
 
 
 async def on_shutdown(ctx: dict[str, Any]) -> None:
