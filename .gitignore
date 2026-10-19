@@ -37,3 +37,6 @@ content/corpus/*.pdf
 
 # Filled-in demo secrets
 infra/demo.env
+
+# Internal planning docs: kept out of the public repo
+ANVIQ_BUILD_PLAN.md

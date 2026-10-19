@@ -1,4 +1,4 @@
--- Proof that "delete my data" left nothing behind for one teacher (build plan 14.2).
+-- Proof that "delete my data" left nothing behind for one teacher.
 --
 -- Run it after a deletion, against the database the deletion ran on:
 --

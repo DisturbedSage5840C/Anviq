@@ -1,7 +1,7 @@
 # Architecture
 
-How Anviq is put together, what is built today and what is still to come. The design intent is in
-the build plan; this page describes the repository as it is, and marks every gap.
+How Anviq is put together, what is built today and what is still to come. This page describes the
+repository as it is, and marks every gap.
 
 ## The shape
 

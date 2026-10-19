@@ -28,7 +28,7 @@ slow part. Details, and what is built versus still to come: [Architecture](docs/
 
 ## Try it (judge access)
 
-Fill these in at release (build plan D14); nothing below is live until then.
+Fill these in at release; nothing below is live until then.
 
 | Way in | What you need |
 |---|---|
