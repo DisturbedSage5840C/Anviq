@@ -107,9 +107,13 @@ def _timed_out(idle_for: timedelta | None) -> bool:
 def _after_delete_timeout(state: TeacherState, text: str) -> Transition:
     """A delete question left unanswered lapses: a late "yes" must never erase anything.
 
-    The teacher is put back where they were and the message is handled from there.
+    The teacher is put back where they were and the message is handled from there, except at the
+    consent question: a stale "yes" answered "delete?", so it must not count as agreeing to the
+    notice. There the notice is shown again.
     """
     restored = replace(state, phase=state.resume or Phase.NEW, resume=None)
+    if restored.phase is Phase.ONB_CONSENT:
+        return _say(restored, "delete_timed_out", "consent_notice")
     carried_on = handle(restored, text)
     return Transition(carried_on.state, (Say("delete_timed_out"), *carried_on.effects))
 

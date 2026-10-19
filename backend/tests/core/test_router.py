@@ -247,6 +247,21 @@ def test_asking_again_after_the_timeout_starts_a_fresh_confirmation():
     assert _keys(t) == ["delete_timed_out", "delete_confirm"]
 
 
+def test_a_stale_yes_is_never_taken_as_consent_to_the_privacy_notice():
+    # the teacher asked to delete while the consent question was open; their late "yes" answered
+    # "delete?", so it must not be read as agreeing to the notice
+    asked_mid_consent = TeacherState(
+        phase=Phase.DELETE_CONFIRM, lang="en", grade_band="2", resume=Phase.ONB_CONSENT
+    )
+    t = handle(asked_mid_consent, "yes", idle_for=INACTIVITY_TIMEOUT)
+
+    assert not any(isinstance(e, RecordConsent) for e in t.effects)
+    assert not any(isinstance(e, EraseTeacher) for e in t.effects)
+    assert t.state.phase is Phase.ONB_CONSENT
+    assert t.state.consented is False
+    assert _keys(t) == ["delete_timed_out", "consent_notice"]
+
+
 @pytest.mark.parametrize("phase", [Phase.ONB_LANG, Phase.ONB_GRADE, Phase.IDLE])
 def test_idle_teachers_outside_a_delete_prompt_carry_on_where_they_were(phase: Phase):
     start = TeacherState(phase=phase, lang="en", grade_band="1", consented=True)
