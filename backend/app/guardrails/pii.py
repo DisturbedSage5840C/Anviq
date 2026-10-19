@@ -6,6 +6,7 @@ they are never touched. The name list is a deliberate floor, not a guarantee.
 """
 
 import re
+import unicodedata
 
 PHONE_PLACEHOLDER = "[phone]"
 ID_PLACEHOLDER = "[id]"
@@ -31,6 +32,8 @@ _CHILD_NAME = re.compile(
 
 
 def scrub(text: str) -> str:
+    # NFKC folds fullwidth and other compatibility forms so they cannot dodge the patterns.
+    text = unicodedata.normalize("NFKC", text)
     text = _EMAIL.sub(EMAIL_PLACEHOLDER, text)
     text = _PHONE.sub(PHONE_PLACEHOLDER, text)
     text = _AADHAAR.sub(ID_PLACEHOLDER, text)

@@ -64,3 +64,16 @@ def test_scrubbing_twice_changes_nothing_more():
 
 def test_a_phone_number_written_in_devanagari_digits_is_scrubbed():
     assert scrub("मेरा नंबर ९८७६५४३२१० है") == "मेरा नंबर [phone] है"
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("call ９８７６５４３２１０ now", "call [phone] now"),
+        ("mail teacher.k＠example.org please", "mail [email] please"),
+        ("ｒａｈｕｌ was stuck", "[बच्चा] was stuck"),
+        ("ＰＩＮＫＹ was stuck", "[बच्चा] was stuck"),
+    ],
+)
+def test_compatibility_forms_cannot_hide_personal_data(text: str, expected: str):
+    assert scrub(text) == expected
