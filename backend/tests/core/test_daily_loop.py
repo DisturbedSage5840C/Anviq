@@ -69,7 +69,21 @@ async def test_a_plan_request_carries_the_teachers_move_and_week():
 
     assert planner.seen == [PlanRequest("fractions", "en", 3, "B")]
     assert reply.text == "the plan"
-    assert reply.stay_in is None
+
+
+async def test_a_finished_plan_offers_the_practice_and_names_its_topic():
+    planner = FakePlanner(Planned("NUM.G2.SUB.REGROUP", (QUESTION,) * 3, "the plan"))
+
+    reply = await _loop(planner=planner).plan(TEACHER, "en", "subtraction")
+
+    assert reply.stay_in is Phase.REHEARSE_OFFER
+    assert reply.topic_id == "NUM.G2.SUB.REGROUP"
+
+
+async def test_a_question_back_names_no_topic():
+    reply = await _loop(planner=FakePlanner(AskBack("which class?"))).plan(TEACHER, "en", "that")
+
+    assert reply.topic_id is None
 
 
 async def test_an_unclear_topic_puts_the_question_back_and_keeps_the_teacher_in_the_topic_prompt():

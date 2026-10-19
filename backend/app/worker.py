@@ -15,7 +15,7 @@ from arq import cron
 from arq.connections import RedisSettings
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.ai import build_daily_loop
+from app.ai import build_daily_loop, build_rehearsals
 from app.channel.messages import InboundMessage
 from app.channel.pipeline import InboundPipeline
 from app.channel.reminders import (
@@ -73,7 +73,8 @@ def build_pipeline(resources: Resources, settings: Settings, *, brain: Brain) ->
 
 def build_brain(resources: Resources, settings: Settings | None = None) -> Brain:
     loop = build_daily_loop(resources, settings) if settings is not None else None
-    return RouterBrain(resources.teacher_store, resources.keyring.phone_pepper, loop)
+    rehearsal = build_rehearsals(resources, settings) if settings is not None else None
+    return RouterBrain(resources.teacher_store, resources.keyring.phone_pepper, loop, rehearsal)
 
 
 async def handle_inbound(ctx: dict[str, Any], envelope: dict[str, Any]) -> None:
@@ -84,16 +85,18 @@ async def handle_inbound(ctx: dict[str, Any], envelope: dict[str, Any]) -> None:
 
 
 async def purge_retention(ctx: dict[str, Any]) -> None:
-    """Hourly: delete expired transcripts, empty sessions, mirror clips and demo codes."""
+    """Hourly: delete expired transcripts, empty sessions, mirror clips and demo codes, and
+    clear practices left unfinished."""
     resources: Resources = ctx["resources"]
     async with resources.engine.begin() as conn:
         report = await purge_expired(conn, now=datetime.now(UTC))
     logger.info(
-        "retention purge: turns=%d sessions=%d mirror_clips=%d demo_codes=%d",
+        "retention purge: turns=%d sessions=%d mirror_clips=%d demo_codes=%d rehearsals=%d",
         report.turns,
         report.sessions,
         report.mirror_clips,
         report.demo_codes,
+        report.rehearsals,
     )
 
 

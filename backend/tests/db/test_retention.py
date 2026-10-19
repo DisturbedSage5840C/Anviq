@@ -5,7 +5,12 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from app.privacy.retention import TRANSCRIPT_RETENTION_DAYS, PurgeReport, purge_expired
+from app.privacy.retention import (
+    REHEARSAL_RETENTION,
+    TRANSCRIPT_RETENTION_DAYS,
+    PurgeReport,
+    purge_expired,
+)
 
 NOW = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
 CUTOFF = NOW - timedelta(days=TRANSCRIPT_RETENTION_DAYS)
@@ -128,6 +133,48 @@ async def test_expired_demo_codes_are_deleted_and_live_ones_kept(conn: AsyncConn
     remaining = (await conn.execute(text("select code_hash from demo_codes"))).scalars().all()
     assert [bytes(code_hash) for code_hash in remaining] == [b"live"]
     assert report.demo_codes == 1
+
+
+async def _practising(conn: AsyncConnection, teacher_id: str, last_active_at: datetime) -> None:
+    await conn.execute(
+        text(
+            "update teachers set rehearsal_json = '{\"turns\": 1}', "
+            "last_topic_id = 'NUM.G2.SUB.REGROUP', last_active_at = :at where id = :t"
+        ),
+        {"t": teacher_id, "at": last_active_at},
+    )
+
+
+async def _practice_and_topic(
+    conn: AsyncConnection, teacher_id: str
+) -> tuple[str | None, str | None]:
+    row = await conn.execute(
+        text("select rehearsal_json, last_topic_id from teachers where id = :t"), {"t": teacher_id}
+    )
+    found = row.one()
+    return found[0], found[1]
+
+
+async def test_a_practice_abandoned_for_over_a_day_is_cleared_but_the_topic_stays(
+    conn: AsyncConnection,
+):
+    teacher = await _teacher(conn)
+    await _practising(conn, teacher, NOW - REHEARSAL_RETENTION - timedelta(minutes=1))
+
+    report = await purge_expired(conn, now=NOW)
+
+    assert await _practice_and_topic(conn, teacher) == (None, "NUM.G2.SUB.REGROUP")
+    assert report.rehearsals == 1
+
+
+async def test_a_practice_still_inside_its_day_is_kept(conn: AsyncConnection):
+    teacher = await _teacher(conn)
+    await _practising(conn, teacher, NOW - REHEARSAL_RETENTION)
+
+    report = await purge_expired(conn, now=NOW)
+
+    assert await _practice_and_topic(conn, teacher) == ('{"turns": 1}', "NUM.G2.SUB.REGROUP")
+    assert report.rehearsals == 0
 
 
 async def test_purging_never_touches_the_teacher_or_their_progress(conn: AsyncConnection):

@@ -15,6 +15,7 @@ from app.core.router import Phase, TeacherState
 from app.core.teacher_store import (
     ConsentRecord,
     InMemoryTeacherStore,
+    RehearsalSlot,
     TeacherExport,
     TeacherStore,
     deletion_log_prefix,
@@ -138,6 +139,137 @@ async def test_resume_phase_survives_a_round_trip(harness: Harness, phone_hash: 
     )
     await _save(harness, phone_hash, pending)
     assert await _load(harness, phone_hash) == pending
+
+
+TOPIC = "NUM.G2.SUB.REGROUP"
+PRACTICE = '{"turns": 1}'
+
+
+async def _rehearsal(h: Harness, phone_hash: bytes) -> RehearsalSlot:
+    async with h.store.locked(phone_hash) as session:
+        return await session.load_rehearsal()
+
+
+async def test_a_new_teacher_has_an_empty_rehearsal_slot(harness: Harness, phone_hash: bytes):
+    assert await _rehearsal(harness, phone_hash) == RehearsalSlot()
+
+
+async def test_the_last_topic_and_a_practice_in_progress_round_trip(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    async with harness.store.locked(phone_hash) as session:
+        await session.save_last_topic(TOPIC)
+        await session.save_rehearsal(PRACTICE)
+
+    assert await _rehearsal(harness, phone_hash) == RehearsalSlot(TOPIC, PRACTICE)
+
+
+async def test_saving_the_state_leaves_the_rehearsal_slot_alone(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    async with harness.store.locked(phone_hash) as session:
+        await session.save_last_topic(TOPIC)
+        await session.save_rehearsal(PRACTICE)
+        await session.save(replace(ENROLLED, phase=Phase.REHEARSE), WA_ID)
+
+    assert await _rehearsal(harness, phone_hash) == RehearsalSlot(TOPIC, PRACTICE)
+
+
+async def test_a_finished_practice_can_be_cleared_without_losing_the_topic(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    async with harness.store.locked(phone_hash) as session:
+        await session.save_last_topic(TOPIC)
+        await session.save_rehearsal(PRACTICE)
+        await session.save_rehearsal(None)
+
+    assert await _rehearsal(harness, phone_hash) == RehearsalSlot(TOPIC, None)
+
+
+async def _replace(h: Harness, phone_hash: bytes, expected: str | None, new: str | None) -> bool:
+    async with h.store.locked(phone_hash) as session:
+        return await session.replace_rehearsal(expected, new)
+
+
+async def test_a_practice_is_replaced_only_if_it_is_still_the_one_the_turn_started_from(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    async with harness.store.locked(phone_hash) as session:
+        await session.save_rehearsal(PRACTICE)
+
+    assert await _replace(harness, phone_hash, PRACTICE, '{"turns": 2}') is True
+    assert (await _rehearsal(harness, phone_hash)).rehearsal_json == '{"turns": 2}'
+
+
+async def test_a_stale_turn_cannot_overwrite_a_practice_that_moved_on(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    async with harness.store.locked(phone_hash) as session:
+        await session.save_rehearsal('{"turns": 2}')
+
+    assert await _replace(harness, phone_hash, PRACTICE, '{"turns": 9}') is False
+    assert (await _rehearsal(harness, phone_hash)).rehearsal_json == '{"turns": 2}'
+
+
+async def test_a_turn_cannot_revive_a_practice_that_was_ended_meanwhile(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+
+    assert await _replace(harness, phone_hash, PRACTICE, '{"turns": 2}') is False
+    assert (await _rehearsal(harness, phone_hash)).rehearsal_json is None
+
+
+async def test_an_empty_slot_matches_an_expected_none_and_can_be_cleared_by_replace(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+
+    assert await _replace(harness, phone_hash, None, PRACTICE) is True
+    assert await _replace(harness, phone_hash, PRACTICE, None) is True
+    assert (await _rehearsal(harness, phone_hash)).rehearsal_json is None
+
+
+async def test_replacing_the_practice_of_an_unknown_teacher_does_nothing(
+    harness: Harness, phone_hash: bytes
+):
+    assert await _replace(harness, phone_hash, None, PRACTICE) is False
+    assert not await _row_exists(harness, phone_hash)
+
+
+async def test_the_rehearsal_slot_of_an_unknown_teacher_stays_empty(
+    harness: Harness, phone_hash: bytes
+):
+    async with harness.store.locked(phone_hash) as session:
+        await session.save_last_topic(TOPIC)
+        await session.save_rehearsal(PRACTICE)
+
+    assert await _rehearsal(harness, phone_hash) == RehearsalSlot()
+    assert not await _row_exists(harness, phone_hash)
+
+
+async def test_withdrawing_consent_clears_the_rehearsal_slot(harness: Harness, phone_hash: bytes):
+    await _save(harness, phone_hash, ENROLLED)
+    async with harness.store.locked(phone_hash) as session:
+        await session.save_last_topic(TOPIC)
+        await session.save_rehearsal(PRACTICE)
+        await session.withdraw_consent()
+
+    assert await _rehearsal(harness, phone_hash) == RehearsalSlot()
+
+
+async def test_erase_takes_the_rehearsal_slot_with_the_teacher(harness: Harness, phone_hash: bytes):
+    await _save(harness, phone_hash, ENROLLED)
+    async with harness.store.locked(phone_hash) as session:
+        await session.save_rehearsal(PRACTICE)
+        await session.erase()
+
+    assert await _rehearsal(harness, phone_hash) == RehearsalSlot()
 
 
 async def test_consent_is_recorded_with_its_text_hash(harness: Harness, phone_hash: bytes):

@@ -33,6 +33,8 @@ class Phase(StrEnum):
     PLAN_TOPIC = "PLAN_TOPIC"  # asked what they teach tomorrow, waiting for the answer
     REFLECT_NOTES = "REFLECT_NOTES"  # asked how the lesson went, waiting for the answer
     ASK_QUESTION = "ASK_QUESTION"  # asked what they want to know, waiting for the question
+    REHEARSE_OFFER = "REHEARSE_OFFER"  # shown a plan and asked whether to practise it now
+    REHEARSE = "REHEARSE"  # practising on the three children; every message is a turn
     DELETE_CONFIRM = "DELETE_CONFIRM"
 
 
@@ -105,6 +107,24 @@ class AskQuestion:
     text: str
 
 
+@dataclass(frozen=True)
+class StartRehearsal:
+    """Begin practising the topic of the teacher's latest plan. Reads the plan and the move they
+    are on, so it runs after commit; if it cannot start, the teacher is put back at the menu."""
+
+
+@dataclass(frozen=True)
+class RehearseTurn:
+    """The teacher's next question to the children. Needs the model, so it runs after commit."""
+
+    text: str
+
+
+@dataclass(frozen=True)
+class EndRehearsal:
+    """Forget the practice in progress."""
+
+
 Effect = (
     Say
     | RecordConsent
@@ -116,6 +136,9 @@ Effect = (
     | MakeReflection
     | ShowMirror
     | AskQuestion
+    | StartRehearsal
+    | RehearseTurn
+    | EndRehearsal
 )
 
 
@@ -136,12 +159,17 @@ def handle(state: TeacherState, text: str, *, idle_for: timedelta | None = None)
     """
     if state.phase is Phase.DELETE_CONFIRM and _timed_out(idle_for):
         return _after_delete_timeout(state, text)
+    if state.phase is Phase.REHEARSE and _timed_out(idle_for):
+        return _after_rehearsal_timeout(state, text)
+    if state.phase is Phase.REHEARSE_OFFER and _timed_out(idle_for):
+        # A "yes" a day later answers something else, so the offer lapses silently.
+        return handle(replace(state, phase=Phase.IDLE), text)
     if state.phase is Phase.DELETE_CONFIRM:
         answer = parse_yes_no(text)
         if answer is not None:
             return _resolve_delete(state, confirmed=answer)
     intent = classify_global(text)
-    if intent is not None:
+    if intent is not None and not _ends_the_practice(state, intent):
         return _handle_global(state, intent)
     if state.consented and state.phase in _MENU_PHASES and not _is_question_for_ask(state, text):
         choice = classify_menu(text)
@@ -153,6 +181,11 @@ def handle(state: TeacherState, text: str, *, idle_for: timedelta | None = None)
 def _is_question_for_ask(state: TeacherState, text: str) -> bool:
     """ "How to reflect?" is a question about reflecting, not a request to start Reflect."""
     return state.phase in _ASKING_PHASES and looks_like_question(text)
+
+
+def _ends_the_practice(state: TeacherState, intent: GlobalIntent) -> bool:
+    """Mid-practice "stop" ends the practice, not the reminders: the practice handles it."""
+    return state.phase is Phase.REHEARSE and intent is GlobalIntent.STOP
 
 
 def _timed_out(idle_for: timedelta | None) -> bool:
@@ -171,6 +204,13 @@ def _after_delete_timeout(state: TeacherState, text: str) -> Transition:
         return _say(restored, "delete_timed_out", "consent_notice")
     carried_on = handle(restored, text)
     return Transition(carried_on.state, (Say("delete_timed_out"), *carried_on.effects))
+
+
+def _after_rehearsal_timeout(state: TeacherState, text: str) -> Transition:
+    """A practice left for half an hour is over: the message is a fresh one, not the next turn."""
+    carried_on = handle(replace(state, phase=Phase.IDLE), text)
+    effects = (EndRehearsal(), Say("rehearsal_timed_out"), *carried_on.effects)
+    return Transition(carried_on.state, effects)
 
 
 def _handle_global(state: TeacherState, intent: GlobalIntent) -> Transition:
@@ -192,7 +232,13 @@ def _handle_menu(state: TeacherState, choice: MenuIntent) -> Transition:
         return _say(replace(state, phase=Phase.PLAN_TOPIC), "ask_plan_topic")
     if choice is MenuIntent.ASK:
         return _say(replace(state, phase=Phase.ASK_QUESTION), "ask_question_prompt")
+    if choice is MenuIntent.REHEARSE:
+        return _start_rehearsal(state)
     return _say(replace(state, phase=Phase.REFLECT_NOTES), "ask_reflect_notes")
+
+
+def _start_rehearsal(state: TeacherState) -> Transition:
+    return Transition(replace(state, phase=Phase.REHEARSE), (StartRehearsal(),))
 
 
 def _withdraw_consent(state: TeacherState) -> Transition:
@@ -269,6 +315,21 @@ def _on_ask_question(state: TeacherState, text: str) -> Transition:
     return Transition(idle, (AskQuestion(text[:MAX_QUESTION_CHARS]),))
 
 
+def _on_rehearse_offer(state: TeacherState, text: str) -> Transition:
+    answer = parse_yes_no(text)
+    if answer:
+        return _start_rehearsal(state)
+    if answer is None:
+        return _on_idle(replace(state, phase=Phase.IDLE), text)
+    return _say(replace(state, phase=Phase.IDLE), "menu")
+
+
+def _on_rehearse(state: TeacherState, text: str) -> Transition:
+    if not state.consented:
+        return _say(replace(state, phase=Phase.IDLE), "menu", extra=(EndRehearsal(),))
+    return Transition(state, (RehearseTurn(text[:MAX_QUESTION_CHARS]),))
+
+
 def _on_delete_confirm(state: TeacherState, text: str) -> Transition:
     return _say(state, "delete_confirm")
 
@@ -282,8 +343,13 @@ _HANDLERS = {
     Phase.PLAN_TOPIC: _on_plan_topic,
     Phase.REFLECT_NOTES: _on_reflect_notes,
     Phase.ASK_QUESTION: _on_ask_question,
+    Phase.REHEARSE_OFFER: _on_rehearse_offer,
+    Phase.REHEARSE: _on_rehearse,
     Phase.DELETE_CONFIRM: _on_delete_confirm,
 }
 
-_MENU_PHASES = frozenset({Phase.IDLE, Phase.PLAN_TOPIC, Phase.REFLECT_NOTES, Phase.ASK_QUESTION})
-_ASKING_PHASES = frozenset({Phase.IDLE, Phase.ASK_QUESTION})
+# REHEARSE is not here: while practising, "plan" is something to say to a child, not a command.
+_MENU_PHASES = frozenset(
+    {Phase.IDLE, Phase.PLAN_TOPIC, Phase.REFLECT_NOTES, Phase.ASK_QUESTION, Phase.REHEARSE_OFFER}
+)
+_ASKING_PHASES = frozenset({Phase.IDLE, Phase.ASK_QUESTION, Phase.REHEARSE_OFFER})

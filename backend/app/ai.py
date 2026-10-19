@@ -9,9 +9,13 @@ from app.config import Settings
 from app.core.ask.answer import AskAnviq
 from app.core.ask.retrieve import HybridRetriever
 from app.core.children.registry import RegistryMisconceptions
+from app.core.children.verbalizer import LLMChildVoice
+from app.core.coach import Coach
 from app.core.daily_loop import DailyLoop, PipelineDailyLoop
 from app.core.planner import Planner
 from app.core.reflect import Reflector
+from app.core.rehearsal import RehearsalEngine
+from app.core.rehearsal_flow import RehearsalFlow
 from app.core.topics import TopicResolverWithModel
 from app.core.writers import LLMPlanWriter, LLMReflectionWriter
 from app.db.corpus import PostgresFullTextSearch
@@ -47,6 +51,18 @@ def build_daily_loop(resources: Resources, settings: Settings) -> DailyLoop | No
         PostgresMirrors(resources.engine, demo_minutes=demo),
         asker=_ask_anviq(llm, resources, settings),
     )
+
+
+def build_rehearsals(resources: Resources, settings: Settings) -> RehearsalFlow | None:
+    """The practice with the three AI children. The children speak with the fast model."""
+    llm = build_llm(resources, settings)
+    if llm is None:
+        return None
+    engine = RehearsalEngine(
+        LLMChildVoice(llm, settings.model_fast), Coach(llm, settings.model_smart)
+    )
+    positions = PostgresPositions(resources.engine, demo_minutes=settings.demo_cycle_minutes)
+    return RehearsalFlow(engine, positions)
 
 
 def build_ask(resources: Resources, settings: Settings) -> AskAnviq | None:

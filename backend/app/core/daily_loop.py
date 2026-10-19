@@ -32,6 +32,8 @@ class LoopReply:
     text: str
     # Set when the teacher has been asked something back and must answer in the same prompt.
     stay_in: Phase | None = None
+    # The lesson topic a plan was made for, so a practice can follow it.
+    topic_id: str | None = None
 
 
 class Plans(Protocol):
@@ -95,7 +97,7 @@ class PipelineDailyLoop:
             return LoopReply(render("plan_unavailable", lang))
         if isinstance(outcome, AskBack):
             return LoopReply(outcome.prompt, stay_in=Phase.PLAN_TOPIC)
-        return LoopReply(outcome.text)
+        return LoopReply(outcome.text, stay_in=Phase.REHEARSE_OFFER, topic_id=outcome.topic_id)
 
     async def reflect(self, teacher: bytes, lang: str, text: str) -> LoopReply:
         position = await self._positions.current(teacher)

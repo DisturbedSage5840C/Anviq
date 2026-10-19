@@ -8,6 +8,7 @@ from app.core.router import (
     INACTIVITY_TIMEOUT,
     MAX_QUESTION_CHARS,
     AskQuestion,
+    EndRehearsal,
     EraseTeacher,
     ExportData,
     MakePlan,
@@ -15,8 +16,10 @@ from app.core.router import (
     OptOutReminders,
     Phase,
     RecordConsent,
+    RehearseTurn,
     Say,
     ShowMirror,
+    StartRehearsal,
     TeacherState,
     WithdrawConsent,
     handle,
@@ -405,3 +408,103 @@ def test_a_question_mentioning_a_menu_word_is_answered_not_treated_as_a_menu_cho
 
     assert t.state.phase is Phase.IDLE
     assert t.effects == (AskQuestion(question),)
+
+
+# --- Rehearse -------------------------------------------------------------------------------
+
+REHEARSING = replace(ENROLLED, phase=Phase.REHEARSE)
+OFFERED = replace(ENROLLED, phase=Phase.REHEARSE_OFFER)
+
+
+@pytest.mark.parametrize("word", ["rehearse", "रिहर्सल"])
+def test_the_rehearse_word_starts_a_rehearsal(word: str):
+    t = handle(ENROLLED, word)
+    assert t.state.phase is Phase.REHEARSE
+    assert t.effects == (StartRehearsal(),)
+
+
+@pytest.mark.parametrize("answer", ["yes", "हाँ"])
+def test_saying_yes_to_the_offer_after_a_plan_starts_the_rehearsal(answer: str):
+    t = handle(OFFERED, answer)
+    assert t.state.phase is Phase.REHEARSE
+    assert t.effects == (StartRehearsal(),)
+
+
+def test_saying_no_to_the_offer_goes_back_to_the_menu():
+    t = handle(OFFERED, "no")
+    assert t.state.phase is Phase.IDLE
+    assert _keys(t) == ["menu"]
+
+
+def test_anything_else_after_the_offer_is_handled_as_at_the_menu():
+    assert handle(OFFERED, "hmm").state.phase is Phase.IDLE
+    assert handle(OFFERED, "plan").state.phase is Phase.PLAN_TOPIC
+    asked = handle(OFFERED, "How do I teach regrouping?")
+    assert asked.state.phase is Phase.IDLE
+    assert asked.effects == (AskQuestion("How do I teach regrouping?"),)
+
+
+def test_every_message_in_a_rehearsal_is_a_turn_and_the_teacher_stays_in_it():
+    t = handle(REHEARSING, "Riya, how did you get 28?")
+    assert t.state.phase is Phase.REHEARSE
+    assert t.effects == (RehearseTurn("Riya, how did you get 28?"),)
+
+
+def test_menu_words_are_part_of_the_practice_not_a_way_out_of_it():
+    t = handle(REHEARSING, "plan")
+    assert t.state.phase is Phase.REHEARSE
+    assert t.effects == (RehearseTurn("plan"),)
+
+
+def test_a_turn_is_cut_to_the_length_limit():
+    t = handle(REHEARSING, "x" * (MAX_QUESTION_CHARS + 50))
+    assert t.effects == (RehearseTurn("x" * MAX_QUESTION_CHARS),)
+
+
+def test_help_during_a_rehearsal_answers_and_keeps_the_practice():
+    t = handle(REHEARSING, "help")
+    assert t.state.phase is Phase.REHEARSE
+    assert _keys(t) == ["help"]
+
+
+@pytest.mark.parametrize("word", ["stop", "बंद करो"])
+def test_stop_during_a_rehearsal_ends_the_practice_and_does_not_cancel_reminders(word: str):
+    t = handle(REHEARSING, word)
+    assert t.state.phase is Phase.REHEARSE  # the brain moves on once the practice has wound up
+    assert t.effects == (RehearseTurn(word),)
+
+
+def test_a_plan_offer_left_for_half_an_hour_lapses_so_a_stale_yes_starts_nothing():
+    t = handle(OFFERED, "yes", idle_for=INACTIVITY_TIMEOUT)
+    assert t.state.phase is Phase.IDLE
+    assert not any(isinstance(e, StartRehearsal) for e in t.effects)
+
+
+def test_a_plan_offer_answered_within_half_an_hour_still_starts_the_practice():
+    t = handle(OFFERED, "yes", idle_for=INACTIVITY_TIMEOUT - timedelta(seconds=1))
+    assert t.state.phase is Phase.REHEARSE
+    assert t.effects == (StartRehearsal(),)
+
+
+def test_a_rehearsal_left_for_half_an_hour_ends_and_the_message_is_handled_afresh():
+    t = handle(REHEARSING, "plan", idle_for=INACTIVITY_TIMEOUT)
+    assert t.state.phase is Phase.PLAN_TOPIC
+    assert t.effects[:2] == (EndRehearsal(), Say("rehearsal_timed_out"))
+    assert Say("ask_plan_topic") in t.effects
+
+
+def test_a_rehearsal_resumed_within_half_an_hour_carries_on():
+    t = handle(REHEARSING, "Aman, show me", idle_for=INACTIVITY_TIMEOUT - timedelta(seconds=1))
+    assert t.effects == (RehearseTurn("Aman, show me"),)
+
+
+def test_a_rehearsal_without_consent_ends_instead_of_running_the_model():
+    t = handle(replace(REHEARSING, consented=False), "Riya, how?")
+    assert t.state.phase is Phase.IDLE
+    assert t.effects == (EndRehearsal(), Say("menu"))
+
+
+def test_a_delete_request_mid_rehearsal_resumes_it_when_cancelled():
+    asked = handle(REHEARSING, "delete my data")
+    assert asked.state.resume is Phase.REHEARSE
+    assert handle(asked.state, "no").state.phase is Phase.REHEARSE

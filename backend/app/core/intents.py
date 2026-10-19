@@ -98,6 +98,7 @@ class MenuIntent(StrEnum):
     REFLECT = "reflect"
     MIRROR = "mirror"
     ASK = "ask"
+    REHEARSE = "rehearse"
 
 
 _MENU_WORDS = {
@@ -105,6 +106,7 @@ _MENU_WORDS = {
     MenuIntent.REFLECT: frozenset(_tokens("reflect रिफ्लेक्ट")),
     MenuIntent.MIRROR: frozenset(_tokens("mirror मिरर")),
     MenuIntent.ASK: frozenset(_tokens("ask question सवाल प्रश्न पूछो")),
+    MenuIntent.REHEARSE: frozenset(_tokens("rehearse rehearsal रिहर्सल")),
 }
 
 

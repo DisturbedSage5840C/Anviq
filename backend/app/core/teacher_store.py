@@ -44,6 +44,22 @@ class TeacherSession(Protocol):
 
     async def opt_out_reminders(self) -> None: ...
 
+    async def load_rehearsal(self) -> "RehearsalSlot":
+        """The last lesson topic and any practice in progress; empty for an unknown teacher."""
+        ...
+
+    async def save_last_topic(self, topic_id: str) -> None:
+        """Remember the topic of the latest plan, so a practice can follow it. No-op if unknown."""
+        ...
+
+    async def save_rehearsal(self, rehearsal_json: str | None) -> None:
+        """Keep, or with None clear, the practice in progress. No-op if the teacher is unknown."""
+        ...
+
+    async def replace_rehearsal(self, expected: str | None, new: str | None) -> bool:
+        """Swap the practice for `new` only if it is still `expected`; False if it moved on."""
+        ...
+
     async def export(self) -> "TeacherExport | None":
         """Everything stored about the teacher that they may ask to see; None if nothing is."""
         ...
@@ -71,12 +87,21 @@ class TeacherExport:
 
 
 @dataclass(frozen=True)
+class RehearsalSlot:
+    """What a practice needs between messages: the topic to practise and the saved progress."""
+
+    topic_id: str | None = None
+    rehearsal_json: str | None = None
+
+
+@dataclass(frozen=True)
 class StoredTeacher:
     state: TeacherState
     wa_id: str
     last_active_at: datetime
     consents: tuple[ConsentRecord, ...] = ()
     reminders_opt_in: bool = False
+    rehearsal: RehearsalSlot = RehearsalSlot()
 
 
 @dataclass
@@ -139,7 +164,9 @@ class _InMemorySession:
         if existing is None:
             return
         revoked = tuple(replace(c, revoked=True) for c in existing.consents)
-        self.store.teachers[self.phone_hash] = replace(existing, consents=revoked)
+        self.store.teachers[self.phone_hash] = replace(
+            existing, consents=revoked, rehearsal=RehearsalSlot()
+        )
 
     async def erase(self) -> None:
         if self.store.teachers.pop(self.phone_hash, None) is not None:
@@ -149,6 +176,29 @@ class _InMemorySession:
         existing = self.store.teachers.get(self.phone_hash)
         if existing is not None:
             self.store.teachers[self.phone_hash] = replace(existing, reminders_opt_in=False)
+
+    async def load_rehearsal(self) -> RehearsalSlot:
+        stored = self.store.teachers.get(self.phone_hash)
+        return RehearsalSlot() if stored is None else stored.rehearsal
+
+    async def save_last_topic(self, topic_id: str) -> None:
+        stored = self.store.teachers.get(self.phone_hash)
+        if stored is not None:
+            slot = replace(stored.rehearsal, topic_id=topic_id)
+            self.store.teachers[self.phone_hash] = replace(stored, rehearsal=slot)
+
+    async def save_rehearsal(self, rehearsal_json: str | None) -> None:
+        stored = self.store.teachers.get(self.phone_hash)
+        if stored is not None:
+            slot = replace(stored.rehearsal, rehearsal_json=rehearsal_json)
+            self.store.teachers[self.phone_hash] = replace(stored, rehearsal=slot)
+
+    async def replace_rehearsal(self, expected: str | None, new: str | None) -> bool:
+        stored = self.store.teachers.get(self.phone_hash)
+        if stored is None or stored.rehearsal.rehearsal_json != expected:
+            return False
+        await self.save_rehearsal(new)
+        return True
 
     async def export(self) -> TeacherExport | None:
         stored = self.store.teachers.get(self.phone_hash)

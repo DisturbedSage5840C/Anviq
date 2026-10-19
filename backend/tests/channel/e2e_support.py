@@ -12,6 +12,7 @@ from app.channel.pipeline import InboundPipeline
 from app.channel.whatsapp_client import DownloadedMedia
 from app.content.copy import render
 from app.core.daily_loop import DailyLoop
+from app.core.rehearsal_flow import Rehearsals
 from app.core.router_brain import RouterBrain
 from app.core.teacher_store import InMemoryTeacherStore
 from app.speech.base import Transcript, Voice
@@ -94,13 +95,17 @@ class Harness:
         return sum(1 for kind, _ in self.whatsapp.sent if kind == "audio")
 
 
-def make_harness(*transcripts: Transcript, loop: DailyLoop | None = None) -> Harness:
+def make_harness(
+    *transcripts: Transcript,
+    loop: DailyLoop | None = None,
+    rehearsal: Rehearsals | None = None,
+) -> Harness:
     whatsapp, store = FakeWhatsApp(), InMemoryTeacherStore()
     pipeline = InboundPipeline(
         whatsapp=whatsapp,
         stt=ScriptedSTT(list(transcripts)),
         tts=FakeTTS(),
-        brain=RouterBrain(store, PEPPER, loop=loop),
+        brain=RouterBrain(store, PEPPER, loop=loop, rehearsal=rehearsal),
         voice=Voice("ritu"),
         prepare_audio=_prepare,
         encode_voice=_voice_note,

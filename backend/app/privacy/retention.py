@@ -3,7 +3,8 @@
 Transcripts live 90 days. A session row only carries a derived summary, so it goes once its
 last transcript has. Mirror clips carry their own expiry. Teachers, consents and rubric
 results stay until the teacher asks for deletion. Webhook dedupe ids live in Redis with a TTL,
-so they need no purge here. Demo codes go once expired.
+so they need no purge here. Demo codes go once expired. A practice with the AI children holds
+the teacher's own words, so one left unfinished for a day is cleared (the topic stays).
 """
 
 from dataclasses import dataclass
@@ -13,6 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 TRANSCRIPT_RETENTION_DAYS = 90
+REHEARSAL_RETENTION = timedelta(days=1)
 
 
 @dataclass(frozen=True)
@@ -21,6 +23,7 @@ class PurgeReport:
     sessions: int
     mirror_clips: int
     demo_codes: int = 0
+    rehearsals: int = 0
 
 
 async def purge_expired(conn: AsyncConnection, *, now: datetime) -> PurgeReport:
@@ -38,11 +41,22 @@ async def purge_expired(conn: AsyncConnection, *, now: datetime) -> PurgeReport:
     )
     mirror_clips = await _delete(conn, "delete from mirror_clips where expires_at < :now", now=now)
     demo_codes = await _delete(conn, "delete from demo_codes where expires_at < :now", now=now)
+    rehearsals = await _delete(
+        conn,
+        "update teachers set rehearsal_json = null "
+        "where rehearsal_json is not null and last_active_at < :stale",
+        stale=now - REHEARSAL_RETENTION,
+    )
     return PurgeReport(
-        turns=turns, sessions=sessions, mirror_clips=mirror_clips, demo_codes=demo_codes
+        turns=turns,
+        sessions=sessions,
+        mirror_clips=mirror_clips,
+        demo_codes=demo_codes,
+        rehearsals=rehearsals,
     )
 
 
 async def _delete(conn: AsyncConnection, statement: str, **params: datetime) -> int:
+    """Run a purge statement and count the rows it removed or cleared."""
     result = await conn.execute(text(statement), params)
     return result.rowcount

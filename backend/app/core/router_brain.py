@@ -7,8 +7,10 @@ from dataclasses import replace
 from app.content.copy import render
 from app.core.daily_loop import DailyLoop, LoopReply
 from app.core.dialogue import Reply, Utterance
+from app.core.rehearsal_flow import RehearsalReply, Rehearsals
 from app.core.router import (
     AskQuestion,
+    EndRehearsal,
     EraseTeacher,
     ExportData,
     MakePlan,
@@ -16,13 +18,20 @@ from app.core.router import (
     OptOutReminders,
     Phase,
     RecordConsent,
+    RehearseTurn,
     Say,
     ShowMirror,
+    StartRehearsal,
     Transition,
     WithdrawConsent,
     handle,
 )
-from app.core.teacher_store import TeacherExport, TeacherSession, TeacherStore
+from app.core.teacher_store import (
+    RehearsalSlot,
+    TeacherExport,
+    TeacherSession,
+    TeacherStore,
+)
 from app.privacy.crypto import phone_hash
 from app.privacy.export import render_export
 
@@ -30,6 +39,8 @@ logger = logging.getLogger(__name__)
 
 LoopEffect = MakePlan | MakeReflection | ShowMirror | AskQuestion
 _LOOP_EFFECTS = (MakePlan, MakeReflection, ShowMirror, AskQuestion)
+RehearsalEffect = StartRehearsal | RehearseTurn
+_REHEARSAL_EFFECTS = (StartRehearsal, RehearseTurn)
 
 PARAGRAPH_BREAK = "\n\n"
 UNKNOWN_LANG_TTS = "hi"
@@ -41,45 +52,56 @@ def consent_text_sha256(lang: str | None) -> str:
 
 
 class RouterBrain:
-    """`loop` runs Plan, Reflect, Ask and Mirror. Without one they say "unavailable"."""
+    """`loop` runs Plan, Reflect, Ask and Mirror; `rehearsal` runs the practice with the children.
 
-    def __init__(self, store: TeacherStore, pepper: bytes, loop: DailyLoop | None = None) -> None:
+    Without them those steps say "unavailable".
+    """
+
+    def __init__(
+        self,
+        store: TeacherStore,
+        pepper: bytes,
+        loop: DailyLoop | None = None,
+        rehearsal: Rehearsals | None = None,
+    ) -> None:
         self._store = store
         self._pepper = pepper
         self._loop = loop
+        self._rehearsal = rehearsal
 
     async def respond(self, utterance: Utterance) -> Reply:
         key = phone_hash(self._pepper, utterance.sender_wa_id)
+        slot = RehearsalSlot()
         async with self._store.locked(key) as session:
             before = await session.load()
             idle_for = await session.idle_for()
             transition = handle(before, utterance.text, idle_for=idle_for)
+            if any(isinstance(effect, _REHEARSAL_EFFECTS) for effect in transition.effects):
+                slot = await session.load_rehearsal()
             await session.save(transition.state, utterance.sender_wa_id)
             exports = await _apply_effects(session, transition)
         # After an erase the new state has forgotten the language, but the goodbye should not.
         lang = transition.state.lang or before.lang
         reply = _compose(transition, lang, exports)
-        looped = await self._run_loop_effects(key, utterance.sender_wa_id, lang, transition)
-        if not looped:
+        wa_id = utterance.sender_wa_id
+        spoken = await self._run_loop_effects(key, wa_id, lang, transition)
+        spoken += await self._run_rehearsal(key, wa_id, lang, transition, slot)
+        if not spoken:
             return reply
-        text = PARAGRAPH_BREAK.join(
-            part for part in (reply.text, *(r.text for r in looped)) if part
-        )
+        text = PARAGRAPH_BREAK.join(part for part in (reply.text, *spoken) if part)
         return replace(reply, text=text, speak=True, lang=lang or UNKNOWN_LANG_TTS)
 
     async def _run_loop_effects(
         self, key: bytes, wa_id: str, lang: str | None, transition: Transition
-    ) -> list[LoopReply]:
+    ) -> list[str]:
         """Plan, Reflect, Ask and Mirror call the model, so they run after the database commit."""
         replies = [
             await self._run_one(key, lang or UNKNOWN_LANG_TTS, effect)
             for effect in transition.effects
             if isinstance(effect, _LOOP_EFFECTS)
         ]
-        stay_in = next((r.stay_in for r in replies if r.stay_in is not None), None)
-        if stay_in is not None:
-            await self._return_to(key, wa_id, stay_in)
-        return replies
+        await self._settle_loop(key, wa_id, replies)
+        return [reply.text for reply in replies]
 
     async def _run_one(self, key: bytes, lang: str, effect: LoopEffect) -> LoopReply:
         unavailable = _UNAVAILABLE[type(effect)]
@@ -99,12 +121,68 @@ class RouterBrain:
             logger.error("daily loop step failed: %s", type(exc).__name__)
             return LoopReply(render(unavailable, lang))
 
-    async def _return_to(self, key: bytes, wa_id: str, phase: Phase) -> None:
-        """The loop asked something back, so the next message belongs to that prompt."""
+    async def _settle_loop(self, key: bytes, wa_id: str, replies: list[LoopReply]) -> None:
+        """Remember which plan the teacher can practise, and where the next message belongs."""
+        stay_in = next((r.stay_in for r in replies if r.stay_in is not None), None)
+        topic_id = next((r.topic_id for r in replies if r.topic_id is not None), None)
+        if stay_in is None and topic_id is None:
+            return
         async with self._store.locked(key) as session:
             state = await session.load()
-            if state.phase is Phase.IDLE:
-                await session.save(replace(state, phase=phase), wa_id)
+            if state.phase is not Phase.IDLE:  # the teacher moved on, or withdrew, meanwhile
+                return
+            if topic_id is not None:
+                await session.save_last_topic(topic_id)
+            if stay_in is not None:
+                await session.save(replace(state, phase=stay_in), wa_id)
+
+    async def _run_rehearsal(
+        self,
+        key: bytes,
+        wa_id: str,
+        lang: str | None,
+        transition: Transition,
+        slot: RehearsalSlot,
+    ) -> list[str]:
+        """The children answer through the model, so this too runs after the commit."""
+        effect = next((e for e in transition.effects if isinstance(e, _REHEARSAL_EFFECTS)), None)
+        if effect is None:
+            return []
+        reply = await self._rehearse(key, lang or UNKNOWN_LANG_TTS, effect, slot)
+        if not await self._keep_rehearsal(key, wa_id, slot.rehearsal_json, reply):
+            # A newer message was answered while this one was with the model; its answer stands.
+            return [render("rehearsal_turn_failed", lang or UNKNOWN_LANG_TTS)]
+        return [reply.text]
+
+    async def _rehearse(
+        self, key: bytes, lang: str, effect: RehearsalEffect, slot: RehearsalSlot
+    ) -> RehearsalReply:
+        if self._rehearsal is not None:
+            try:
+                if isinstance(effect, StartRehearsal):
+                    return await self._rehearsal.begin(key, lang, slot.topic_id)
+                return await self._rehearsal.turn(lang, effect.text, slot.rehearsal_json)
+            except Exception as exc:  # the teacher is told; the type is the only safe detail
+                logger.error("rehearsal step failed: %s", type(exc).__name__)
+        return RehearsalReply(render("rehearsal_unavailable", lang), None, True)
+
+    async def _keep_rehearsal(
+        self, key: bytes, wa_id: str, expected: str | None, reply: RehearsalReply
+    ) -> bool:
+        """Save the practice, or end it, unless it moved on while the model was thinking.
+
+        A teacher who left the practice meanwhile leaves nothing behind. False means another
+        turn of this practice was saved first, so this one is dropped rather than rewinding it.
+        """
+        async with self._store.locked(key) as session:
+            state = await session.load()
+            if state.phase is not Phase.REHEARSE:
+                return True
+            if not await session.replace_rehearsal(expected, reply.rehearsal_json):
+                return False
+            if reply.finished:
+                await session.save(replace(state, phase=Phase.IDLE), wa_id)
+            return True
 
 
 _UNAVAILABLE = {
@@ -130,9 +208,19 @@ async def _apply_effects(
                 await session.erase()
             case OptOutReminders():
                 await session.opt_out_reminders()
+            case EndRehearsal():
+                await session.save_rehearsal(None)
             case ExportData():
                 exports.append(await session.export())
-            case Say() | MakePlan() | MakeReflection() | ShowMirror() | AskQuestion():
+            case (
+                Say()
+                | MakePlan()
+                | MakeReflection()
+                | ShowMirror()
+                | AskQuestion()
+                | StartRehearsal()
+                | RehearseTurn()
+            ):
                 pass  # spoken or run after the transaction commits, not stored
     return exports
 

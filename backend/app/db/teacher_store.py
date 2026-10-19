@@ -9,7 +9,12 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from app.core.router import Phase, TeacherState
-from app.core.teacher_store import ConsentRecord, TeacherExport, deletion_log_prefix
+from app.core.teacher_store import (
+    ConsentRecord,
+    RehearsalSlot,
+    TeacherExport,
+    deletion_log_prefix,
+)
 from app.privacy.crypto import FieldCipher
 
 DEFAULT_LANG = "hi"  # teachers.lang is NOT NULL; the real choice arrives one step after the stub
@@ -125,8 +130,8 @@ class _PostgresSession:
         )
         await self.conn.execute(
             text(
-                "update teachers set consent_version = null, consent_at = null "
-                "where phone_hash = :h"
+                "update teachers set consent_version = null, consent_at = null, "
+                "last_topic_id = null, rehearsal_json = null where phone_hash = :h"
             ),
             {"h": self.phone_hash},
         )
@@ -148,6 +153,38 @@ class _PostgresSession:
             text("update teachers set reminders_opt_in = false where phone_hash = :h"),
             {"h": self.phone_hash},
         )
+
+    async def load_rehearsal(self) -> RehearsalSlot:
+        row = (
+            await self.conn.execute(
+                text("select last_topic_id, rehearsal_json from teachers where phone_hash = :h"),
+                {"h": self.phone_hash},
+            )
+        ).first()
+        return RehearsalSlot() if row is None else RehearsalSlot(row[0], row[1])
+
+    async def save_last_topic(self, topic_id: str) -> None:
+        await self.conn.execute(
+            text("update teachers set last_topic_id = :topic where phone_hash = :h"),
+            {"topic": topic_id, "h": self.phone_hash},
+        )
+
+    async def save_rehearsal(self, rehearsal_json: str | None) -> None:
+        await self.conn.execute(
+            text("update teachers set rehearsal_json = :json where phone_hash = :h"),
+            {"json": rehearsal_json, "h": self.phone_hash},
+        )
+
+    async def replace_rehearsal(self, expected: str | None, new: str | None) -> bool:
+        result = await self.conn.execute(
+            text(
+                "update teachers set rehearsal_json = cast(:new as text) "
+                "where phone_hash = :h "
+                "and rehearsal_json is not distinct from cast(:expected as text)"
+            ),
+            {"new": new, "expected": expected, "h": self.phone_hash},
+        )
+        return result.rowcount > 0
 
     async def export(self) -> TeacherExport | None:
         row = (

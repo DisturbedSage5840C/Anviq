@@ -3,10 +3,11 @@ from types import SimpleNamespace
 import httpx
 from pydantic import SecretStr
 
-from app.ai import build_ask, build_daily_loop, build_llm
+from app.ai import build_ask, build_daily_loop, build_llm, build_rehearsals
 from app.config import Settings
 from app.core.ask.answer import AskAnviq
 from app.core.daily_loop import PipelineDailyLoop
+from app.core.rehearsal_flow import RehearsalFlow
 
 
 def _settings(**extra: object) -> Settings:
@@ -22,6 +23,7 @@ def test_without_a_key_nothing_model_backed_is_built():
     assert build_llm(resources, _settings()) is None  # type: ignore[arg-type]
     assert build_daily_loop(resources, _settings()) is None  # type: ignore[arg-type]
     assert build_ask(resources, _settings()) is None  # type: ignore[arg-type]
+    assert build_rehearsals(resources, _settings()) is None  # type: ignore[arg-type]
 
 
 def test_with_a_key_the_daily_loop_and_ask_are_built():
@@ -29,3 +31,4 @@ def test_with_a_key_the_daily_loop_and_ask_are_built():
     settings = _settings(anthropic_api_key=SecretStr("sk-test"))
     assert isinstance(build_daily_loop(resources, settings), PipelineDailyLoop)  # type: ignore[arg-type]
     assert isinstance(build_ask(resources, settings), AskAnviq)  # type: ignore[arg-type]
+    assert isinstance(build_rehearsals(resources, settings), RehearsalFlow)  # type: ignore[arg-type]

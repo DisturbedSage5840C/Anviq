@@ -31,7 +31,7 @@ from app.core.coach import CoachRequest, CoachUnavailableError, CoachVerdict, nu
 MAX_TURNS = 6
 GOOD_TURNS_TO_FINISH = 3
 GOOD_AT = 2  # criteria met for a turn to count as good
-_STOP_WORDS = frozenset({"बस", "bas", "enough", "done", "finish", "ख़त्म", "खत्म"})
+_STOP_WORDS = frozenset({"बस", "bas", "enough", "done", "finish", "ख़त्म", "खत्म", "stop", "बंद"})
 _TOKEN = re.compile(r"[\wऀ-ॿ]+")
 _MAX_STOP_TOKENS = 3
 _PLAN_DRAWS = 200
