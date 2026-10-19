@@ -49,7 +49,8 @@ Meta's retry window even when a vendor is slow.
 | Error reporting with scrubbing | Built (off without `SENTRY_DSN`) | `app/ops/sentry.py` |
 | Planner, Coach, AI children and malrules, Ask Anviq (RAG), guardrail checks | **Not yet** (LLM client and prompts are other people's work) | planned `app/llm/`, `app/core/coach.py`, `app/core/ask/` |
 | Nightly aggregates job | **Not yet** | planned in `worker.py` |
-| Mentor dashboard | **Not yet** | `dashboard/` is empty; the `public_trends` view it reads exists |
+| Dashboard data API: `GET /dashboard/trends`, bearer token, `dashboard_ro` connection, `public_trends` only | Built (off until `DASHBOARD_API_TOKEN` and `DASHBOARD_DATABASE_URL` are set) | `app/api/dashboard.py`, `app/dashboard/` |
+| Mentor dashboard page | **Not yet** | `dashboard/` is empty; the API it calls exists |
 | Web room front end | **Not yet** | `web-room/` is empty; the API it calls exists |
 | Evaluation harness and datasets | **Not yet** | `eval/` is empty |
 | Rubrics, personas, topic map | **Not yet** | `content/` is empty |
@@ -137,8 +138,11 @@ Details that matter:
   `FLY_API_TOKEN` exists, so a fresh clone never goes red.
 - It only deploys CI runs that came from a push to this repository's `main`, never from a fork or
   a pull request, because `workflow_run` executes with secrets.
-- **Not wired yet:** the production deploy on a `v*` tag with manual approval. Until then
-  production is deployed by hand: see [runbook](runbook.md#rolling-back-a-release).
+- A `v*` tag deploys production (`anviq-prod`, `APP_ENV=prod`) through the `production`
+  environment, which needs a reviewer's approval and checks the tag is on `main`:
+  see [runbook](runbook.md#releasing-to-production).
+- CI also gates `app/core`, `app/privacy` and `app/guardrails` at 80% each, on top of the
+  overall 80%.
 - The database tests need Postgres and skip locally without it; CI runs them.
 - Pre-commit runs gitleaks, so a secret is caught before it is committed, not only after a push.
 

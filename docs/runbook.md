@@ -132,6 +132,35 @@ which); `WA_APP_SECRET` or `WA_VERIFY_TOKEN` unset; a malformed `WEB_ALLOWED_ORI
 Never start prod without `PHONE_PEPPER`: outside local development a missing key is a hard
 failure precisely so a restart cannot silently change every phone hash.
 
+## Releasing to production
+
+Staging deploys itself when CI is green on `main`. Production deploys from a tag:
+
+```bash
+git checkout main && git pull
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+The `deploy` workflow then waits for a reviewer on the GitHub `production` environment. After
+approval it checks that the tagged commit is on `main`, then runs `fly deploy -a anviq-prod`
+with `APP_ENV=prod`. The `production` environment holds its own `FLY_API_TOKEN`. Nothing deploys
+until the repository variable `DEPLOY_ENABLED` is `true`. Smoke test straight after: `/readyz`,
+then one message from a team phone.
+
+## Checking that a deletion worked
+
+Note the teacher's id before they ask to be deleted (for your own test account:
+`select id from teachers where …`), then after the deletion:
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -c "select set_config('anviq.teacher_id', '<teacher uuid>', false)" \
+  -f backend/scripts/verify_deletion.sql
+```
+
+It finds every table with a `teacher_id` column from the catalogue, so a table added later is
+covered. Silence means zero rows everywhere; otherwise it stops and names the table.
+
 ## Rolling back a release
 
 ```bash

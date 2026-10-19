@@ -45,6 +45,12 @@ jobs:
       - run: uv run pip-audit --skip-editable
       - run: uv run alembic upgrade head
       - run: uv run pytest --cov=app --cov-fail-under=80
+      # The cores that carry the privacy promises must each clear the bar on their own, so strong
+      # coverage elsewhere cannot hide a gap in them.
+      - run: |
+          for package in core privacy guardrails; do
+            uv run coverage report --include="app/$package/*" --fail-under=80
+          done
 
   secrets-scan:
     runs-on: ubuntu-latest
