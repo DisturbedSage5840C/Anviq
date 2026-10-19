@@ -1,0 +1,72 @@
+# Numeracy topics for Grades 1-3 that Anviq can plan and rehearse (plan sections 3.3 A, 4.6).
+# Every topic here has at least one executable misconception in core/children/malrules.
+#
+# For Vansh: add the NIPUN Bharat learning-outcome code and the NISHTHA course/section for each
+# topic in `nipun_lo` and `nishtha_ref` (left empty on purpose; they must be copied from the
+# source documents, not guessed), and review the Hindi titles and clarifying questions.
+#
+# `keywords` are matched as plain text in what the teacher said. ASCII keywords match at the start
+# of a word; Hindi keywords match anywhere in a word because Hindi inflects (घटा, घटाना, घटाओ).
+
+[[topic]]
+id = "NUM.G1.ADD.SINGLE"
+grade = 1
+title_en = "adding single-digit numbers by counting on"
+title_hi = "एक अंक वाली संख्याओं का जोड़ (आगे गिनकर)"
+keywords = ["single digit", "count on", "counting on", "एक अंक", "आगे गिन", "छोटा जोड़"]
+nipun_lo = ""
+nishtha_ref = ""
+
+[[topic]]
+id = "NUM.G2.ADD.REGROUP"
+grade = 2
+title_en = "two-digit addition with carrying"
+title_hi = "हासिल वाला जोड़ (दो अंकों का)"
+keywords = ["add", "addition", "plus", "carry", "carrying", "जोड़", "हासिल", "जमा"]
+nipun_lo = ""
+nishtha_ref = ""
+
+[[topic]]
+id = "NUM.G2.SUB.REGROUP"
+grade = 2
+title_en = "two-digit subtraction with borrowing"
+title_hi = "हासिल वाला घटाना (दो अंकों का)"
+keywords = ["subtract", "subtraction", "minus", "borrow", "borrowing", "take away", "घटा", "हासिल", "उधार", "बाकी"]
+nipun_lo = ""
+nishtha_ref = ""
+
+[[topic]]
+id = "NUM.G2.SUB.ZERO"
+grade = 2
+title_en = "subtraction when there is a zero"
+title_hi = "शून्य वाला घटाना"
+keywords = ["subtract", "subtraction", "minus", "take away", "घटा", "zero", "शून्य", "ज़ीरो", "जीरो"]
+nipun_lo = ""
+nishtha_ref = ""
+
+[[topic]]
+id = "NUM.G1.PV.TWO_DIGIT"
+grade = 1
+title_en = "place value and writing two-digit numbers"
+title_hi = "स्थानीय मान और दो अंकों की संख्या लिखना"
+keywords = ["place value", "tens and ones", "tens", "ones", "write numbers", "स्थानीय मान", "दहाई", "इकाई", "संख्या लिखना"]
+nipun_lo = ""
+nishtha_ref = ""
+
+[[topic]]
+id = "NUM.G1.CMP.TWO_DIGIT"
+grade = 1
+title_en = "comparing two-digit numbers"
+title_hi = "दो अंकों की संख्याओं की तुलना"
+keywords = ["compare", "comparing", "greater", "bigger", "smaller", "तुलना", "बड़ी संख्या", "छोटी संख्या", "बड़ा", "छोटा"]
+nipun_lo = ""
+nishtha_ref = ""
+
+[[topic]]
+id = "NUM.G3.WP.COMPARE"
+grade = 3
+title_en = "word problems with 'more than'"
+title_hi = "'से ज़्यादा' वाले कहानी के सवाल"
+keywords = ["word problem", "story problem", "more than", "कहानी", "शब्द समस्या", "से ज़्यादा", "से ज्यादा", "से अधिक"]
+nipun_lo = ""
+nishtha_ref = ""

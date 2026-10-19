@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     model_fast: str = "claude-haiku-5-5"
     model_smart: str = "claude-sonnet-5-5"
     model_offline: str = "claude-opus-5-5"
+    # Ask Anviq scope gate (plan 4.8, tau): the weakest full-text match still treated as covered.
+    # A starting guess; tune it on eval/datasets/ask_*.jsonl with app.evaluation.citations.
+    ask_min_score: float = Field(default=0.05, ge=0, le=1)
 
     # Vendors rename and retire models, so model ids are config, not code.
     sarvam_api_key: SecretStr | None = None

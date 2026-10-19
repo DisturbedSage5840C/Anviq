@@ -481,7 +481,7 @@ async def test_worker_startup_turns_on_error_reporting_with_the_deployed_environ
 
     monkeypatch.setattr(worker, "get_settings", lambda: settings)
     monkeypatch.setattr(worker, "open_resources", fake_resources)
-    monkeypatch.setattr(worker, "build_brain", lambda _: object())
+    monkeypatch.setattr(worker, "build_brain", lambda *_: object())
     monkeypatch.setattr(worker, "build_pipeline", lambda *_, **__: object())
     monkeypatch.setattr(
         worker, "init_sentry", lambda dsn, *, environment: started.append((dsn, environment))

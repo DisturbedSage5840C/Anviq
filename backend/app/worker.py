@@ -15,6 +15,7 @@ from arq import cron
 from arq.connections import RedisSettings
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.ai import build_daily_loop
 from app.channel.messages import InboundMessage
 from app.channel.pipeline import InboundPipeline
 from app.channel.reminders import (
@@ -70,8 +71,9 @@ def build_pipeline(resources: Resources, settings: Settings, *, brain: Brain) ->
     )
 
 
-def build_brain(resources: Resources) -> Brain:
-    return RouterBrain(resources.teacher_store, resources.keyring.phone_pepper)
+def build_brain(resources: Resources, settings: Settings | None = None) -> Brain:
+    loop = build_daily_loop(resources, settings) if settings is not None else None
+    return RouterBrain(resources.teacher_store, resources.keyring.phone_pepper, loop)
 
 
 async def handle_inbound(ctx: dict[str, Any], envelope: dict[str, Any]) -> None:
@@ -191,7 +193,7 @@ def _inbound_pipeline_or_none(resources: Resources, settings: Settings) -> Inbou
     if resources.whatsapp is None:
         logger.warning("WhatsApp is not configured: inbound jobs will fail, cron jobs still run")
         return None
-    return build_pipeline(resources, settings, brain=build_brain(resources))
+    return build_pipeline(resources, settings, brain=build_brain(resources, settings))
 
 
 async def on_shutdown(ctx: dict[str, Any]) -> None:

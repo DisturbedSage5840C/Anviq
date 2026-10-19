@@ -1,0 +1,70 @@
+# Move 2: Use the wrong answer. Plan section 3.2.
+# Draft examples by Aadi from the plan; Vansh and the mentor review the labels and the Hindi.
+move_id = 2
+status = "draft"
+title_en = "Use the wrong answer"
+title_hi = "गलत जवाब का इस्तेमाल कीजिए"
+
+[[criteria]]
+id = "C1"
+text = "Does not label the answer wrong (no 'wrong', 'no', 'incorrect') before the child has explained."
+
+[[criteria]]
+id = "C2"
+text = "Asks the child to explain their own method or thinking."
+
+[[criteria]]
+id = "C3"
+text = "Invites another child to compare, respond or weigh in."
+
+[[criteria]]
+id = "C4"
+text = "Frames the mistake as useful or interesting for the whole class to learn from."
+
+[[examples]]
+text = "रिया, 5 कहाँ से आया? बंडल से दिखाओ।"
+met = ["C1", "C2"]
+
+[[examples]]
+text = "Riya got 45. Riya, tell us how you got it, then let's see if Aman did the same."
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "रिया का जवाब 45 है, अमन का 35। दोनों में से किसका सही है, और क्यों?"
+met = ["C1", "C3"]
+
+[[examples]]
+text = "That's an interesting answer, Riya. Walk us through your steps, because other children might have done the same."
+met = ["C1", "C2", "C4"]
+
+[[examples]]
+text = "रिया ने कुछ दिलचस्प किया है। रिया, सबको बताओ तुमने क्या किया, इससे हम सब सीखेंगे।"
+met = ["C1", "C2", "C4"]
+
+[[examples]]
+text = "Meena, do you see what Riya did? Do you agree with her first step?"
+met = ["C1", "C3"]
+
+[[examples]]
+text = "नहीं, गलत है। फिर से करो।"
+met = []
+
+[[examples]]
+text = "No, that's wrong. The answer is 35."
+met = []
+
+[[examples]]
+text = "Riya, you forgot to borrow."
+met = []
+
+[[examples]]
+text = "ठीक है, बैठ जाओ। कोई और बताए।"
+met = ["C1"]
+
+[[examples]]
+text = "Wrong. Who can help Riya?"
+met = []
+
+[[examples]]
+text = "तुमने 7 में से 2 क्यों घटाया? यह तो गलत तरीका है।"
+met = ["C2"]

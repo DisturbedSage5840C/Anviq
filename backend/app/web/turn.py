@@ -7,6 +7,7 @@ goes back in the HTTP response. Nothing here knows who the visitor is beyond an 
 import logging
 from dataclasses import dataclass
 
+from app.ai import build_daily_loop
 from app.channel import replies
 from app.channel.audio import prepare_for_stt
 from app.channel.pipeline import PrepareAudio, spoken_utterance, transcribe_audio
@@ -85,6 +86,10 @@ def build_web_turn(resources: Resources, settings: Settings) -> WebTurn:
     return WebTurn(
         stt=resources.stt,
         tts=resources.tts,
-        brain=RouterBrain(resources.teacher_store, resources.keyring.phone_pepper),
+        brain=RouterBrain(
+            resources.teacher_store,
+            resources.keyring.phone_pepper,
+            build_daily_loop(resources, settings),
+        ),
         voice=voice_for(settings.tts_provider, COACH_PERSONA),
     )

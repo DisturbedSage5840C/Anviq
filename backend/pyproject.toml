@@ -29,6 +29,10 @@ dev = [
   "fakeredis>=2.40.0",
   "pip-audit>=2.10.1",
 ]
+# Only `python -m app.core.ask.ingest` needs PDF extraction: uv sync --group ingest
+ingest = [
+  "pymupdf>=1.24",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -43,8 +47,11 @@ target-version = "py312"
 select = ["E", "F", "I", "UP", "B", "S"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "S105", "S106", "E501"]
+"tests/*" = ["S101", "S105", "S106", "S311", "E501"]
 "tests/db/*" = ["S608"]  # table names come from module constants, never input
+# Seeded generators pick practice problems; nothing here is security-sensitive.
+"app/core/children/registry.py" = ["S311"]
+"app/evaluation/character.py" = ["S311", "E501"]  # E501: the teacher-style table
 
 [tool.mypy]
 python_version = "3.12"
