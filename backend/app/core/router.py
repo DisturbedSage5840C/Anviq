@@ -5,6 +5,7 @@ rows to write); the caller applies them. That keeps every transition unit-testab
 """
 
 from dataclasses import dataclass, field, replace
+from datetime import timedelta
 from enum import StrEnum
 
 from app.core.intents import (
@@ -16,6 +17,7 @@ from app.core.intents import (
 )
 
 CONSENT_VERSION = "v2"
+INACTIVITY_TIMEOUT = timedelta(minutes=30)
 
 
 class Phase(StrEnum):
@@ -81,8 +83,13 @@ def _say(state: TeacherState, *keys: str, extra: tuple[Effect, ...] = ()) -> Tra
     return Transition(state, (*extra, *(Say(k) for k in keys)))
 
 
-def handle(state: TeacherState, text: str) -> Transition:
-    """Advance the conversation by one inbound message."""
+def handle(state: TeacherState, text: str, *, idle_for: timedelta | None = None) -> Transition:
+    """Advance the conversation by one inbound message.
+
+    `idle_for` is how long the teacher was silent before this message (None: first contact).
+    """
+    if state.phase is Phase.DELETE_CONFIRM and _timed_out(idle_for):
+        return _after_delete_timeout(state, text)
     if state.phase is Phase.DELETE_CONFIRM:
         answer = parse_yes_no(text)
         if answer is not None:
@@ -91,6 +98,20 @@ def handle(state: TeacherState, text: str) -> Transition:
     if intent is not None:
         return _handle_global(state, intent)
     return _HANDLERS[state.phase](state, text)
+
+
+def _timed_out(idle_for: timedelta | None) -> bool:
+    return idle_for is not None and idle_for >= INACTIVITY_TIMEOUT
+
+
+def _after_delete_timeout(state: TeacherState, text: str) -> Transition:
+    """A delete question left unanswered lapses: a late "yes" must never erase anything.
+
+    The teacher is put back where they were and the message is handled from there.
+    """
+    restored = replace(state, phase=state.resume or Phase.NEW, resume=None)
+    carried_on = handle(restored, text)
+    return Transition(carried_on.state, (Say("delete_timed_out"), *carried_on.effects))
 
 
 def _handle_global(state: TeacherState, intent: GlobalIntent) -> Transition:

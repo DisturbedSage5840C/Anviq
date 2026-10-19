@@ -1,7 +1,10 @@
+from datetime import timedelta
+
 import pytest
 
 from app.core.router import (
     CONSENT_VERSION,
+    INACTIVITY_TIMEOUT,
     EraseTeacher,
     ExportData,
     OptOutReminders,
@@ -217,3 +220,35 @@ def test_export_does_not_delete_anything():
     t = handle(ENROLLED, "send me my data")
 
     assert not any(isinstance(e, EraseTeacher) for e in t.effects)
+
+
+PENDING_DELETE = TeacherState(
+    phase=Phase.DELETE_CONFIRM, lang="hi", grade_band="2", consented=True, resume=Phase.IDLE
+)
+RESTORED = TeacherState(phase=Phase.IDLE, lang="hi", grade_band="2", consented=True)
+
+
+def test_stale_yes_does_not_confirm_a_delete_asked_half_an_hour_ago():
+    t = handle(PENDING_DELETE, "हाँ, मिटाओ", idle_for=INACTIVITY_TIMEOUT)
+    assert not any(isinstance(e, EraseTeacher) for e in t.effects)
+    assert t.state == RESTORED
+    assert _keys(t) == ["delete_timed_out", "menu"]
+
+
+def test_yes_just_inside_the_timeout_still_confirms_the_delete():
+    t = handle(PENDING_DELETE, "हाँ, मिटाओ", idle_for=INACTIVITY_TIMEOUT - timedelta(seconds=1))
+    assert EraseTeacher() in t.effects
+
+
+def test_asking_again_after_the_timeout_starts_a_fresh_confirmation():
+    t = handle(PENDING_DELETE, "delete my data", idle_for=INACTIVITY_TIMEOUT)
+    assert t.state.phase is Phase.DELETE_CONFIRM
+    assert t.state.resume is Phase.IDLE
+    assert _keys(t) == ["delete_timed_out", "delete_confirm"]
+
+
+@pytest.mark.parametrize("phase", [Phase.ONB_LANG, Phase.ONB_GRADE, Phase.IDLE])
+def test_idle_teachers_outside_a_delete_prompt_carry_on_where_they_were(phase: Phase):
+    start = TeacherState(phase=phase, lang="en", grade_band="1", consented=True)
+    quiet = handle(start, "umm", idle_for=timedelta(days=3))
+    assert quiet == handle(start, "umm")

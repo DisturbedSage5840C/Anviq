@@ -1,4 +1,5 @@
 import hashlib
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -178,15 +179,22 @@ async def test_export_never_includes_the_whatsapp_number(brain: RouterBrain):
     assert SENDER not in reply.text
 
 
+def _contents(store: InMemoryTeacherStore) -> dict[bytes, tuple]:
+    """What is stored about each teacher, ignoring when they last wrote."""
+    return {
+        key: (t.state, t.wa_id, t.consents, t.reminders_opt_in) for key, t in store.teachers.items()
+    }
+
+
 async def test_export_changes_nothing_that_is_stored(
     brain: RouterBrain, store: InMemoryTeacherStore
 ):
     await _onboard(brain)
-    before = dict(store.teachers)
+    before = _contents(store)
 
     await brain.respond(_say("send me my data"))
 
-    assert store.teachers == before
+    assert _contents(store) == before
 
 
 async def test_export_for_a_stranger_says_nothing_is_stored(brain: RouterBrain):
@@ -216,3 +224,42 @@ async def test_saying_yes_after_withdrawing_starts_a_new_consent(
     stored = store.teachers[_hash()]
     assert [c.revoked for c in stored.consents] == [True, False]
     assert stored.state.phase is Phase.IDLE
+
+
+class _Clock:
+    def __init__(self) -> None:
+        self.now = datetime(2026, 1, 5, 9, 0, tzinfo=UTC)
+
+    def __call__(self) -> datetime:
+        return self.now
+
+    def advance(self, by: timedelta) -> None:
+        self.now += by
+
+
+async def test_a_yes_sent_after_the_timeout_does_not_delete_the_teacher():
+    clock = _Clock()
+    store = InMemoryTeacherStore(clock=clock)
+    brain = RouterBrain(store, PEPPER)
+    await _onboard(brain)
+    await brain.respond(_say("delete my data"))
+
+    clock.advance(timedelta(minutes=31))
+    reply = await brain.respond(_say("yes"))
+
+    assert _hash() in store.teachers
+    assert store.deletion_log == []
+    assert render("delete_timed_out", "en") in reply.text
+
+
+async def test_a_yes_sent_within_the_timeout_still_deletes_the_teacher():
+    clock = _Clock()
+    store = InMemoryTeacherStore(clock=clock)
+    brain = RouterBrain(store, PEPPER)
+    await _onboard(brain)
+    await brain.respond(_say("delete my data"))
+
+    clock.advance(timedelta(minutes=29))
+    await brain.respond(_say("yes"))
+
+    assert _hash() not in store.teachers

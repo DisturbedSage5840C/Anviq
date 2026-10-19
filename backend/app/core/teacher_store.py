@@ -5,9 +5,10 @@ teacher and commits or rolls back everything done inside the block together.
 """
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
 from app.core.router import TeacherState
@@ -22,6 +23,10 @@ def deletion_log_prefix(phone_hash: bytes) -> str:
 
 class TeacherSession(Protocol):
     async def load(self) -> TeacherState: ...
+
+    async def idle_for(self) -> timedelta | None:
+        """Time since the teacher's last saved message; None if they are unknown."""
+        ...
 
     async def save(self, state: TeacherState, wa_id: str) -> None:
         """Persist `state`. A NEW teacher has nothing worth keeping, so no row is created."""
@@ -69,6 +74,7 @@ class TeacherExport:
 class StoredTeacher:
     state: TeacherState
     wa_id: str
+    last_active_at: datetime
     consents: tuple[ConsentRecord, ...] = ()
     reminders_opt_in: bool = False
 
@@ -79,6 +85,7 @@ class InMemoryTeacherStore:
 
     teachers: dict[bytes, StoredTeacher] = field(default_factory=dict)
     deletion_log: list[str] = field(default_factory=list)
+    clock: Callable[[], datetime] = lambda: datetime.now(UTC)
     _locks: dict[bytes, asyncio.Lock] = field(default_factory=dict)
 
     @asynccontextmanager
@@ -86,6 +93,9 @@ class InMemoryTeacherStore:
         lock = self._locks.setdefault(phone_hash, asyncio.Lock())
         async with lock:
             yield _InMemorySession(self, phone_hash)
+
+    def now(self) -> datetime:
+        return self.clock()
 
 
 @dataclass(frozen=True)
@@ -99,14 +109,23 @@ class _InMemorySession:
             return TeacherState()
         return replace(stored.state, consented=any(not c.revoked for c in stored.consents))
 
+    async def idle_for(self) -> timedelta | None:
+        stored = self.store.teachers.get(self.phone_hash)
+        return None if stored is None else self.store.now() - stored.last_active_at
+
     async def save(self, state: TeacherState, wa_id: str) -> None:
+        now = self.store.now()
         existing = self.store.teachers.get(self.phone_hash)
         if existing is None:
             if state == TeacherState():
                 return
-            self.store.teachers[self.phone_hash] = StoredTeacher(state=state, wa_id=wa_id)
+            self.store.teachers[self.phone_hash] = StoredTeacher(
+                state=state, wa_id=wa_id, last_active_at=now
+            )
             return
-        self.store.teachers[self.phone_hash] = replace(existing, state=state, wa_id=wa_id)
+        self.store.teachers[self.phone_hash] = replace(
+            existing, state=state, wa_id=wa_id, last_active_at=now
+        )
 
     async def record_consent(self, version: str, text_sha256: str) -> None:
         existing = self.store.teachers[self.phone_hash]

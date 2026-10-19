@@ -21,6 +21,7 @@ menu = "What would you like to do? Prepare for tomorrow, practise, reflect on to
 delete_confirm = "Are you sure you want to delete everything? This will also erase your progress. Say 'yes, delete'."
 deleted = "All your data has been deleted. Type 'Hello' to come back to Anviq."
 delete_cancelled = "Okay, nothing was deleted."
+delete_timed_out = "That delete request timed out, so nothing was deleted. Ask again if you still want it."
 stopped = "Okay, I won't send reminder messages any more. Write to me whenever you like."
 privacy = "Your practice and scores are yours alone. No headmaster, mentor or officer sees your individual work. Institutions see only anonymous averages for 20 or more teachers. Voice recordings are not kept."
 help = "I help you prepare tomorrow's lesson, practise with three AI children, and reflect on the day. Say 'delete my data' to erase everything, 'withdraw consent' to take back your agreement, 'stop' to pause reminders, or 'privacy' to learn who sees what."

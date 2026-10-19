@@ -5,6 +5,7 @@ import os
 import secrets
 from collections.abc import AsyncIterator
 from dataclasses import replace
+from datetime import timedelta
 
 import pytest
 from sqlalchemy import text
@@ -40,6 +41,24 @@ class Harness:
         self.memory = memory
         self.engine = engine
         self.hashes: list[bytes] = []
+
+    async def age(self, phone_hash: bytes, by: timedelta) -> None:
+        """Make the teacher's last message look `by` older, without waiting."""
+        if self.memory is not None:
+            stored = self.memory.teachers[phone_hash]
+            self.memory.teachers[phone_hash] = replace(
+                stored, last_active_at=stored.last_active_at - by
+            )
+            return
+        assert self.engine is not None
+        async with self.engine.begin() as conn:
+            await conn.execute(
+                text(
+                    "update teachers set last_active_at = last_active_at - make_interval(secs => :s) "
+                    "where phone_hash = :h"
+                ),
+                {"s": by.total_seconds(), "h": phone_hash},
+            )
 
 
 @pytest.fixture(
@@ -375,3 +394,37 @@ async def _turn_reminders_on(h: Harness, phone_hash: bytes) -> None:
             text("update teachers set reminders_opt_in = true where phone_hash = :h"),
             {"h": phone_hash},
         )
+
+
+async def _idle_for(h: Harness, phone_hash: bytes) -> timedelta | None:
+    async with h.store.locked(phone_hash) as session:
+        return await session.idle_for()
+
+
+async def test_unknown_teacher_has_no_idle_time(harness: Harness, phone_hash: bytes):
+    assert await _idle_for(harness, phone_hash) is None
+
+
+async def test_idle_time_is_small_right_after_a_save(harness: Harness, phone_hash: bytes):
+    await _save(harness, phone_hash, ENROLLED)
+    idle = await _idle_for(harness, phone_hash)
+    assert idle is not None
+    assert timedelta(0) <= idle < timedelta(minutes=1)
+
+
+async def test_idle_time_grows_while_the_teacher_is_silent(harness: Harness, phone_hash: bytes):
+    await _save(harness, phone_hash, ENROLLED)
+    await harness.age(phone_hash, timedelta(minutes=45))
+    idle = await _idle_for(harness, phone_hash)
+    assert idle is not None
+    assert timedelta(minutes=45) <= idle < timedelta(minutes=46)
+
+
+async def test_saving_again_restarts_the_idle_clock(harness: Harness, phone_hash: bytes):
+    await _save(harness, phone_hash, ENROLLED)
+    await harness.age(phone_hash, timedelta(hours=2))
+    async with harness.store.locked(phone_hash) as session:
+        await session.save(ENROLLED, WA_ID)
+    idle = await _idle_for(harness, phone_hash)
+    assert idle is not None
+    assert idle < timedelta(minutes=1)

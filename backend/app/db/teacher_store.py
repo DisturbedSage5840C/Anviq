@@ -3,6 +3,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from datetime import timedelta
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
@@ -62,6 +63,15 @@ class _PostgresSession:
             consented=row.consent_version is not None,
             resume=Phase(row.resume_state) if row.resume_state else None,
         )
+
+    async def idle_for(self) -> timedelta | None:
+        idle = (
+            await self.conn.execute(
+                text("select now() - last_active_at from teachers where phone_hash = :h"),
+                {"h": self.phone_hash},
+            )
+        ).scalar_one_or_none()
+        return idle
 
     async def save(self, state: TeacherState, wa_id: str) -> None:
         if state.phase is Phase.NEW:

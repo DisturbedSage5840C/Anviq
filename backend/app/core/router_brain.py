@@ -36,7 +36,8 @@ class RouterBrain:
         key = phone_hash(self._pepper, utterance.sender_wa_id)
         async with self._store.locked(key) as session:
             before = await session.load()
-            transition = handle(before, utterance.text)
+            idle_for = await session.idle_for()
+            transition = handle(before, utterance.text, idle_for=idle_for)
             await session.save(transition.state, utterance.sender_wa_id)
             exports = await _apply_effects(session, transition)
         # After an erase the new state has forgotten the language, but the goodbye should not.
