@@ -41,3 +41,8 @@ plan_cta = "Want to practise this with the three children? Say yes."
 plan_unavailable = "I could not prepare the plan just now. Please try again in a moment."
 plan_label_answer = "A child may say"
 plan_label_do = "You do"
+
+reflect_label_strength = "What went well"
+reflect_label_next = "One thing to try next"
+reflect_label_example = "You could say"
+reflect_unavailable = "I could not put your reflection together just now. Please try again in a moment."

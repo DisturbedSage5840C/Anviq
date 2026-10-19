@@ -41,3 +41,8 @@ plan_cta = "क्या आप इसे तीनों बच्चों क
 plan_unavailable = "अभी मैं योजना तैयार नहीं कर पाया। कृपया थोड़ी देर बाद फिर कोशिश कीजिए।"
 plan_label_answer = "बच्चा कह सकता है"
 plan_label_do = "आप करें"
+
+reflect_label_strength = "जो अच्छा रहा"
+reflect_label_next = "अगली बार एक चीज़ आज़माइए"
+reflect_label_example = "आप कह सकते हैं"
+reflect_unavailable = "अभी मैं आपका चिंतन तैयार नहीं कर पाया। कृपया थोड़ी देर बाद फिर कोशिश कीजिए।"
