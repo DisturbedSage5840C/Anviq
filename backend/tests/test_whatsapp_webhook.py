@@ -101,3 +101,20 @@ def test_post_with_signed_invalid_json_returns_400(client):
     body = b"{not json"
     response = client.post(URL, content=body, headers={"X-Hub-Signature-256": sign(body)})
     assert response.status_code == 400
+
+
+def test_a_non_ascii_signature_header_is_rejected_not_a_server_error(client):
+    response = client.post(
+        URL,
+        content=_body(TEXT_PAYLOAD),
+        headers={"X-Hub-Signature-256": "sha256=é".encode("latin-1")},
+    )
+    assert response.status_code == 401
+
+
+def test_verify_rejects_a_non_ascii_token_not_a_server_error(client):
+    response = client.get(
+        URL,
+        params={"hub.mode": "subscribe", "hub.verify_token": "tokén", "hub.challenge": "1"},
+    )
+    assert response.status_code == 403

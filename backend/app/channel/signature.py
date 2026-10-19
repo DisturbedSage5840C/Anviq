@@ -12,4 +12,5 @@ def is_valid_signature(body: bytes, header: str | None, app_secret: str) -> bool
         return False
     expected = hmac.new(app_secret.encode(), body, hashlib.sha256).hexdigest()
     received = header.removeprefix(SIGNATURE_PREFIX)
-    return hmac.compare_digest(expected, received)
+    # bytes, because compare_digest on str raises for non-ASCII, and a forged header must be a 401
+    return hmac.compare_digest(expected.encode(), received.encode())

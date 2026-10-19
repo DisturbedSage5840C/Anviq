@@ -1,5 +1,6 @@
 """WhatsApp Cloud API webhook: handshake (GET) and signed event delivery (POST)."""
 
+import hmac
 import json
 import logging
 from typing import Annotated
@@ -27,7 +28,9 @@ async def verify_webhook(
     token: Annotated[str | None, Query(alias="hub.verify_token")] = None,
     challenge: Annotated[str | None, Query(alias="hub.challenge")] = None,
 ) -> Response:
-    if mode != SUBSCRIBE_MODE or token != settings.wa_verify_token.get_secret_value():
+    expected = settings.wa_verify_token.get_secret_value().encode()
+    presented_ok = token is not None and hmac.compare_digest(token.encode(), expected)
+    if mode != SUBSCRIBE_MODE or not presented_ok:
         raise HTTPException(status_code=403, detail="verification failed")
     return Response(content=challenge or "", media_type="text/plain")
 
