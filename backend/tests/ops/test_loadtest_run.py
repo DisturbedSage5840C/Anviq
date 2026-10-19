@@ -87,10 +87,10 @@ async def test_web_load_records_a_refused_code_as_a_failure():
 
 
 def test_production_hosts_are_recognised():
-    assert is_production_host("https://anviq-prod.fly.dev")
+    assert is_production_host("https://anviq-prod.duckdns.org")
     assert is_production_host("https://API.ANVIQ-PROD.example/")
 
 
 def test_staging_and_local_hosts_are_not_production():
-    assert not is_production_host("https://anviq-staging.fly.dev")
+    assert not is_production_host("https://anviq-staging.duckdns.org")
     assert not is_production_host("http://localhost:8080")

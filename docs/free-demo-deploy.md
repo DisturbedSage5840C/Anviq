@@ -2,7 +2,8 @@
 
 For the hackathon: judges try Anviq after we submit, so it has to stay up without anyone's laptop,
 cost nothing, and feel fast. This runs the whole backend on one free VM with automatic HTTPS.
-The paid production design (Fly, Supabase, Upstash) is still in the build plan §7 for later.
+This is the only deployment the repo ships. A managed, multi-environment setup is a decision for
+after the hackathon (build plan §7).
 
 What you get: Caddy (HTTPS) → API, plus the worker, Postgres+pgvector and Redis, all from
 `infra/docker-compose.demo.yml`. Only ports 80 and 443 are open.

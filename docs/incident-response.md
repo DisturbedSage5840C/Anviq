@@ -22,15 +22,15 @@ to prevent.
 
 Treat any of these as one until shown otherwise:
 
-- A secret that protects teacher data was exposed: `FIELD_KEY`, `PHONE_PEPPER`, `DATABASE_URL`,
-  `WA_ACCESS_TOKEN`, `WA_APP_SECRET`, the Fly token, or a vendor API key. Includes a secret pasted
+- A secret that protects teacher data was exposed: `FIELD_KEY`, `PHONE_PEPPER`, `APP_DB_PASSWORD`,
+  `POSTGRES_PASSWORD`, `WA_ACCESS_TOKEN`, `WA_APP_SECRET`, the VM's SSH key, or a vendor API key. Includes a secret pasted
   into a chat, a ticket or a commit.
 - Someone outside the team read, copied or changed rows in the database, Redis or backups.
 - A reply was sent to the wrong teacher, or one teacher saw another's content.
 - The dashboard returned something other than an aggregate for a group of 20 or more.
 - Error reports or logs contained a transcript, a phone number or a credential.
 - A vendor tells us they had a breach that touched our data.
-- A device or account with access (laptop, Fly, Supabase, Meta, GitHub) was lost or taken over.
+- A device or account with access (laptop, the Oracle Cloud account or VM, Meta, GitHub) was lost or taken over.
 
 When unsure, declare it. Closing a false alarm costs an hour. A missed breach costs the clock.
 
@@ -51,17 +51,17 @@ time down first.
 Stop it getting worse before working out how it happened.
 
 1. **Rotate** the exposed secret now ([runbook: rotating secrets](runbook.md#rotating-secrets)).
-   Revoke the old value at the vendor, not just in Fly.
-2. If a database credential is involved, rotate `DATABASE_URL` first. It also cuts off anyone
+   Revoke the old value at the vendor, not just in `infra/demo.env`.
+2. If a database credential is involved, rotate `APP_DB_PASSWORD` first. It also cuts off anyone
    holding the old one.
 3. If a WhatsApp token is involved, revoke it in Meta Business Settings.
 4. If an account was taken over, remove the member, force a password reset, and revoke sessions
    and personal access tokens.
 5. If a code path is leaking, turn it off rather than debug it live: roll back
-   ([runbook](runbook.md#rolling-back-a-release)) or take the API down with
-   `fly scale count 0 -a anviq-prod`. A short outage is better than a continuing leak.
+   ([runbook](runbook.md#rolling-back-an-update)) or take the API down with
+   `docker compose --env-file infra/demo.env -f infra/docker-compose.demo.yml stop api worker`. A short outage is better than a continuing leak.
 6. **Do not delete evidence.** No log purges, no force-pushes, no clearing Sentry. Take a database
-   snapshot and save the relevant `fly logs` output.
+   snapshot (`pg_dump`) and save the relevant `docker compose logs` output.
 
 ## 2. Work out what was exposed
 
@@ -112,7 +112,7 @@ owner edits rather than writes from scratch. Send it from the production number.
 a bulk template without a check that it is correct. Use the `teachers` table only to pick
 recipients; do not read content.
 
-If the exposure was limited to the staging environment and no real teacher data was involved, no
+If the exposure was limited to a throwaway local stack and no real teacher data was involved, no
 teacher notice is needed. Record why.
 
 ## 5. Recover

@@ -9,7 +9,7 @@ the build plan; this page describes the repository as it is, and marks every gap
  Teacher (WhatsApp)                         Visitor (browser demo)
    │ voice note / text                        │ audio or text + X-Demo-Code
    ▼                                          ▼
- Meta WhatsApp Cloud API ──signed webhook──► api  (FastAPI, Fly.io Mumbai)
+ Meta WhatsApp Cloud API ──signed webhook──► api  (FastAPI, Oracle VM Mumbai)
    ▲                                          │  POST /webhook/whatsapp   POST /web/turn
    │ send text / voice                        │  verify, dedupe, rate limit, enqueue
    │                                          ▼
@@ -116,12 +116,12 @@ What is stored and for how long: [data-inventory.md](data-inventory.md). Risk as
 | Env | Backend | Database | WhatsApp |
 |---|---|---|---|
 | local | `uvicorn` and `arq` against docker-compose Postgres (pgvector) and Redis | local | test number through a tunnel |
-| staging | Fly app `anviq-staging` (Mumbai) | Supabase `anviq-staging` | Meta test number, whitelisted phones |
-| prod | Fly app `anviq-prod` (Mumbai): one `api` and one `worker` machine | Supabase `anviq-prod`, daily backups | real number |
+| demo | One free Oracle Cloud VM (Mumbai) running `infra/docker-compose.demo.yml`: Caddy for HTTPS, `api`, `worker`, Postgres, Redis | Postgres container with a named volume | Meta test number (at most 5 whitelisted phones), plus the web room for everyone else |
 
-Both Fly apps share `infra/fly.toml`; the app name and `APP_ENV` are overridden per environment.
-The release command runs `alembic upgrade head` before traffic moves, so a failed migration leaves
-the old version serving.
+There is one deployed environment and it is the demo. The `migrate` container runs
+`alembic upgrade head` before the API and worker start, so a failed migration leaves the old
+containers serving until it is fixed. Setup and day-to-day commands:
+[free-demo-deploy.md](free-demo-deploy.md) and the [runbook](runbook.md).
 
 ## CI and deploy
 
@@ -129,18 +129,13 @@ the old version serving.
 PR and main:  ruff check, ruff format --check, mypy, pip-audit, alembic upgrade head,
               pytest with an 80% coverage gate   (Postgres and Redis as service containers)
               gitleaks over full history         (separate job)
-CI green on main ──► deploy.yml ──► fly deploy -a anviq-staging
 ```
 
 Details that matter:
 
-- `deploy.yml` stays off until the repository variable `DEPLOY_ENABLED` is `true` and
-  `FLY_API_TOKEN` exists, so a fresh clone never goes red.
-- It only deploys CI runs that came from a push to this repository's `main`, never from a fork or
-  a pull request, because `workflow_run` executes with secrets.
-- A `v*` tag deploys production (`anviq-prod`, `APP_ENV=prod`) through the `production`
-  environment, which needs a reviewer's approval and checks the tag is on `main`:
-  see [runbook](runbook.md#releasing-to-production).
+- There is no deploy workflow. The VM is updated by hand with `git pull` and
+  `docker compose ... up -d --build`, from a commit that is green on `main`. A managed,
+  multi-environment pipeline is a decision for after the hackathon.
 - CI also gates `app/core`, `app/privacy` and `app/guardrails` at 80% each, on top of the
   overall 80%.
 - The database tests need Postgres and skip locally without it; CI runs them.

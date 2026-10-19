@@ -38,7 +38,7 @@ Fill these in at release (build plan D14); nothing below is live until then.
 
 The team issues web demo codes (never put one in the repo). A code allows a fixed number of turns
 and expires after 7 days:
-`fly ssh console -a anviq-prod -C "uv run --no-sync python -m app.web.issue_code --turns 20"`.
+`docker compose --env-file infra/demo.env -f infra/docker-compose.demo.yml run --rm api uv run --no-sync python -m app.web.issue_code --turns 20`.
 See the [runbook](docs/runbook.md#web-room).
 
 ## Layout
@@ -46,7 +46,7 @@ See the [runbook](docs/runbook.md#web-room).
 | Path | What lives there |
 |---|---|
 | `backend/` | FastAPI service: WhatsApp webhook, router, speech, privacy, jobs |
-| `infra/` | Local docker-compose and Fly.io config (Mumbai, `bom`) |
+| `infra/` | Local docker-compose and the free always-on demo stack (Caddy, API, worker, Postgres, Redis) |
 | `content/` | Rubrics, topic map, personas, Hindi/English copy |
 | `eval/` | Evaluation harness and datasets |
 | `dashboard/` | Aggregate-only mentor dashboard (k >= 20) |
@@ -95,5 +95,5 @@ MIT, see [LICENSE](LICENSE).
 ## Secrets
 
 Real keys live only in `backend/.env` (gitignored) and in the hosting provider's secret store
-(`fly secrets set`). `.env.example` lists variable names, never values. The app refuses to
+(`infra/demo.env` on the demo VM, gitignored). `.env.example` lists variable names, never values. The app refuses to
 start if a required secret is missing.
