@@ -1,0 +1,41 @@
+# Move 3: Wait before rescuing. Plan section 3.2. Skeleton for the finale; Vansh writes the full set.
+move_id = 3
+status = "draft"
+title_en = "Wait before rescuing"
+title_hi = "बचाने से पहले इंतज़ार कीजिए"
+
+[[criteria]]
+id = "C1"
+text = "When the child hesitates, the teacher does not supply the answer or do the step for them."
+
+[[criteria]]
+id = "C2"
+text = "Gives encouragement or wait language (take your time, think calmly)."
+
+[[criteria]]
+id = "C3"
+text = "Offers a smaller hint or a smaller step, not the solution."
+
+[[examples]]
+text = "कोई जल्दी नहीं, आराम से सोचो मीना।"
+met = ["C1", "C2"]
+
+[[examples]]
+text = "सोचो, आराम से। पहले बताओ, दहाई में हमारे पास कितने बंडल हैं?"
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "Take your time, Meena. What do we have in the tens place?"
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "जवाब 35 है, समझ आया?"
+met = []
+
+[[examples]]
+text = "Come on, quickly, we don't have all day. It's 35."
+met = []
+
+[[examples]]
+text = "Hurry up, Meena."
+met = ["C1"]

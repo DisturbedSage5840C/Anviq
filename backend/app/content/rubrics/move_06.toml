@@ -1,0 +1,41 @@
+# Move 6: Ask in the home language. Plan section 3.2. Skeleton for the finale; Vansh writes the full set.
+move_id = 6
+status = "draft"
+title_en = "Ask in the home language"
+title_hi = "घर की भाषा में पूछिए"
+
+[[criteria]]
+id = "C1"
+text = "Uses a word or phrase from the child's home language."
+
+[[criteria]]
+id = "C2"
+text = "Uses a familiar local context (market, roti, cricket, fair)."
+
+[[criteria]]
+id = "C3"
+text = "The mathematical meaning is preserved."
+
+[[examples]]
+text = "52 में से 17 'घटा' दें तो कितने 'बचते' हैं? जैसे मेले में 52 रुपये में से 17 की जलेबी खा ली।"
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "If a shop has 52 laddoos and sells 17, how many are left? 'Bachte hain', yes?"
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "रोटी के 52 टुकड़े हैं, 17 खा लिए, बाकी कितने?"
+met = ["C2", "C3"]
+
+[[examples]]
+text = "Subtract 17 from 52 using the borrowing method."
+met = []
+
+[[examples]]
+text = "52 माइनस 17 कितना होता है?"
+met = []
+
+[[examples]]
+text = "If a train leaves with 52 passengers and 17 get off, how many remain?"
+met = ["C3"]
