@@ -125,3 +125,24 @@ async def test_the_mirror_shows_both_turns_and_unlocks_the_next_move_once():
 async def test_every_loop_message_has_copy_in_each_language(lang: str):
     for key in ("plan_unavailable", "reflect_unavailable", "mirror_not_ready", "mirror_next_move"):
         assert render(key, lang)
+
+
+class PositionAt:
+    def __init__(self, move_id: int) -> None:
+        self.move_id = move_id
+
+    async def current(self, teacher: bytes) -> Position:
+        return Position(self.move_id, "A")
+
+
+@pytest.mark.parametrize("move_id", range(1, 7))
+async def test_plan_and_reflect_work_for_every_move_in_the_programme(move_id: int):
+    planner = FakePlanner(Planned("fractions", (QUESTION,) * 3, "the plan"))
+    reflector = FakeReflector(Reflected(ReflectionDraft("s", "n", "e"), "the reflection"))
+    loop = PipelineDailyLoop(planner, reflector, PositionAt(move_id), FakeMirrors(None))
+
+    await loop.plan(TEACHER, "en", "fractions")
+    await loop.reflect(TEACHER, "en", "it went well")
+
+    assert planner.seen[0].move_id == move_id
+    assert reflector.seen[0].move_id == move_id
