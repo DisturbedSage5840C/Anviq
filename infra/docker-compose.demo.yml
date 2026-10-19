@@ -1,0 +1,114 @@
+# Always-on demo stack: Caddy (free HTTPS) -> API, plus worker, Postgres+pgvector and Redis.
+# Run from the repo root:
+#   docker compose --env-file infra/demo.env -f infra/docker-compose.demo.yml up -d --build
+# Only Caddy publishes ports; the database and Redis are reachable inside the stack alone.
+
+x-backend: &backend
+  build:
+    context: ../backend
+  image: anviq-backend:demo
+  restart: unless-stopped
+  environment: &app-env
+    - APP_ENV=staging
+    - DATABASE_URL=postgresql+asyncpg://app_rw:${APP_DB_PASSWORD:?set APP_DB_PASSWORD}@postgres:5432/anviq
+    - REDIS_URL=redis://redis:6379/0
+    - WA_VERIFY_TOKEN=${WA_VERIFY_TOKEN:?set WA_VERIFY_TOKEN}
+    - WA_APP_SECRET=${WA_APP_SECRET:?set WA_APP_SECRET}
+    - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY}
+    - SARVAM_API_KEY=${SARVAM_API_KEY:?set SARVAM_API_KEY}
+    - FIELD_KEY=${FIELD_KEY:?set FIELD_KEY}
+    - PHONE_PEPPER=${PHONE_PEPPER:?set PHONE_PEPPER}
+    - WEB_ALLOWED_ORIGINS
+    - DEMO_CYCLE_MINUTES
+    - WA_PHONE_NUMBER_ID
+    - WA_ACCESS_TOKEN
+  depends_on:
+    db-roles:
+      condition: service_completed_successfully
+    redis:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: anviq
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: anviq
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anviq"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    <<: *backend
+    restart: "no"
+    command: ["uv", "run", "--no-sync", "alembic", "upgrade", "head"]
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://anviq:${POSTGRES_PASSWORD}@postgres:5432/anviq
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  db-roles:
+    image: pgvector/pgvector:pg16
+    restart: "no"
+    entrypoint: ["sh", "-c"]
+    command: ['psql -v ON_ERROR_STOP=1 -h postgres -U anviq -d anviq -v pw="$$APP_DB_PASSWORD" -f /app-role.sql']
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+    volumes:
+      - ./demo/app-role.sql:/app-role.sql:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  api:
+    <<: *backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8080/healthz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  worker:
+    <<: *backend
+    command: ["uv", "run", "--no-sync", "arq", "app.worker.WorkerSettings"]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - SITE_ADDRESS
+    volumes:
+      - ./demo/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  redisdata:
+  caddydata:

@@ -34,3 +34,6 @@ content/corpus/*.pdf
 .DS_Store
 .idea/
 .vscode/
+
+# Filled-in demo secrets
+infra/demo.env
