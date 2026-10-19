@@ -92,6 +92,30 @@ def classify_global(text: str) -> GlobalIntent | None:
     return None
 
 
+class MenuIntent(StrEnum):
+    PLAN = "plan"
+    REFLECT = "reflect"
+    MIRROR = "mirror"
+
+
+_MENU_WORDS = {
+    MenuIntent.PLAN: frozenset(_tokens("plan प्लान")),
+    MenuIntent.REFLECT: frozenset(_tokens("reflect रिफ्लेक्ट")),
+    MenuIntent.MIRROR: frozenset(_tokens("mirror मिरर")),
+}
+
+
+def classify_menu(text: str) -> MenuIntent | None:
+    """Menu choices. Only short messages count: "plan" inside a lesson description is content."""
+    tokens = _tokens(text)
+    if len(tokens) > SHORT_UTTERANCE_MAX_TOKENS:
+        return None
+    for intent, words in _MENU_WORDS.items():
+        if words.intersection(tokens):
+            return intent
+    return None
+
+
 _YES = frozenset(_tokens("हाँ हां हा जी ठीक सही yes y ok okay sure yeah yep"))
 _NO = frozenset(_tokens("नहीं नही ना no n nope"))
 

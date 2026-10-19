@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from app.content.copy import render
+from app.core.daily_loop import LoopReply
 from app.core.dialogue import Utterance
 from app.core.router import CONSENT_VERSION, Phase
 from app.core.router_brain import RouterBrain
@@ -263,3 +264,99 @@ async def test_a_yes_sent_within_the_timeout_still_deletes_the_teacher():
     await brain.respond(_say("yes"))
 
     assert _hash() not in store.teachers
+
+
+class RecordingLoop:
+    def __init__(self, stay_in: Phase | None = None) -> None:
+        self.calls: list[tuple[str, bytes, str, str | None]] = []
+        self.stay_in = stay_in
+
+    async def plan(self, teacher: bytes, lang: str, text: str) -> LoopReply:
+        self.calls.append(("plan", teacher, lang, text))
+        return LoopReply("THE PLAN", stay_in=self.stay_in)
+
+    async def reflect(self, teacher: bytes, lang: str, text: str) -> LoopReply:
+        self.calls.append(("reflect", teacher, lang, text))
+        return LoopReply("THE REFLECTION")
+
+    async def mirror(self, teacher: bytes, lang: str) -> LoopReply:
+        self.calls.append(("mirror", teacher, lang, None))
+        return LoopReply("THE MIRROR")
+
+
+async def _looped(store: InMemoryTeacherStore, loop: RecordingLoop | None) -> RouterBrain:
+    brain = RouterBrain(store, PEPPER, loop)
+    await _onboard(brain)
+    return brain
+
+
+async def test_a_plan_is_asked_for_then_made_from_the_teachers_answer(
+    store: InMemoryTeacherStore,
+):
+    loop = RecordingLoop()
+    brain = await _looped(store, loop)
+
+    asked = await brain.respond(_say("plan"))
+    made = await brain.respond(_say("fractions for class 3"))
+
+    assert asked.text == render("ask_plan_topic", "en")
+    assert made.text == "THE PLAN"
+    assert made.lang == "en"
+    assert loop.calls == [("plan", _hash(), "en", "fractions for class 3")]
+    assert store.teachers[_hash()].state.phase is Phase.IDLE
+
+
+async def test_an_unclear_topic_keeps_the_teacher_in_the_topic_prompt(
+    store: InMemoryTeacherStore,
+):
+    brain = await _looped(store, RecordingLoop(stay_in=Phase.PLAN_TOPIC))
+
+    await brain.respond(_say("plan"))
+    await brain.respond(_say("that thing"))
+
+    assert store.teachers[_hash()].state.phase is Phase.PLAN_TOPIC
+
+
+async def test_reflect_and_mirror_go_to_the_loop(store: InMemoryTeacherStore):
+    loop = RecordingLoop()
+    brain = await _looped(store, loop)
+
+    await brain.respond(_say("reflect"))
+    reflected = await brain.respond(_say("it went well"))
+    mirrored = await brain.respond(_say("mirror"))
+
+    assert reflected.text == "THE REFLECTION"
+    assert mirrored.text == "THE MIRROR"
+    assert [call[0] for call in loop.calls] == ["reflect", "mirror"]
+
+
+async def test_without_a_loop_the_teacher_is_told_it_is_unavailable_not_ignored(
+    store: InMemoryTeacherStore,
+):
+    brain = await _looped(store, None)
+
+    await brain.respond(_say("plan"))
+    plan = await brain.respond(_say("fractions"))
+    await brain.respond(_say("reflect"))
+    reflection = await brain.respond(_say("fine"))
+    mirror = await brain.respond(_say("mirror"))
+
+    assert plan.text == render("plan_unavailable", "en")
+    assert reflection.text == render("reflect_unavailable", "en")
+    assert mirror.text == render("mirror_unavailable", "en")
+
+
+async def test_a_loop_that_crashes_is_reported_as_unavailable_and_leaves_the_teacher_idle(
+    store: InMemoryTeacherStore,
+):
+    class Broken(RecordingLoop):
+        async def plan(self, teacher: bytes, lang: str, text: str) -> LoopReply:
+            raise RuntimeError("model exploded")
+
+    brain = await _looped(store, Broken())
+
+    await brain.respond(_say("plan"))
+    reply = await brain.respond(_say("fractions"))
+
+    assert reply.text == render("plan_unavailable", "en")
+    assert store.teachers[_hash()].state.phase is Phase.IDLE

@@ -2,7 +2,9 @@ import pytest
 
 from app.core.intents import (
     GlobalIntent,
+    MenuIntent,
     classify_global,
+    classify_menu,
     parse_grade,
     parse_language,
     parse_yes_no,
@@ -144,3 +146,32 @@ def test_delete_outranks_export_when_both_appear():
 
 def test_a_sentence_that_merely_mentions_data_is_not_an_export():
     assert classify_global("my data is in the register") is None
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("plan", MenuIntent.PLAN),
+        ("Plan for tomorrow", MenuIntent.PLAN),
+        ("प्लान", MenuIntent.PLAN),
+        ("reflect", MenuIntent.REFLECT),
+        ("रिफ्लेक्ट", MenuIntent.REFLECT),
+        ("mirror", MenuIntent.MIRROR),
+        ("मिरर", MenuIntent.MIRROR),
+    ],
+)
+def test_menu_words_are_recognised(text: str, expected: MenuIntent):
+    assert classify_menu(text) is expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "",
+        "umm",
+        # a long sentence that merely uses the word is lesson content, not a command
+        "tomorrow I will teach the plan of the village and how to draw a mirror image",
+    ],
+)
+def test_ordinary_or_long_utterances_are_not_menu_commands(text: str):
+    assert classify_menu(text) is None

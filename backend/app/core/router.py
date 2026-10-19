@@ -10,7 +10,9 @@ from enum import StrEnum
 
 from app.core.intents import (
     GlobalIntent,
+    MenuIntent,
     classify_global,
+    classify_menu,
     parse_grade,
     parse_language,
     parse_yes_no,
@@ -26,6 +28,8 @@ class Phase(StrEnum):
     ONB_GRADE = "ONB_GRADE"
     ONB_CONSENT = "ONB_CONSENT"
     IDLE = "IDLE"
+    PLAN_TOPIC = "PLAN_TOPIC"  # asked what they teach tomorrow, waiting for the answer
+    REFLECT_NOTES = "REFLECT_NOTES"  # asked how the lesson went, waiting for the answer
     DELETE_CONFIRM = "DELETE_CONFIRM"
 
 
@@ -70,7 +74,37 @@ class ExportData:
     """Reply with a summary of everything stored about this teacher. Reads only, never writes."""
 
 
-Effect = Say | RecordConsent | WithdrawConsent | EraseTeacher | OptOutReminders | ExportData
+@dataclass(frozen=True)
+class MakePlan:
+    """Prepare three questions for the lesson the teacher described. Needs the model, so it runs
+    after the transaction commits."""
+
+    text: str
+
+
+@dataclass(frozen=True)
+class MakeReflection:
+    """Reflect on the lesson the teacher described. Needs the model, so it runs after commit."""
+
+    text: str
+
+
+@dataclass(frozen=True)
+class ShowMirror:
+    """Show the Day 1 and latest practice side by side, if the cycle has two sessions to compare."""
+
+
+Effect = (
+    Say
+    | RecordConsent
+    | WithdrawConsent
+    | EraseTeacher
+    | OptOutReminders
+    | ExportData
+    | MakePlan
+    | MakeReflection
+    | ShowMirror
+)
 
 
 @dataclass(frozen=True)
@@ -97,6 +131,10 @@ def handle(state: TeacherState, text: str, *, idle_for: timedelta | None = None)
     intent = classify_global(text)
     if intent is not None:
         return _handle_global(state, intent)
+    if state.consented and state.phase in _MENU_PHASES:
+        choice = classify_menu(text)
+        if choice is not None:
+            return _handle_menu(state, choice)
     return _HANDLERS[state.phase](state, text)
 
 
@@ -128,6 +166,14 @@ def _handle_global(state: TeacherState, intent: GlobalIntent) -> Transition:
     if intent is GlobalIntent.STOP:
         return _say(state, "stopped", extra=(OptOutReminders(),))
     return _say(state, "privacy" if intent is GlobalIntent.PRIVACY else "help")
+
+
+def _handle_menu(state: TeacherState, choice: MenuIntent) -> Transition:
+    if choice is MenuIntent.MIRROR:
+        return Transition(replace(state, phase=Phase.IDLE), (ShowMirror(),))
+    if choice is MenuIntent.PLAN:
+        return _say(replace(state, phase=Phase.PLAN_TOPIC), "ask_plan_topic")
+    return _say(replace(state, phase=Phase.REFLECT_NOTES), "ask_reflect_notes")
 
 
 def _withdraw_consent(state: TeacherState) -> Transition:
@@ -187,6 +233,14 @@ def _on_idle(state: TeacherState, text: str) -> Transition:
     return _say(state, "menu")
 
 
+def _on_plan_topic(state: TeacherState, text: str) -> Transition:
+    return Transition(replace(state, phase=Phase.IDLE), (MakePlan(text),))
+
+
+def _on_reflect_notes(state: TeacherState, text: str) -> Transition:
+    return Transition(replace(state, phase=Phase.IDLE), (MakeReflection(text),))
+
+
 def _on_delete_confirm(state: TeacherState, text: str) -> Transition:
     return _say(state, "delete_confirm")
 
@@ -197,5 +251,9 @@ _HANDLERS = {
     Phase.ONB_GRADE: _on_grade,
     Phase.ONB_CONSENT: _on_consent,
     Phase.IDLE: _on_idle,
+    Phase.PLAN_TOPIC: _on_plan_topic,
+    Phase.REFLECT_NOTES: _on_reflect_notes,
     Phase.DELETE_CONFIRM: _on_delete_confirm,
 }
+
+_MENU_PHASES = frozenset({Phase.IDLE, Phase.PLAN_TOPIC, Phase.REFLECT_NOTES})

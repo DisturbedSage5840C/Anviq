@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import timedelta
 
 import pytest
@@ -7,10 +8,13 @@ from app.core.router import (
     INACTIVITY_TIMEOUT,
     EraseTeacher,
     ExportData,
+    MakePlan,
+    MakeReflection,
     OptOutReminders,
     Phase,
     RecordConsent,
     Say,
+    ShowMirror,
     TeacherState,
     WithdrawConsent,
     handle,
@@ -267,3 +271,60 @@ def test_idle_teachers_outside_a_delete_prompt_carry_on_where_they_were(phase: P
     start = TeacherState(phase=phase, lang="en", grade_band="1", consented=True)
     quiet = handle(start, "umm", idle_for=timedelta(days=3))
     assert quiet == handle(start, "umm")
+
+
+IDLE_TEACHER = TeacherState(phase=Phase.IDLE, lang="en", grade_band="2", consented=True)
+
+
+def test_asking_for_a_plan_waits_for_the_topic():
+    t = handle(IDLE_TEACHER, "plan")
+    assert t.state.phase is Phase.PLAN_TOPIC
+    assert _keys(t) == ["ask_plan_topic"]
+
+
+def test_the_topic_is_handed_on_as_a_plan_request_and_the_teacher_is_idle_again():
+    t = handle(replace(IDLE_TEACHER, phase=Phase.PLAN_TOPIC), "fractions tomorrow, Gr 3")
+    assert t.state.phase is Phase.IDLE
+    assert t.effects == (MakePlan("fractions tomorrow, Gr 3"),)
+
+
+def test_asking_to_reflect_waits_for_the_notes():
+    t = handle(IDLE_TEACHER, "reflect")
+    assert t.state.phase is Phase.REFLECT_NOTES
+    assert _keys(t) == ["ask_reflect_notes"]
+
+
+def test_the_notes_are_handed_on_as_a_reflection_request():
+    t = handle(replace(IDLE_TEACHER, phase=Phase.REFLECT_NOTES), "the children enjoyed it")
+    assert t.state.phase is Phase.IDLE
+    assert t.effects == (MakeReflection("the children enjoyed it"),)
+
+
+def test_the_mirror_is_shown_at_once_without_leaving_idle():
+    t = handle(IDLE_TEACHER, "mirror")
+    assert t.state.phase is Phase.IDLE
+    assert t.effects == (ShowMirror(),)
+
+
+def test_a_menu_word_while_waiting_for_a_topic_switches_task():
+    t = handle(replace(IDLE_TEACHER, phase=Phase.PLAN_TOPIC), "reflect")
+    assert t.state.phase is Phase.REFLECT_NOTES
+
+
+def test_a_menu_word_is_ignored_before_consent_is_given():
+    waiting = TeacherState(phase=Phase.ONB_CONSENT, lang="en", grade_band="2")
+    assert handle(waiting, "plan").state.phase is Phase.ONB_CONSENT
+
+
+def test_delete_while_waiting_for_a_topic_returns_to_the_topic_prompt_if_cancelled():
+    waiting = replace(IDLE_TEACHER, phase=Phase.PLAN_TOPIC)
+    asked = handle(waiting, "delete my data")
+    assert asked.state.resume is Phase.PLAN_TOPIC
+    assert handle(asked.state, "no").state.phase is Phase.PLAN_TOPIC
+
+
+def test_a_topic_sent_days_after_the_prompt_is_still_taken():
+    waiting = replace(IDLE_TEACHER, phase=Phase.PLAN_TOPIC)
+    t = handle(waiting, "fractions", idle_for=timedelta(days=2))
+    assert t.state.phase is Phase.IDLE
+    assert t.effects == (MakePlan("fractions"),)
