@@ -283,6 +283,10 @@ class RecordingLoop:
         self.calls.append(("mirror", teacher, lang, None))
         return LoopReply("THE MIRROR")
 
+    async def ask(self, teacher: bytes, lang: str, text: str) -> LoopReply:
+        self.calls.append(("ask", teacher, lang, text))
+        return LoopReply("THE ANSWER")
+
 
 async def _looped(store: InMemoryTeacherStore, loop: RecordingLoop | None) -> RouterBrain:
     brain = RouterBrain(store, PEPPER, loop)
@@ -359,4 +363,48 @@ async def test_a_loop_that_crashes_is_reported_as_unavailable_and_leaves_the_tea
     reply = await brain.respond(_say("fractions"))
 
     assert reply.text == render("plan_unavailable", "en")
+    assert store.teachers[_hash()].state.phase is Phase.IDLE
+
+
+async def test_a_question_is_asked_for_then_answered_from_the_loop(store: InMemoryTeacherStore):
+    loop = RecordingLoop()
+    brain = await _looped(store, loop)
+
+    prompt = await brain.respond(_say("ask"))
+    answer = await brain.respond(_say("How do I teach place value?"))
+
+    assert prompt.text == render("ask_question_prompt", "en")
+    assert answer.text == "THE ANSWER"
+    assert loop.calls == [("ask", _hash(), "en", "How do I teach place value?")]
+    assert store.teachers[_hash()].state.phase is Phase.IDLE
+
+
+async def test_a_question_typed_at_the_menu_reaches_the_loop(store: InMemoryTeacherStore):
+    loop = RecordingLoop()
+    brain = await _looped(store, loop)
+
+    answer = await brain.respond(_say("Why do children confuse b and d?"))
+
+    assert answer.text == "THE ANSWER"
+    assert [call[0] for call in loop.calls] == ["ask"]
+
+
+async def test_without_a_loop_a_question_is_reported_unavailable(store: InMemoryTeacherStore):
+    brain = await _looped(store, None)
+
+    reply = await brain.respond(_say("Why do children confuse b and d?"))
+
+    assert reply.text == render("ask_unavailable", "en")
+
+
+async def test_a_crashing_answerer_is_reported_as_unavailable(store: InMemoryTeacherStore):
+    class Broken(RecordingLoop):
+        async def ask(self, teacher: bytes, lang: str, text: str) -> LoopReply:
+            raise RuntimeError("model exploded")
+
+    brain = await _looped(store, Broken())
+
+    reply = await brain.respond(_say("Why do children confuse b and d?"))
+
+    assert reply.text == render("ask_unavailable", "en")
     assert store.teachers[_hash()].state.phase is Phase.IDLE

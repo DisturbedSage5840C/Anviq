@@ -13,12 +13,14 @@ from app.core.intents import (
     MenuIntent,
     classify_global,
     classify_menu,
+    looks_like_question,
     parse_grade,
     parse_language,
     parse_yes_no,
 )
 
 CONSENT_VERSION = "v2"
+MAX_QUESTION_CHARS = 500  # bounds what one question can cost; a teaching question fits easily
 INACTIVITY_TIMEOUT = timedelta(minutes=30)
 
 
@@ -30,6 +32,7 @@ class Phase(StrEnum):
     IDLE = "IDLE"
     PLAN_TOPIC = "PLAN_TOPIC"  # asked what they teach tomorrow, waiting for the answer
     REFLECT_NOTES = "REFLECT_NOTES"  # asked how the lesson went, waiting for the answer
+    ASK_QUESTION = "ASK_QUESTION"  # asked what they want to know, waiting for the question
     DELETE_CONFIRM = "DELETE_CONFIRM"
 
 
@@ -94,6 +97,14 @@ class ShowMirror:
     """Show the Day 1 and latest practice side by side, if the cycle has two sessions to compare."""
 
 
+@dataclass(frozen=True)
+class AskQuestion:
+    """Answer a teaching question from the module library. Needs the model, so it runs after
+    the transaction commits."""
+
+    text: str
+
+
 Effect = (
     Say
     | RecordConsent
@@ -104,6 +115,7 @@ Effect = (
     | MakePlan
     | MakeReflection
     | ShowMirror
+    | AskQuestion
 )
 
 
@@ -131,11 +143,16 @@ def handle(state: TeacherState, text: str, *, idle_for: timedelta | None = None)
     intent = classify_global(text)
     if intent is not None:
         return _handle_global(state, intent)
-    if state.consented and state.phase in _MENU_PHASES:
+    if state.consented and state.phase in _MENU_PHASES and not _is_question_for_ask(state, text):
         choice = classify_menu(text)
         if choice is not None:
             return _handle_menu(state, choice)
     return _HANDLERS[state.phase](state, text)
+
+
+def _is_question_for_ask(state: TeacherState, text: str) -> bool:
+    """ "How to reflect?" is a question about reflecting, not a request to start Reflect."""
+    return state.phase in _ASKING_PHASES and looks_like_question(text)
 
 
 def _timed_out(idle_for: timedelta | None) -> bool:
@@ -173,6 +190,8 @@ def _handle_menu(state: TeacherState, choice: MenuIntent) -> Transition:
         return Transition(replace(state, phase=Phase.IDLE), (ShowMirror(),))
     if choice is MenuIntent.PLAN:
         return _say(replace(state, phase=Phase.PLAN_TOPIC), "ask_plan_topic")
+    if choice is MenuIntent.ASK:
+        return _say(replace(state, phase=Phase.ASK_QUESTION), "ask_question_prompt")
     return _say(replace(state, phase=Phase.REFLECT_NOTES), "ask_reflect_notes")
 
 
@@ -230,6 +249,8 @@ def _on_consent(state: TeacherState, text: str) -> Transition:
 
 
 def _on_idle(state: TeacherState, text: str) -> Transition:
+    if state.consented and looks_like_question(text):
+        return Transition(state, (AskQuestion(text[:MAX_QUESTION_CHARS]),))
     return _say(state, "menu")
 
 
@@ -239,6 +260,13 @@ def _on_plan_topic(state: TeacherState, text: str) -> Transition:
 
 def _on_reflect_notes(state: TeacherState, text: str) -> Transition:
     return Transition(replace(state, phase=Phase.IDLE), (MakeReflection(text),))
+
+
+def _on_ask_question(state: TeacherState, text: str) -> Transition:
+    idle = replace(state, phase=Phase.IDLE)
+    if not state.consented:
+        return _say(idle, "menu")
+    return Transition(idle, (AskQuestion(text[:MAX_QUESTION_CHARS]),))
 
 
 def _on_delete_confirm(state: TeacherState, text: str) -> Transition:
@@ -253,7 +281,9 @@ _HANDLERS = {
     Phase.IDLE: _on_idle,
     Phase.PLAN_TOPIC: _on_plan_topic,
     Phase.REFLECT_NOTES: _on_reflect_notes,
+    Phase.ASK_QUESTION: _on_ask_question,
     Phase.DELETE_CONFIRM: _on_delete_confirm,
 }
 
-_MENU_PHASES = frozenset({Phase.IDLE, Phase.PLAN_TOPIC, Phase.REFLECT_NOTES})
+_MENU_PHASES = frozenset({Phase.IDLE, Phase.PLAN_TOPIC, Phase.REFLECT_NOTES, Phase.ASK_QUESTION})
+_ASKING_PHASES = frozenset({Phase.IDLE, Phase.ASK_QUESTION})

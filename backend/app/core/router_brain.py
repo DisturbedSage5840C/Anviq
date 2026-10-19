@@ -8,6 +8,7 @@ from app.content.copy import render
 from app.core.daily_loop import DailyLoop, LoopReply
 from app.core.dialogue import Reply, Utterance
 from app.core.router import (
+    AskQuestion,
     EraseTeacher,
     ExportData,
     MakePlan,
@@ -27,6 +28,9 @@ from app.privacy.export import render_export
 
 logger = logging.getLogger(__name__)
 
+LoopEffect = MakePlan | MakeReflection | ShowMirror | AskQuestion
+_LOOP_EFFECTS = (MakePlan, MakeReflection, ShowMirror, AskQuestion)
+
 PARAGRAPH_BREAK = "\n\n"
 UNKNOWN_LANG_TTS = "hi"
 
@@ -37,7 +41,7 @@ def consent_text_sha256(lang: str | None) -> str:
 
 
 class RouterBrain:
-    """`loop` runs Plan, Reflect and Mirror. Without one they answer "unavailable", not silence."""
+    """`loop` runs Plan, Reflect, Ask and Mirror. Without one they say "unavailable"."""
 
     def __init__(self, store: TeacherStore, pepper: bytes, loop: DailyLoop | None = None) -> None:
         self._store = store
@@ -66,20 +70,18 @@ class RouterBrain:
     async def _run_loop_effects(
         self, key: bytes, wa_id: str, lang: str | None, transition: Transition
     ) -> list[LoopReply]:
-        """Plan, Reflect and Mirror call the model, so they run after the database commit."""
+        """Plan, Reflect, Ask and Mirror call the model, so they run after the database commit."""
         replies = [
             await self._run_one(key, lang or UNKNOWN_LANG_TTS, effect)
             for effect in transition.effects
-            if isinstance(effect, MakePlan | MakeReflection | ShowMirror)
+            if isinstance(effect, _LOOP_EFFECTS)
         ]
         stay_in = next((r.stay_in for r in replies if r.stay_in is not None), None)
         if stay_in is not None:
             await self._return_to(key, wa_id, stay_in)
         return replies
 
-    async def _run_one(
-        self, key: bytes, lang: str, effect: MakePlan | MakeReflection | ShowMirror
-    ) -> LoopReply:
+    async def _run_one(self, key: bytes, lang: str, effect: LoopEffect) -> LoopReply:
         unavailable = _UNAVAILABLE[type(effect)]
         if self._loop is None:
             return LoopReply(render(unavailable, lang))
@@ -91,6 +93,8 @@ class RouterBrain:
                     return await self._loop.reflect(key, lang, text)
                 case ShowMirror():
                     return await self._loop.mirror(key, lang)
+                case AskQuestion(text):
+                    return await self._loop.ask(key, lang, text)
         except Exception as exc:  # the teacher gets a kind message; the details never carry content
             logger.error("daily loop step failed: %s", type(exc).__name__)
             return LoopReply(render(unavailable, lang))
@@ -107,6 +111,7 @@ _UNAVAILABLE = {
     MakePlan: "plan_unavailable",
     MakeReflection: "reflect_unavailable",
     ShowMirror: "mirror_unavailable",
+    AskQuestion: "ask_unavailable",
 }
 
 
@@ -127,7 +132,7 @@ async def _apply_effects(
                 await session.opt_out_reminders()
             case ExportData():
                 exports.append(await session.export())
-            case Say() | MakePlan() | MakeReflection() | ShowMirror():
+            case Say() | MakePlan() | MakeReflection() | ShowMirror() | AskQuestion():
                 pass  # spoken or run after the transaction commits, not stored
     return exports
 

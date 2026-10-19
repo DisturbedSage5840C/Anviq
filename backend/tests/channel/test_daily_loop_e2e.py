@@ -6,6 +6,7 @@ the right writer with the right move.
 """
 
 from app.content.copy import render
+from app.core.ask.answer import AskReply
 from app.core.daily_loop import PipelineDailyLoop, Position
 from app.core.mirror import MirrorTurn
 from app.core.planner import AskBack, Planned, PlanQuestion, PlanRequest
@@ -112,3 +113,31 @@ async def test_without_a_model_loop_plan_reflect_and_mirror_each_say_they_are_un
     await _say(harness, "reflect")
     assert await _say(harness, "notes") == render("reflect_unavailable", "en")
     assert await _say(harness, "mirror") == render("mirror_unavailable", "en")
+
+
+class FixedAsker:
+    def __init__(self) -> None:
+        self.seen: list[tuple[str, str]] = []
+
+    async def answer(self, question: str, lang: str) -> AskReply:
+        self.seen.append((question, lang))
+        text = "Use tens and ones.\n\nSource: NIPUN 4"
+        return AskReply(text, "Use tens and ones.", ("NIPUN 4",), False)
+
+
+async def test_a_teacher_asks_by_menu_word_and_by_typing_a_question_straight_away():
+    asker = FixedAsker()
+    loop = PipelineDailyLoop(
+        ScriptedPlanner(), FixedReflector(), FixedPosition(), ReadyMirror(), asker=asker
+    )
+    harness = make_harness(loop=loop)
+    await _onboard(harness)
+
+    assert await _say(harness, "ask") == render("ask_question_prompt", "en")
+    assert "Source: NIPUN 4" in await _say(harness, "How do I teach place value?")
+    assert "Source: NIPUN 4" in await _say(harness, "Why do children confuse b and d?")
+    assert [q for q, _ in asker.seen] == [
+        "How do I teach place value?",
+        "Why do children confuse b and d?",
+    ]
+    assert await _say(harness, "thanks") == render("menu", "en")

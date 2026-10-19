@@ -1,6 +1,7 @@
 import pytest
 
 from app.content.copy import render
+from app.core.ask.answer import AskReply, AskUnavailableError
 from app.core.daily_loop import Mirrors, PipelineDailyLoop, Position
 from app.core.mirror import MirrorTurn
 from app.core.planner import AskBack, Planned, PlanQuestion, PlanRequest, PlanUnavailableError
@@ -146,3 +147,57 @@ async def test_plan_and_reflect_work_for_every_move_in_the_programme(move_id: in
 
     assert planner.seen[0].move_id == move_id
     assert reflector.seen[0].move_id == move_id
+
+
+class FakeAsker:
+    def __init__(self, result: AskReply | Exception) -> None:
+        self.result = result
+        self.seen: list[tuple[str, str]] = []
+
+    async def answer(self, question: str, lang: str) -> AskReply:
+        self.seen.append((question, lang))
+        if isinstance(self.result, Exception):
+            raise self.result
+        return self.result
+
+
+def _asking(asker: FakeAsker | None) -> PipelineDailyLoop:
+    return PipelineDailyLoop(
+        FakePlanner(AskBack("x")),
+        FakeReflector(ReflectUnavailableError("x")),
+        FakePositions(),
+        FakeMirrors(None),
+        asker=asker,
+    )
+
+
+async def test_a_question_is_answered_with_its_source_line():
+    answer = AskReply("Use bundles.\n\nSource: NISHTHA 9", "Use bundles.", ("NISHTHA 9",), False)
+    asker = FakeAsker(answer)
+
+    reply = await _asking(asker).ask(TEACHER, "en", "How do I teach tens?")
+
+    assert reply.text == answer.text
+    assert reply.stay_in is None
+    assert asker.seen == [("How do I teach tens?", "en")]
+
+
+async def test_a_refusal_is_passed_on_as_it_is():
+    refusal = AskReply("This isn't in the modules.", "This isn't in the modules.", (), True)
+
+    reply = await _asking(FakeAsker(refusal)).ask(TEACHER, "en", "What is my salary?")
+
+    assert reply.text == "This isn't in the modules."
+
+
+async def test_an_unreachable_model_says_so_honestly(caplog):
+    reply = await _asking(FakeAsker(AskUnavailableError("down"))).ask(TEACHER, "hi", "x?")
+
+    assert reply.text == render("ask_unavailable", "hi")
+    assert "AskUnavailableError" in caplog.text
+
+
+async def test_without_a_corpus_the_question_is_reported_unavailable():
+    reply = await _asking(None).ask(TEACHER, "en", "How do I teach tens?")
+
+    assert reply.text == render("ask_unavailable", "en")

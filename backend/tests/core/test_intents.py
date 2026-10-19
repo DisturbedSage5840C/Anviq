@@ -5,6 +5,7 @@ from app.core.intents import (
     MenuIntent,
     classify_global,
     classify_menu,
+    looks_like_question,
     parse_grade,
     parse_language,
     parse_yes_no,
@@ -158,6 +159,9 @@ def test_a_sentence_that_merely_mentions_data_is_not_an_export():
         ("रिफ्लेक्ट", MenuIntent.REFLECT),
         ("mirror", MenuIntent.MIRROR),
         ("मिरर", MenuIntent.MIRROR),
+        ("ask", MenuIntent.ASK),
+        ("my question", MenuIntent.ASK),
+        ("सवाल", MenuIntent.ASK),
     ],
 )
 def test_menu_words_are_recognised(text: str, expected: MenuIntent):
@@ -175,3 +179,36 @@ def test_menu_words_are_recognised(text: str, expected: MenuIntent):
 )
 def test_ordinary_or_long_utterances_are_not_menu_commands(text: str):
     assert classify_menu(text) is None
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "How do I teach place value to class 2?",
+        "बच्चे घटाना क्यों नहीं सीख पाते?",
+        "what is NIPUN Bharat",
+        "कैसे सिखाएँ गिनती",
+        "how can children learn to read without letters",
+        "बच्चे घटाना क्यों नहीं सीख पाते",
+        "How to reflect on a lesson",
+        "क्या बच्चे खेल से सीखते हैं？",
+    ],
+)
+def test_question_shaped_messages_are_recognised(text: str):
+    assert looks_like_question(text) is True
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "",
+        "hello",
+        "tomorrow I teach fractions",
+        "Do not worry about it",
+        "Is it ok if I skip today",
+        "what?",  # too short to be a real question
+        "बहुत अच्छा रहा आज का दिन",
+    ],
+)
+def test_statements_and_fragments_are_not_questions(text: str):
+    assert looks_like_question(text) is False

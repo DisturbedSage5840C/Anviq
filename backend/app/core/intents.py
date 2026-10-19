@@ -11,6 +11,7 @@ from enum import StrEnum
 # Devanagari block minus the danda (U+0964) and double danda (U+0965), which are punctuation.
 _TOKEN = re.compile(r"[\w\u0900-\u0963\u0966-\u097F]+")
 SHORT_UTTERANCE_MAX_TOKENS = 3
+QUESTION_MIN_TOKENS = 3
 
 
 def _normalise(text: str) -> str:
@@ -96,12 +97,14 @@ class MenuIntent(StrEnum):
     PLAN = "plan"
     REFLECT = "reflect"
     MIRROR = "mirror"
+    ASK = "ask"
 
 
 _MENU_WORDS = {
     MenuIntent.PLAN: frozenset(_tokens("plan प्लान")),
     MenuIntent.REFLECT: frozenset(_tokens("reflect रिफ्लेक्ट")),
     MenuIntent.MIRROR: frozenset(_tokens("mirror मिरर")),
+    MenuIntent.ASK: frozenset(_tokens("ask question सवाल प्रश्न पूछो")),
 }
 
 
@@ -114,6 +117,28 @@ def classify_menu(text: str) -> MenuIntent | None:
         if words.intersection(tokens):
             return intent
     return None
+
+
+# English puts the question word first; Hindi puts it anywhere ("बच्चे घटाना क्यों नहीं सीख पाते").
+_ENGLISH_OPENERS = frozenset(_tokens("how what why when where which who whom"))
+_HINDI_QUESTION_WORDS = frozenset(_tokens("क्या कैसे कैसी क्यों कब कहाँ कहां कौन कितना कितने कितनी किस"))
+
+
+def looks_like_question(text: str) -> bool:
+    """A real question, not a fragment: ends in "?", opens with an English wh-/how word, or has
+    a Hindi question word anywhere.
+
+    Auxiliary openers ("do", "is", "can") are left out: "do not worry" is a statement, and each
+    question costs two model calls. Needs a few words, so "what?" falls through to the menu.
+    """
+    tokens = _tokens(text)
+    if len(tokens) < QUESTION_MIN_TOKENS:
+        return False
+    return (
+        text.rstrip().endswith(("?", "？"))
+        or tokens[0] in _ENGLISH_OPENERS
+        or not _HINDI_QUESTION_WORDS.isdisjoint(tokens)
+    )
 
 
 _YES = frozenset(_tokens("हाँ हां हा जी ठीक सही yes y ok okay sure yeah yep"))

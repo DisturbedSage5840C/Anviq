@@ -1,6 +1,6 @@
 """Builds the model-backed parts from settings and shared resources.
 
-Without ANTHROPIC_API_KEY nothing here is built, and Plan, Reflect and Mirror answer
+Without ANTHROPIC_API_KEY nothing here is built, and Plan, Reflect, Ask and Mirror answer
 "unavailable" (the router's documented behaviour), so a local or demo deployment without a key
 still runs.
 """
@@ -45,14 +45,17 @@ def build_daily_loop(resources: Resources, settings: Settings) -> DailyLoop | No
         Reflector(LLMReflectionWriter(llm, settings.model_smart)),
         PostgresPositions(resources.engine, demo_minutes=demo),
         PostgresMirrors(resources.engine, demo_minutes=demo),
+        asker=_ask_anviq(llm, resources, settings),
     )
 
 
 def build_ask(resources: Resources, settings: Settings) -> AskAnviq | None:
-    """Ask Anviq over the ingested corpus. The router's ASK phase is not wired to it yet."""
+    """Ask Anviq over the ingested corpus, for the eval harness; the daily loop builds its own."""
     llm = build_llm(resources, settings)
-    if llm is None:
-        return None
+    return None if llm is None else _ask_anviq(llm, resources, settings)
+
+
+def _ask_anviq(llm: LLMClient, resources: Resources, settings: Settings) -> AskAnviq:
     retriever = HybridRetriever([PostgresFullTextSearch(resources.engine)], settings.ask_min_score)
     return AskAnviq(
         llm, retriever, fast_model=settings.model_fast, smart_model=settings.model_smart

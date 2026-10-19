@@ -6,6 +6,8 @@ import pytest
 from app.core.router import (
     CONSENT_VERSION,
     INACTIVITY_TIMEOUT,
+    MAX_QUESTION_CHARS,
+    AskQuestion,
     EraseTeacher,
     ExportData,
     MakePlan,
@@ -328,3 +330,78 @@ def test_a_topic_sent_days_after_the_prompt_is_still_taken():
     t = handle(waiting, "fractions", idle_for=timedelta(days=2))
     assert t.state.phase is Phase.IDLE
     assert t.effects == (MakePlan("fractions"),)
+
+
+def test_the_ask_word_asks_for_the_question():
+    t = handle(ENROLLED, "ask")
+
+    assert t.state.phase is Phase.ASK_QUESTION
+    assert _keys(t) == ["ask_question_prompt"]
+
+
+def test_the_question_is_handed_to_ask_anviq_and_the_teacher_goes_back_to_idle():
+    start = replace(ENROLLED, phase=Phase.ASK_QUESTION)
+
+    t = handle(start, "How do I teach place value?")
+
+    assert t.state.phase is Phase.IDLE
+    assert t.effects == (AskQuestion("How do I teach place value?"),)
+
+
+def test_a_question_typed_at_the_menu_is_answered_without_choosing_ask_first():
+    t = handle(ENROLLED, "How do I teach place value to class 2?")
+
+    assert t.state.phase is Phase.IDLE
+    assert t.effects == (AskQuestion("How do I teach place value to class 2?"),)
+
+
+def test_a_statement_at_the_menu_still_shows_the_menu():
+    t = handle(ENROLLED, "tomorrow I teach fractions")
+
+    assert _keys(t) == ["menu"]
+
+
+def test_a_menu_word_inside_the_question_prompt_switches_task_instead_of_being_asked():
+    start = replace(ENROLLED, phase=Phase.ASK_QUESTION)
+
+    t = handle(start, "plan")
+
+    assert t.state.phase is Phase.PLAN_TOPIC
+
+
+def test_global_commands_still_win_while_a_question_is_awaited():
+    start = replace(ENROLLED, phase=Phase.ASK_QUESTION)
+
+    t = handle(start, "delete my data")
+
+    assert t.state.phase is Phase.DELETE_CONFIRM
+    assert t.state.resume is Phase.ASK_QUESTION
+
+
+def test_a_very_long_question_is_cut_to_the_cap_before_it_reaches_the_model():
+    t = handle(ENROLLED, "How do I teach tens? " + "x" * 2000)
+
+    (effect,) = t.effects
+    assert isinstance(effect, AskQuestion)
+    assert len(effect.text) == MAX_QUESTION_CHARS
+
+
+def test_an_unconsented_teacher_is_never_routed_to_the_model():
+    asking = TeacherState(phase=Phase.ASK_QUESTION, lang="en", grade_band="2", consented=False)
+    idle = replace(asking, phase=Phase.IDLE)
+
+    for t in (handle(asking, "How do I teach tens?"), handle(idle, "How do I teach tens?")):
+        assert not any(isinstance(e, AskQuestion) for e in t.effects)
+
+
+@pytest.mark.parametrize(
+    "question", ["How to reflect?", "Why plan lessons?", "सवाल कैसे समझाएँ", "बच्चे क्यों नहीं सीखते"]
+)
+@pytest.mark.parametrize("phase", [Phase.IDLE, Phase.ASK_QUESTION])
+def test_a_question_mentioning_a_menu_word_is_answered_not_treated_as_a_menu_choice(
+    question: str, phase: Phase
+):
+    t = handle(replace(ENROLLED, phase=phase), question)
+
+    assert t.state.phase is Phase.IDLE
+    assert t.effects == (AskQuestion(question),)
