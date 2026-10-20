@@ -36,7 +36,7 @@ Last reviewed against the schema at migration `0006`.
 | `teachers.wa_id_enc` | AES-256-GCM with `FIELD_KEY`, random 96-bit nonce per value. The one reversible field, kept only because a reply needs the id. |
 | `mirror_clips.audio_enc` | Encrypted the same way. Written only after an explicit opt-in. |
 | `turns.text_scrubbed` | Passed through `guardrails.pii.scrub` before it is written. |
-| `turns.child_name`, `turns.malrule_id`, `turns.criteria_json` | **Not scrubbed.** They are written by the practice log from fixed values (the three AI children's names, the misconception id, rubric ids with true/false). No teacher text reaches them. See [Known gaps](#known-gaps). |
+| `turns.child_name`, `turns.malrule_id`, `turns.criteria_json` | Scrubbed like the words: `record_turn` passes the child name and misconception id through `guardrails.pii.scrub`, and keeps only the rubric ids' true/false values. The writer already passes fixed values; this enforces it. |
 
 ## Who is allowed to read what (database roles)
 
@@ -65,7 +65,7 @@ differencing harder. It is not differential privacy; see the [DPIA](DPIA.md).
 
 | Right | How |
 |---|---|
-| Access | The teacher sends "send me my data". The reply is a text summary: language, grade, consents, reminder setting. |
+| Access | The teacher sends "send me my data". The reply is a text summary: language, grade, consents, reminder setting, reminder time and last reminder day, the number of practice sessions and scored questions, the saved plan topic, and whether a practice is in progress. The teacher's words and the saved progress are not repeated. |
 | Erasure | The teacher asks to delete and confirms. The teacher row is deleted; transcripts, sessions, progress, consents and clips are removed by cascade. A `deletion_log` row keeps only the hash prefix. Backups age out within 7 days. |
 | Withdraw consent | The teacher says so at any time; the consent row is marked revoked. |
 | Correction | There is no self-service correction command yet. A teacher who wants a detail changed asks through the grievance contact, or deletes and starts again. |
@@ -75,15 +75,10 @@ differencing harder. It is not differential privacy; see the [DPIA](DPIA.md).
 
 These are tracked and not hidden. Each needs a decision or a change before the full pilot.
 
-1. `turns.child_name`, `turns.malrule_id` and `turns.criteria_json` are not passed through the scrubber.
-   Their writer only passes fixed values, but nothing in `record_turn` enforces it.
-2. The web room records consent under channel `whatsapp`, which blurs the record for audit.
-3. Web-room teacher rows are not purged when their demo code expires.
-4. `export` does not yet list the reminder time or the last reminder date.
-5. `FIELD_KEY` and `PHONE_PEPPER` have no key version, so rotating either needs a scripted re-key
+1. The web room records consent under channel `whatsapp`, which blurs the record for audit.
+2. Web-room teacher rows are not purged when their demo code expires.
+3. `FIELD_KEY` and `PHONE_PEPPER` have no key version, so rotating either needs a scripted re-key
    (see the [runbook](runbook.md)).
-6. The `demo_codes` grants are broader than the table needs.
-7. Correction (DPDP S.12) has no in-chat command; see the rights table.
-8. `export` does not yet list the practice sessions and scored questions that are now recorded, nor
-   the saved plan topic and in-progress practice. What to show over WhatsApp, and in which words,
-   needs a decision and reviewed Hindi copy.
+4. The `demo_codes` grants are broader than the table needs.
+5. Correction (DPDP S.12) has no in-chat command; see the rights table.
+6. The Hindi copy for the export's reminder and practice lines is a draft, waiting for Vansh's review.

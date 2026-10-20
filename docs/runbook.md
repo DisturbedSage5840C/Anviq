@@ -188,7 +188,7 @@ back only if the migration was additive; otherwise fix forward. Return to `main`
 ## Reminders
 
 The worker claims due teachers every 15 minutes and stamps them as reminded before sending, so a
-crash can drop a reminder but never sends one twice. The log line is
+crash can drop a reminder but never sends one twice. The claim is one `update ... from due` statement with `skip locked`, served by the `teachers_reminder_due` index, so two workers never take the same teacher. The log line is
 `daily reminders: claimed=N sent=N failed=N skipped=N`.
 
 - `failed` is high: see [Meta token expired](#meta-token-expired-or-graph-is-failing) and check the

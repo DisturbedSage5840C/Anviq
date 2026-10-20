@@ -76,9 +76,9 @@ Answer, in writing, in the incident log:
 - Could it be read? Hashes and AES-GCM ciphertext are useless without `PHONE_PEPPER` and
   `FIELD_KEY`. If those keys were **not** exposed, say so; it changes the severity a great deal.
   If either key was exposed, assume the matching field is readable.
-- What is scrubbed and what is not: `turns.text_scrubbed` is scrubbed, but `turns.child_name` and
-  `turns.criteria_json` are not (see the data inventory's known gaps), so treat those as readable
-  content.
+- What is scrubbed and what is not: `turns.text_scrubbed`, `turns.child_name`, `turns.malrule_id`
+  and `turns.criteria_json` are scrubbed on write, but the scrubber is a filter, not a guarantee
+  (DPIA 6.2), so treat the transcript as readable content.
 - Was a child affected? We do not collect child data on purpose, but a teacher can still say a
   name. If a child's name reached an exposed field, record that, because the Act is stricter there.
 

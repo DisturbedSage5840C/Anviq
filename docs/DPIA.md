@@ -90,10 +90,10 @@ noise or cap how often the view changes, and review which fields it exposes.
 ### 6.2 The scrubber is a filter, not a guarantee
 
 Name detection works from a list of common names. An uncommon name, a nickname or a name inside a
-longer sentence can pass through. `turns.child_name` and `turns.criteria_json` are **not**
-scrubbed today (data inventory, known gap 1). Mitigations: teachers are told not to name children,
-transcripts expire after 90 days, and the data is visible only to the backend. Close the gap before
-the full pilot.
+longer sentence can pass through. `turns.child_name`, `turns.malrule_id` and `turns.criteria_json`
+are scrubbed on write too, though they only ever hold fixed values. Mitigations: teachers are told
+not to name children, transcripts expire after 90 days, and the data is visible only to the
+backend.
 
 ### 6.3 Cross-border processing
 
@@ -125,7 +125,7 @@ PIN for deletion and export.
 ### 6.7 Other known gaps
 
 Listed with owners in the data inventory: web-room consent is recorded under channel `whatsapp`;
-expired web teacher rows are not purged; `export` omits the reminder fields; `demo_codes` grants
+expired web teacher rows are not purged; `demo_codes` grants
 are broader than needed; there is no in-chat command for correcting details.
 
 ## 7. Processors and recipients
@@ -155,13 +155,12 @@ These are what would change the risk ratings above. Each needs an owner and a da
 
 1. Obtain Sarvam's written confirmation of no retention and no training.
 2. File data processing terms for Oracle Cloud.
-3. Scrub `turns.child_name` and `turns.criteria_json`, or stop storing them.
-4. Script the `FIELD_KEY` and `PHONE_PEPPER` re-key and test it on a copy of the database.
-5. Fill in the grievance contact and the Board reporting channel ([incident response](incident-response.md)).
-6. Have counsel read this page, the consent note and the incident process.
-7. Decide whether the dashboard needs noise before it is shown beyond the pilot group.
-8. Move the LLM to the India-region Bedrock profile, or record why not.
-9. Decide whether deletion and export need more than possession of the phone number.
+3. Script the `FIELD_KEY` and `PHONE_PEPPER` re-key and test it on a copy of the database.
+4. Fill in the grievance contact and the Board reporting channel ([incident response](incident-response.md)).
+5. Have counsel read this page, the consent note and the incident process.
+6. Decide whether the dashboard needs noise before it is shown beyond the pilot group.
+7. Move the LLM to the India-region Bedrock profile, or record why not.
+8. Decide whether deletion and export need more than possession of the phone number.
 
 ## 10. Review
 
