@@ -43,6 +43,7 @@ def dump(state: RehearsalState) -> str:
             "turns": state.turns,
             "good_turns": state.good_turns,
             "exchanges": [_dump_exchange(e) for e in state.exchanges],
+            "awaiting_rating": state.awaiting_rating,
         },
         ensure_ascii=False,
     )
@@ -87,6 +88,7 @@ def _build(data: Any) -> RehearsalState:
     rule_ids = {rule.id for rule in rules_for_topic(topic_id)}
     if primary_id not in rule_ids or (secondary_id is not None and secondary_id not in rule_ids):
         raise ValueError("unknown topic or misconception")
+    exchanges = _exchanges(data["exchanges"])
     return RehearsalState(
         topic_id=topic_id,
         problem=_problem(data["problem"]),
@@ -101,8 +103,16 @@ def _build(data: Any) -> RehearsalState:
         next_rotation=_count(data["next_rotation"]),
         turns=_count(data["turns"]),
         good_turns=_count(data["good_turns"]),
-        exchanges=_exchanges(data["exchanges"]),
+        exchanges=exchanges,
+        awaiting_rating=_awaiting_rating(data.get("awaiting_rating", False), exchanges),
     )
+
+
+def _awaiting_rating(value: Any, exchanges: tuple[Exchange, ...]) -> bool:
+    """Only a real bool, and only when there is a scored question to reveal."""
+    if type(value) is not bool or (value and not exchanges):
+        raise ValueError("bad awaiting_rating")
+    return value
 
 
 def _text(value: Any) -> str:

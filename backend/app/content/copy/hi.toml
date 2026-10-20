@@ -86,3 +86,9 @@ ask_out_of_scope = "यह NISHTHA/NIPUN मॉड्यूल्स में �
 ask_nearest = "इससे जुड़ा सबसे पास का हिस्सा"
 ask_source = "स्रोत"
 ask_unavailable = "अभी मैं आपके सवाल का जवाब नहीं ढूँढ पाई। कृपया थोड़ी देर बाद फिर पूछिए।"
+
+# Rehearsal, week B. Draft Hindi, for Vansh to review.
+self_rating_prompt = "आप इस सवाल को कैसे आँकेंगे? 🌱, 🌿 या 🌳 (या 1, 2, 3) भेजिए।"
+self_rating_same = "आपने इसे {mine} दिया और मुझे भी {coach} दिखा। आप अपने सवाल अच्छे से परखते हैं।"
+self_rating_higher = "आपने इसे {mine} दिया; मुझे {coach} दिखा। इसे बेहतर बनाने के लिए:"
+self_rating_lower = "आपने इसे {mine} दिया; मुझे {coach} दिखा। आप खुद पर थोड़े सख़्त हैं:"

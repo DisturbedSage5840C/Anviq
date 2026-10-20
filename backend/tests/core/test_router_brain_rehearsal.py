@@ -317,3 +317,19 @@ async def test_a_corrupt_save_ends_the_practice_instead_of_trapping_the_teacher(
     stored = store.teachers[_hash()]
     assert stored.state.phase is Phase.IDLE
     assert stored.rehearsal.rehearsal_json is None
+
+
+@pytest.mark.parametrize("rating", ["1", "2", "3", "🌱", "🌿", "🌳"])
+async def test_a_rating_reaches_the_practice_instead_of_being_taken_for_a_command(
+    store: InMemoryTeacherStore, rating: str
+):
+    rehearsals = RecordingRehearsals(_started(), RehearsalReply("NUDGE", AFTER_TURN, False))
+    brain = await _brain(store, rehearsals)
+    await _plan(brain)
+    await brain.respond(_say("yes"))
+
+    reply = await brain.respond(_say(rating))
+
+    assert rehearsals.turns == [("en", rating, STARTED)]
+    assert reply.text == "NUDGE"
+    assert store.teachers[_hash()].state.phase is Phase.REHEARSE

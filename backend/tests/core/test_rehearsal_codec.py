@@ -182,3 +182,33 @@ def test_load_refuses_a_row_bigger_than_any_practice_could_be() -> None:
 
 def test_load_survives_json_nested_deeper_than_the_parser_allows() -> None:
     assert load("[" * (MAX_RAW_CHARS // 2)) is None
+
+
+def test_round_trips_a_practice_waiting_for_the_teachers_rating() -> None:
+    state = replace(played(), week="B", awaiting_rating=True)
+
+    assert load(dump(state)) == state
+
+
+def test_a_row_saved_before_ratings_existed_still_loads() -> None:
+    data = json.loads(dump(played()))
+    del data["awaiting_rating"]
+
+    restored = load(json.dumps(data))
+
+    assert restored is not None and restored.awaiting_rating is False
+
+
+@pytest.mark.parametrize("value", ["yes", 1, None, []])
+def test_load_rejects_a_rating_flag_that_is_not_a_bool(value: object) -> None:
+    data = json.loads(dump(played()))
+    data["awaiting_rating"] = value
+
+    assert load(json.dumps(data)) is None
+
+
+def test_load_rejects_waiting_for_a_rating_when_nothing_was_scored() -> None:
+    data = json.loads(dump(fresh()))
+    data["awaiting_rating"] = True
+
+    assert load(json.dumps(data)) is None

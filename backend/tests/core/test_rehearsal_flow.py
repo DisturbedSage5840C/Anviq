@@ -209,3 +209,63 @@ async def test_a_failing_turn_keeps_the_practice_so_the_teacher_can_try_again():
     assert reply.text == render("rehearsal_turn_failed", "en")
     assert reply.rehearsal_json == started.rehearsal_json
     assert reply.finished is False
+
+
+class WeekBPositions(FakePositions):
+    async def current(self, teacher: bytes) -> Position:
+        return Position(move_id=2, week="B")
+
+
+def faded_flow(*verdicts: CoachVerdict | Exception) -> RehearsalFlow:
+    return RehearsalFlow(
+        RehearsalEngine(EchoVoice(), Coach(*verdicts)), WeekBPositions(), lambda: random.Random(1)
+    )
+
+
+async def test_in_week_b_the_teacher_is_asked_to_rate_before_hearing_the_nudge():
+    started = await faded_flow().begin(TEACHER, "en", TOPIC)
+
+    reply = await faded_flow(verdict(1)).turn("en", "Who can tell me?", started.rehearsal_json)
+
+    assert reply.text.startswith(f"{RIYA.name}: ")
+    assert render("self_rating_prompt", "en") in reply.text
+    assert "Try asking how." not in reply.text
+    assert reply.finished is False
+    saved = load(reply.rehearsal_json or "")
+    assert saved is not None and saved.awaiting_rating is True
+
+
+async def test_replying_with_a_rating_then_shows_the_nudge_and_keeps_the_practice():
+    started = await faded_flow().begin(TEACHER, "en", TOPIC)
+    asked = await faded_flow(verdict(1)).turn("en", "Who can tell me?", started.rehearsal_json)
+
+    reply = await faded_flow().turn("en", "🌳", asked.rehearsal_json)
+
+    assert render("self_rating_higher", "en").format(mine="🌳", coach="🌱") in reply.text
+    assert "Try asking how." in reply.text
+    assert not reply.text.startswith(f"{RIYA.name}")
+    saved = load(reply.rehearsal_json or "")
+    assert saved is not None and saved.awaiting_rating is False and saved.turns == 1
+    assert reply.finished is False
+
+
+async def test_the_rating_prompt_is_in_hindi_for_a_hindi_teacher():
+    started = await faded_flow().begin(TEACHER, "hi", TOPIC)
+
+    reply = await faded_flow(verdict(1)).turn("hi", "कौन बताएगा?", started.rehearsal_json)
+
+    assert render("self_rating_prompt", "hi") in reply.text
+
+
+async def test_the_last_turn_of_week_b_still_ends_with_the_nudge_and_summary():
+    saved = (await faded_flow().begin(TEACHER, "en", TOPIC)).rehearsal_json
+    reply = None
+    for _ in range(3):
+        reply = await faded_flow(verdict(4)).turn("en", "How did you get that?", saved)
+        saved = reply.rehearsal_json
+        if not reply.finished:
+            saved = (await faded_flow().turn("en", "2", saved)).rehearsal_json
+
+    assert reply is not None and reply.finished is True
+    assert render("self_rating_prompt", "en") not in reply.text
+    assert render("rehearsal_summary_best", "en") in reply.text

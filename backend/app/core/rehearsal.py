@@ -27,7 +27,10 @@ from app.core.children.problem import Problem
 from app.core.children.registry import RULES_BY_ID, problem_for, rules_for_topic
 from app.core.children.verbalizer import ChildBrief, ChildVoice, hesitation, speak_checked
 from app.core.coach import CoachRequest, CoachUnavailableError, CoachVerdict, nudge_text
+from app.core.mirror import Growth
+from app.core.self_rating import compare, parse_rating
 
+FADED_WEEK = "B"  # the coach asks for a self-rating first (plan 3.1)
 MAX_TURNS = 6
 GOOD_TURNS_TO_FINISH = 3
 GOOD_AT = 2  # criteria met for a turn to count as good
@@ -65,6 +68,7 @@ class RehearsalState:
     turns: int
     good_turns: int
     exchanges: tuple[Exchange, ...]
+    awaiting_rating: bool = False  # week B: the last verdict is held back until they rate it
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "states", MappingProxyType(dict(self.states)))
@@ -81,6 +85,7 @@ class TurnOutcome:
     nudge: str | None
     finished: bool
     summary: str | None
+    ask_rating: bool = False  # week B: ask the teacher to rate the question instead of the nudge
 
 
 def wants_to_stop(text: str) -> bool:
@@ -205,6 +210,11 @@ class RehearsalEngine:
     async def take_turn(self, state: RehearsalState, teacher_text: str) -> TurnOutcome:
         if wants_to_stop(teacher_text):
             return _ended(state)
+        if state.awaiting_rating:
+            rating = parse_rating(teacher_text)
+            if rating is not None:
+                return _reveal(state, rating)
+            state = replace(state, awaiting_rating=False)  # they moved on without rating
         persona, rotation = _who_answers(state, teacher_text)
         current = state.states[persona.key]
         stay = _plan_child(state, persona, current, teacher_text)
@@ -264,15 +274,26 @@ def _after(
         exchanges=exchanges,
     )
     finished = new.turns >= MAX_TURNS or new.good_turns >= GOOD_TURNS_TO_FINISH
+    ask_rating = verdict is not None and state.week == FADED_WEEK and not finished
     return TurnOutcome(
-        state=new,
+        state=replace(new, awaiting_rating=ask_rating),
         child=persona,
         child_text=line,
         malrule_id=chosen.malrule_id,
         verdict=verdict,
-        nudge=nudge_text(verdict, state.lang) if verdict else None,
+        nudge=nudge_text(verdict, state.lang) if verdict and not ask_rating else None,
         finished=finished,
         summary=summarise(new) if finished else None,
+        ask_rating=ask_rating,
+    )
+
+
+def _reveal(state: RehearsalState, rating: Growth) -> TurnOutcome:
+    """The held-back nudge, led by the teacher's own rating set beside the coach's."""
+    verdict = state.exchanges[-1].verdict
+    nudge = f"{compare(rating, verdict.growth, state.lang)}\n{nudge_text(verdict, state.lang)}"
+    return TurnOutcome(
+        replace(state, awaiting_rating=False), None, "", None, None, nudge, False, None
     )
 
 

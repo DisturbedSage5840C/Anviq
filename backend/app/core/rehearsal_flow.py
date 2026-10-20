@@ -16,6 +16,7 @@ from app.core.children.personas import Persona
 from app.core.daily_loop import Positions
 from app.core.rehearsal import RehearsalEngine, TurnOutcome, start
 from app.core.rehearsal_codec import dump, load
+from app.core.self_rating import rating_prompt
 from app.guardrails.pii import scrub
 
 logger = logging.getLogger(__name__)
@@ -86,7 +87,9 @@ def _compose(outcome: TurnOutcome, lang: str) -> str:
     parts: list[str] = []
     if outcome.child is not None:
         parts.append(f"{_name(outcome.child, lang)}: {outcome.child_text}")
-    if outcome.nudge:
+    if outcome.ask_rating:
+        parts.append(rating_prompt(lang))
+    elif outcome.nudge:
         parts.append(outcome.nudge)
     elif outcome.verdict is None and outcome.child is not None and not outcome.finished:
         parts.append(render("rehearsal_coach_unavailable", lang))

@@ -86,3 +86,9 @@ ask_out_of_scope = "This isn't in the NISHTHA/NIPUN modules. I only answer from 
 ask_nearest = "The nearest related section"
 ask_source = "Source"
 ask_unavailable = "I couldn't look up your question just now. Please ask again in a moment."
+
+# Rehearsal, week B: the teacher rates their own question before the coach says what it saw.
+self_rating_prompt = "How would you rate that question? Reply 🌱, 🌿 or 🌳 (or 1, 2, 3)."
+self_rating_same = "You rated it {mine} and I saw {coach} too. You judge your own questions well."
+self_rating_higher = "You rated it {mine}; I saw {coach}. Here's what could lift it:"
+self_rating_lower = "You rated it {mine}; I saw {coach}. You're being hard on yourself:"
