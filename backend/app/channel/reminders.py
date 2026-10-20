@@ -48,21 +48,25 @@ class DueReminder:
 
 
 # Stamping last_reminded_on and returning the rows is one statement, so the claim and the "already
-# sent today" mark cannot drift apart. skip locked keeps two workers off the same teacher.
+# sent today" mark cannot drift apart. skip locked keeps two workers off the same teacher. The pick
+# is a materialized CTE so it runs once: as an `id in (... limit ...)` subquery the planner may
+# rescan it for every row of the outer scan, and each rescan can claim more than the batch.
 _CLAIM_DUE = text(
     """
-    update teachers set last_reminded_on = :today
-    where id in (
+    with due as materialized (
         select id from teachers
         where reminders_opt_in
           and consent_at is not null
           and reminder_time between :earliest and :latest
           and last_reminded_on is distinct from :today
-        order by reminder_time
+        order by reminder_time, id
         limit :batch
         for update skip locked
     )
-    returning id, lang, wa_id_enc
+    update teachers set last_reminded_on = :today
+    from due
+    where teachers.id = due.id
+    returning teachers.id, teachers.lang, teachers.wa_id_enc
     """
 )
 
