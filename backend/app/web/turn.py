@@ -7,14 +7,12 @@ goes back in the HTTP response. Nothing here knows who the visitor is beyond an 
 import logging
 from dataclasses import dataclass
 
-from app.ai import build_daily_loop, build_rehearsals
+from app.ai import build_router_brain
 from app.channel import replies
 from app.channel.audio import prepare_for_stt
-from app.channel.model_budget import RedisModelBudget
 from app.channel.pipeline import PrepareAudio, spoken_utterance, transcribe_audio
 from app.config import Settings
 from app.core.dialogue import Brain, Reply, Utterance
-from app.core.router_brain import RouterBrain
 from app.resources import Resources
 from app.speech.base import SpeechProviderError, STTProvider, TTSProvider, Voice
 from app.speech.voices import COACH_PERSONA, voice_for
@@ -87,12 +85,6 @@ def build_web_turn(resources: Resources, settings: Settings) -> WebTurn:
     return WebTurn(
         stt=resources.stt,
         tts=resources.tts,
-        brain=RouterBrain(
-            resources.teacher_store,
-            resources.keyring.phone_pepper,
-            build_daily_loop(resources, settings),
-            build_rehearsals(resources, settings),
-            RedisModelBudget(resources.redis, settings.max_model_steps_per_day),
-        ),
+        brain=build_router_brain(resources, settings),
         voice=voice_for(settings.tts_provider, COACH_PERSONA),
     )

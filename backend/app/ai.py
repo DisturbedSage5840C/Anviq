@@ -1,10 +1,11 @@
-"""Builds the model-backed parts from settings and shared resources.
+"""Builds the teacher-facing brain from settings and shared resources.
 
-Without ANTHROPIC_API_KEY nothing here is built, and Plan, Reflect, Ask and Mirror answer
-"unavailable" (the router's documented behaviour), so a local or demo deployment without a key
-still runs.
+One model client serves the daily loop, Ask and the practice. Without ANTHROPIC_API_KEY none of
+them is built, and Plan, Reflect, Ask, Mirror and the practice answer "unavailable" (the router's
+documented behaviour), so a local or demo deployment without a key still runs.
 """
 
+from app.channel.model_budget import RedisModelBudget
 from app.config import Settings
 from app.core.ask.answer import AskAnviq
 from app.core.ask.retrieve import HybridRetriever
@@ -16,6 +17,7 @@ from app.core.planner import Planner
 from app.core.reflect import Reflector
 from app.core.rehearsal import RehearsalEngine
 from app.core.rehearsal_flow import RehearsalFlow
+from app.core.router_brain import RouterBrain
 from app.core.topics import TopicResolverWithModel
 from app.core.writers import LLMPlanWriter, LLMReflectionWriter
 from app.db.corpus import PostgresFullTextSearch
@@ -34,10 +36,19 @@ def build_llm(resources: Resources, settings: Settings) -> LLMClient | None:
     )
 
 
-def build_daily_loop(resources: Resources, settings: Settings) -> DailyLoop | None:
+def build_router_brain(resources: Resources, settings: Settings) -> RouterBrain:
+    """The teacher-facing brain. One model client serves the daily loop, Ask and the practice."""
     llm = build_llm(resources, settings)
-    if llm is None:
-        return None
+    return RouterBrain(
+        resources.teacher_store,
+        resources.keyring.phone_pepper,
+        None if llm is None else _daily_loop(llm, resources, settings),
+        None if llm is None else _rehearsals(llm, resources, settings),
+        RedisModelBudget(resources.redis, settings.max_model_steps_per_day),
+    )
+
+
+def _daily_loop(llm: LLMClient, resources: Resources, settings: Settings) -> DailyLoop:
     planner = Planner(
         TopicResolverWithModel(llm, settings.model_fast),
         RegistryMisconceptions(),
@@ -53,22 +64,13 @@ def build_daily_loop(resources: Resources, settings: Settings) -> DailyLoop | No
     )
 
 
-def build_rehearsals(resources: Resources, settings: Settings) -> RehearsalFlow | None:
+def _rehearsals(llm: LLMClient, resources: Resources, settings: Settings) -> RehearsalFlow:
     """The practice with the three AI children. The children speak with the fast model."""
-    llm = build_llm(resources, settings)
-    if llm is None:
-        return None
     engine = RehearsalEngine(
         LLMChildVoice(llm, settings.model_fast), Coach(llm, settings.model_smart)
     )
     positions = PostgresPositions(resources.engine, demo_minutes=settings.demo_cycle_minutes)
     return RehearsalFlow(engine, positions)
-
-
-def build_ask(resources: Resources, settings: Settings) -> AskAnviq | None:
-    """Ask Anviq over the ingested corpus, for the eval harness; the daily loop builds its own."""
-    llm = build_llm(resources, settings)
-    return None if llm is None else _ask_anviq(llm, resources, settings)
 
 
 def _ask_anviq(llm: LLMClient, resources: Resources, settings: Settings) -> AskAnviq:

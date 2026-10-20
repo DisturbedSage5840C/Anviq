@@ -15,9 +15,8 @@ from arq import cron
 from arq.connections import RedisSettings
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.ai import build_daily_loop, build_rehearsals
+from app.ai import build_router_brain
 from app.channel.messages import InboundMessage
-from app.channel.model_budget import RedisModelBudget
 from app.channel.pipeline import InboundPipeline
 from app.channel.reminders import (
     DueReminder,
@@ -74,16 +73,9 @@ def build_pipeline(resources: Resources, settings: Settings, *, brain: Brain) ->
 
 def build_brain(resources: Resources, settings: Settings | None = None) -> Brain:
     """Without settings (tests only) there is no model and no budget; production passes them."""
-    loop = build_daily_loop(resources, settings) if settings is not None else None
-    rehearsal = build_rehearsals(resources, settings) if settings is not None else None
-    budget = (
-        RedisModelBudget(resources.redis, settings.max_model_steps_per_day)
-        if settings is not None
-        else None
-    )
-    return RouterBrain(
-        resources.teacher_store, resources.keyring.phone_pepper, loop, rehearsal, budget
-    )
+    if settings is None:
+        return RouterBrain(resources.teacher_store, resources.keyring.phone_pepper)
+    return build_router_brain(resources, settings)
 
 
 async def handle_inbound(ctx: dict[str, Any], envelope: dict[str, Any]) -> None:
