@@ -47,13 +47,19 @@ Meta's retry window even when a vendor is slow.
 | Retention purge (hourly), cost digest (08:00 IST) | Built | `app/privacy/retention.py`, `app/ops/cost_report.py` |
 | Web rehearsal room API with demo codes | Built | `app/api/web_room.py`, `app/web/` |
 | Error reporting with scrubbing | Built (off without `SENTRY_DSN`) | `app/ops/sentry.py` |
-| Planner, Coach, AI children and malrules, Ask Anviq (RAG), guardrail checks | **Not yet** (LLM client and prompts are other people's work) | planned `app/llm/`, `app/core/coach.py`, `app/core/ask/` |
+| Daily loop: Plan, Reflect, the Day-1/Day-14 mirror | Built | `app/core/planner.py`, `reflect.py`, `mirror.py`, `daily_loop.py` |
+| Ask Anviq: grounded answers with citations, refusal when nothing supports one | Built | `app/core/ask/` |
+| Rehearse: three AI children, silent coach, week-B self-rating, summary | Built | `app/core/rehearsal*.py`, `self_rating.py`, `coach.py`, `children/` |
+| First practice offered at the end of onboarding | Built | `app/core/router.py` (`ONB_FIRST_REHEARSAL`) |
+| Model client with per-tier models and guardrail checks | Built (never run against a live model in CI) | `app/llm/`, `app/guardrails/` |
 | Nightly aggregates job | **Not yet** | planned in `worker.py` |
 | Dashboard data API: `GET /dashboard/trends`, bearer token, `dashboard_ro` connection, `public_trends` only | Built (off until `DASHBOARD_API_TOKEN` and `DASHBOARD_DATABASE_URL` are set) | `app/api/dashboard.py`, `app/dashboard/` |
 | Mentor dashboard page | **Not yet** | `dashboard/` is empty; the API it calls exists |
 | Web room front end | **Not yet** | `web-room/` is empty; the API it calls exists |
-| Evaluation harness and datasets | **Not yet** | `eval/` is empty |
-| Rubrics, personas, topic map | **Not yet** | `content/` is empty |
+| Evaluation harness | Built; needs a model key to produce real numbers | `app/evaluation/`, see `eval/README.md` |
+| Rubrics for coaching moves 1-6, personas, topic map | Built; every rubric is marked `status = "draft"` until the pedagogy lead signs it off (moves 3-6 are skeletons) | `app/content/rubrics/`, `app/content/topics.toml`, `app/core/children/` |
+| Opt-in encrypted mirror clips | **Not yet** | the `mirror_clips` table exists; no flow stores one |
+| Hindi copy | Draft, to be reviewed by a Hindi speaker | `app/content/copy/hi.toml` |
 
 ## Modules (`backend/app/`)
 
@@ -61,7 +67,9 @@ Meta's retry window even when a vendor is slow.
 |---|---|
 | `api/` | HTTP edges only: webhook, web room, health. Thin; no business logic |
 | `channel/` | Everything about talking to WhatsApp: signature, message parsing, dedupe and rate limits, the job queue, sending, and the pipeline that ties one inbound message to one reply |
-| `core/` | The router and dialogue state machine, intent detection, the teacher store protocol |
+| `core/` | The router and dialogue state machine, intent detection, the teacher store protocol, and the coaching features: planner, reflect, mirror, rehearsal (with its codec and flow), coach, the AI children, Ask Anviq |
+| `llm/` | The model client and its ports; the router never talks to a vendor directly |
+| `evaluation/` | Offline checks for the quality targets: child character, coach agreement, citations, latency and cost |
 | `speech/` | `Transcriber` and `Synthesizer` protocols, Sarvam and Google adapters, voice choice, per-call usage metrics |
 | `privacy/` | Field encryption, keyring, retention purge, data export |
 | `guardrails/` | The PII scrubber. Runs before anything is stored or handed to an error reporter |
@@ -75,6 +83,21 @@ Meta's retry window even when a vendor is slow.
 Dependencies point inward: `api/` uses `core/`, and `core/` does not import `api/`. Adapters
 (speech, WhatsApp client, stores) sit behind `Protocol`s so tests use fakes and a provider swap is
 a config change.
+
+## A teacher's first days
+
+1. **Onboarding:** language, grade band, then the consent notice. A "yes" is recorded with a digest
+   of the exact notice shown, and the teacher is offered a first 60-second practice.
+2. **First practice (`ONB_FIRST_REHEARSAL`):** "yes" starts a rehearsal on a starter topic, because a
+   new teacher has no plan yet. Anything else goes to the menu; a question is answered; the offer
+   lapses after 30 minutes. Nothing starts without consent.
+3. **Daily loop:** Plan tomorrow's lesson, rehearse it (the topic comes from the plan), teach,
+   reflect. A rehearsal ends after three good turns, six turns, or a stop word.
+4. **Week B of the cycle:** the coach first asks the teacher to rate their own question (a plant,
+   never a number) and only then shows what it saw, set beside the teacher's rating.
+
+The router is a pure function (`handle(state, text) -> Transition`); `router_brain.py` applies the
+database effects under a per-teacher lock and runs the model calls after the commit.
 
 ## One turn
 
