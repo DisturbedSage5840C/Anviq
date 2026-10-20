@@ -160,7 +160,7 @@ class RouterBrain:
         if self._rehearsal is not None:
             try:
                 if isinstance(effect, StartRehearsal):
-                    return await self._rehearsal.begin(key, lang, slot.topic_id)
+                    return await self._rehearsal.begin(key, lang, effect.topic_id or slot.topic_id)
                 return await self._rehearsal.turn(lang, effect.text, slot.rehearsal_json)
             except Exception as exc:  # the teacher is told; the type is the only safe detail
                 logger.error("rehearsal step failed: %s", type(exc).__name__)

@@ -8,6 +8,7 @@ from dataclasses import dataclass, field, replace
 from datetime import timedelta
 from enum import StrEnum
 
+from app.core.children.malrules.subtraction import TOPIC_REGROUP
 from app.core.intents import (
     GlobalIntent,
     MenuIntent,
@@ -22,6 +23,7 @@ from app.core.intents import (
 CONSENT_VERSION = "v2"
 MAX_QUESTION_CHARS = 500  # bounds what one question can cost; a teaching question fits easily
 INACTIVITY_TIMEOUT = timedelta(minutes=30)
+FIRST_REHEARSAL_TOPIC = TOPIC_REGROUP  # a new teacher has no plan yet, so Day 1 starts here
 
 
 class Phase(StrEnum):
@@ -29,6 +31,7 @@ class Phase(StrEnum):
     ONB_LANG = "ONB_LANG"
     ONB_GRADE = "ONB_GRADE"
     ONB_CONSENT = "ONB_CONSENT"
+    ONB_FIRST_REHEARSAL = "ONB_FIRST_REHEARSAL"  # consented; a first practice is on offer
     IDLE = "IDLE"
     PLAN_TOPIC = "PLAN_TOPIC"  # asked what they teach tomorrow, waiting for the answer
     REFLECT_NOTES = "REFLECT_NOTES"  # asked how the lesson went, waiting for the answer
@@ -109,8 +112,11 @@ class AskQuestion:
 
 @dataclass(frozen=True)
 class StartRehearsal:
-    """Begin practising the topic of the teacher's latest plan. Reads the plan and the move they
-    are on, so it runs after commit; if it cannot start, the teacher is put back at the menu."""
+    """Begin practising `topic_id`, or the topic of the teacher's latest plan if None. Reads the
+    plan and the move they are on, so it runs after commit; if it cannot start, the teacher is put
+    back at the menu."""
+
+    topic_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -161,7 +167,7 @@ def handle(state: TeacherState, text: str, *, idle_for: timedelta | None = None)
         return _after_delete_timeout(state, text)
     if state.phase is Phase.REHEARSE and _timed_out(idle_for):
         return _after_rehearsal_timeout(state, text)
-    if state.phase is Phase.REHEARSE_OFFER and _timed_out(idle_for):
+    if state.phase in _OFFER_PHASES and _timed_out(idle_for):
         # A "yes" a day later answers something else, so the offer lapses silently.
         return handle(replace(state, phase=Phase.IDLE), text)
     if state.phase is Phase.DELETE_CONFIRM:
@@ -290,8 +296,22 @@ def _on_consent(state: TeacherState, text: str) -> Transition:
         return _say(state, "consent_retry")
     if not answer:
         return _say(TeacherState(), "consent_declined", extra=(EraseTeacher(),))
-    granted = replace(state, consented=True, phase=Phase.IDLE)
-    return _say(granted, "consent_thanks", "menu", extra=(RecordConsent(CONSENT_VERSION),))
+    granted = replace(state, consented=True, phase=Phase.ONB_FIRST_REHEARSAL)
+    return _say(
+        granted, "consent_thanks", "first_rehearsal_offer", extra=(RecordConsent(CONSENT_VERSION),)
+    )
+
+
+def _on_first_rehearsal(state: TeacherState, text: str) -> Transition:
+    answer = parse_yes_no(text)
+    idle = replace(state, phase=Phase.IDLE)
+    if answer and state.consented:
+        return Transition(
+            replace(state, phase=Phase.REHEARSE), (StartRehearsal(FIRST_REHEARSAL_TOPIC),)
+        )
+    if answer is None:
+        return _on_idle(idle, text)  # a question is still answered
+    return _say(idle, "menu")
 
 
 def _on_idle(state: TeacherState, text: str) -> Transition:
@@ -339,6 +359,7 @@ _HANDLERS = {
     Phase.ONB_LANG: _on_language,
     Phase.ONB_GRADE: _on_grade,
     Phase.ONB_CONSENT: _on_consent,
+    Phase.ONB_FIRST_REHEARSAL: _on_first_rehearsal,
     Phase.IDLE: _on_idle,
     Phase.PLAN_TOPIC: _on_plan_topic,
     Phase.REFLECT_NOTES: _on_reflect_notes,
@@ -349,7 +370,8 @@ _HANDLERS = {
 }
 
 # REHEARSE is not here: while practising, "plan" is something to say to a child, not a command.
+_OFFER_PHASES = frozenset({Phase.REHEARSE_OFFER, Phase.ONB_FIRST_REHEARSAL})
 _MENU_PHASES = frozenset(
-    {Phase.IDLE, Phase.PLAN_TOPIC, Phase.REFLECT_NOTES, Phase.ASK_QUESTION, Phase.REHEARSE_OFFER}
+    {Phase.IDLE, Phase.PLAN_TOPIC, Phase.REFLECT_NOTES, Phase.ASK_QUESTION} | _OFFER_PHASES
 )
-_ASKING_PHASES = frozenset({Phase.IDLE, Phase.ASK_QUESTION, Phase.REHEARSE_OFFER})
+_ASKING_PHASES = frozenset({Phase.IDLE, Phase.ASK_QUESTION} | _OFFER_PHASES)

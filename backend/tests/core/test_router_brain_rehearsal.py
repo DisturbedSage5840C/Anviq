@@ -6,7 +6,7 @@ from app.content.copy import render
 from app.core.daily_loop import LoopReply
 from app.core.dialogue import Utterance
 from app.core.rehearsal_flow import RehearsalReply
-from app.core.router import Phase
+from app.core.router import FIRST_REHEARSAL_TOPIC, Phase
 from app.core.router_brain import RouterBrain
 from app.core.teacher_store import InMemoryTeacherStore
 from app.privacy.crypto import phone_hash
@@ -333,3 +333,52 @@ async def test_a_rating_reaches_the_practice_instead_of_being_taken_for_a_comman
     assert rehearsals.turns == [("en", rating, STARTED)]
     assert reply.text == "NUDGE"
     assert store.teachers[_hash()].state.phase is Phase.REHEARSE
+
+
+async def test_saying_yes_to_the_first_practice_starts_it_on_the_starter_topic(
+    store: InMemoryTeacherStore,
+):
+    rehearsals = RecordingRehearsals(_started())
+    brain = await _brain(store, rehearsals)  # onboarded, first practice on offer
+
+    reply = await brain.respond(_say("yes"))
+
+    assert rehearsals.begun == [(_hash(), "en", FIRST_REHEARSAL_TOPIC)]
+    assert reply.text == "THE CHILDREN ARE READY"
+    stored = store.teachers[_hash()]
+    assert stored.state.phase is Phase.REHEARSE
+    assert stored.rehearsal.rehearsal_json == STARTED
+
+
+async def test_the_first_practice_does_not_pose_as_a_plan(store: InMemoryTeacherStore):
+    rehearsals = RecordingRehearsals(_started())
+    brain = await _brain(store, rehearsals)
+
+    await brain.respond(_say("yes"))
+
+    assert store.teachers[_hash()].rehearsal.topic_id is None
+
+
+async def test_declining_the_first_practice_shows_the_menu_and_starts_nothing(
+    store: InMemoryTeacherStore,
+):
+    rehearsals = RecordingRehearsals()
+    brain = await _brain(store, rehearsals)
+
+    reply = await brain.respond(_say("no"))
+
+    assert reply.text == render("menu", "en")
+    assert rehearsals.begun == []
+    assert store.teachers[_hash()].state.phase is Phase.IDLE
+
+
+async def test_if_the_first_practice_cannot_start_the_teacher_is_told_and_lands_on_the_menu(
+    store: InMemoryTeacherStore,
+):
+    rehearsals = RecordingRehearsals(RuntimeError("model down"))
+    brain = await _brain(store, rehearsals)
+
+    reply = await brain.respond(_say("yes"))
+
+    assert render("rehearsal_unavailable", "en") in reply.text
+    assert store.teachers[_hash()].state.phase is Phase.IDLE

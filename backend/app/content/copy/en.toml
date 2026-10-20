@@ -92,3 +92,4 @@ self_rating_prompt = "How would you rate that question? Reply 🌱, 🌿 or 🌳
 self_rating_same = "You rated it {mine} and I saw {coach} too. You judge your own questions well."
 self_rating_higher = "You rated it {mine}; I saw {coach}. Here's what could lift it:"
 self_rating_lower = "You rated it {mine}; I saw {coach}. You're being hard on yourself:"
+first_rehearsal_offer = "Want to try a one-minute practice right now? Riya, Aman and Meena are three children in a class. Ask them a question and I will tell you what I noticed. Say yes to start, or no to see the menu."

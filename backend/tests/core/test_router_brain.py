@@ -57,13 +57,13 @@ async def test_a_stranger_who_only_said_hello_leaves_no_trace(
     assert stored.state.lang is None
 
 
-async def test_onboarding_ends_in_the_menu_with_consent_on_file(
+async def test_onboarding_ends_with_a_first_practice_on_offer_and_consent_on_file(
     brain: RouterBrain, store: InMemoryTeacherStore
 ):
     await _onboard(brain)
 
     stored = store.teachers[_hash()]
-    assert stored.state.phase is Phase.IDLE
+    assert stored.state.phase is Phase.ONB_FIRST_REHEARSAL
     assert stored.state.lang == "en"
     assert [c.version for c in stored.consents] == [CONSENT_VERSION]
 
@@ -117,7 +117,7 @@ async def test_cancelling_a_delete_returns_to_where_the_teacher_was(
     reply = await brain.respond(_say("no"))
 
     assert reply.text == render("delete_cancelled", "en")
-    assert store.teachers[_hash()].state.phase is Phase.IDLE
+    assert store.teachers[_hash()].state.phase is Phase.ONB_FIRST_REHEARSAL
 
 
 async def test_different_senders_do_not_share_state(
@@ -127,7 +127,7 @@ async def test_different_senders_do_not_share_state(
     other = "911111111111"
     await brain.respond(_say("hello", other))
 
-    assert store.teachers[_hash()].state.phase is Phase.IDLE
+    assert store.teachers[_hash()].state.phase is Phase.ONB_FIRST_REHEARSAL
     assert store.teachers[_hash(other)].state.phase is Phase.ONB_LANG
 
 
@@ -224,7 +224,7 @@ async def test_saying_yes_after_withdrawing_starts_a_new_consent(
 
     stored = store.teachers[_hash()]
     assert [c.revoked for c in stored.consents] == [True, False]
-    assert stored.state.phase is Phase.IDLE
+    assert stored.state.phase is Phase.ONB_FIRST_REHEARSAL
 
 
 class _Clock:

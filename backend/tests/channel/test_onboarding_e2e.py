@@ -6,7 +6,7 @@ from tests.channel.e2e_support import (
     text_message,
     transcript,
     voice_message,
-    welcome_to_menu,
+    welcome_to_first_practice,
 )
 
 
@@ -21,7 +21,7 @@ async def test_a_teacher_can_onboard_entirely_by_voice_note():
     for _ in range(4):
         await harness.pipeline.handle(voice_message())
 
-    assert harness.texts()[-1] == welcome_to_menu("hi")
+    assert harness.texts()[-1] == welcome_to_first_practice("hi")
     assert harness.audio_count() == 3  # nothing is spoken until the language is chosen
 
 
@@ -31,7 +31,7 @@ async def test_a_typed_english_onboarding_is_answered_in_text_and_voice():
     for body in ("hello", "English", "2", "yes"):
         await harness.pipeline.handle(text_message(body))
 
-    assert harness.texts()[-1] == welcome_to_menu("en")
+    assert harness.texts()[-1] == welcome_to_first_practice("en")
     assert harness.audio_count() == 3
 
 

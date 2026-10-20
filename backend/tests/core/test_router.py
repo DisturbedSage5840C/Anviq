@@ -5,6 +5,7 @@ import pytest
 
 from app.core.router import (
     CONSENT_VERSION,
+    FIRST_REHEARSAL_TOPIC,
     INACTIVITY_TIMEOUT,
     MAX_QUESTION_CHARS,
     AskQuestion,
@@ -77,12 +78,12 @@ def test_nothing_is_recorded_before_consent():
     assert t.state.consented is False
 
 
-def test_consent_yes_records_the_versioned_consent_and_opens_the_menu():
+def test_consent_yes_records_the_versioned_consent_and_offers_a_first_practice():
     t = _walk("Namaste", "Hindi", "2", "हाँ")
     assert RecordConsent(version=CONSENT_VERSION) in t.effects
     assert t.state.consented is True
-    assert t.state.phase is Phase.IDLE
-    assert _keys(t) == ["consent_thanks", "menu"]
+    assert t.state.phase is Phase.ONB_FIRST_REHEARSAL
+    assert _keys(t) == ["consent_thanks", "first_rehearsal_offer"]
 
 
 def test_consent_no_erases_the_stub_and_starts_over():
@@ -185,7 +186,7 @@ def test_withdrawing_consent_revokes_it_stops_reminders_and_asks_again():
 def test_consenting_again_after_a_withdrawal_records_a_fresh_consent():
     t = _walk("withdraw consent", "yes", start=ENROLLED)
 
-    assert t.state == ENROLLED
+    assert t.state == replace(ENROLLED, phase=Phase.ONB_FIRST_REHEARSAL)
     assert RecordConsent(version=CONSENT_VERSION) in t.effects
 
 
@@ -508,3 +509,75 @@ def test_a_delete_request_mid_rehearsal_resumes_it_when_cancelled():
     asked = handle(REHEARSING, "delete my data")
     assert asked.state.resume is Phase.REHEARSE
     assert handle(asked.state, "no").state.phase is Phase.REHEARSE
+
+
+# --- First rehearsal at the end of onboarding -----------------------------------------------
+
+FIRST_OFFERED = replace(ENROLLED, phase=Phase.ONB_FIRST_REHEARSAL)
+
+
+def test_agreeing_to_the_notice_offers_a_first_practice_instead_of_the_menu():
+    start = TeacherState(Phase.ONB_CONSENT, lang="en", grade_band="2")
+
+    t = handle(start, "yes")
+
+    assert t.state == FIRST_OFFERED
+    assert RecordConsent(version=CONSENT_VERSION) in t.effects
+    assert _keys(t) == ["consent_thanks", "first_rehearsal_offer"]
+
+
+@pytest.mark.parametrize("answer", ["yes", "हाँ"])
+def test_saying_yes_to_the_first_practice_starts_it_on_the_starter_topic(answer: str):
+    t = handle(FIRST_OFFERED, answer)
+
+    assert t.state.phase is Phase.REHEARSE
+    assert t.effects == (StartRehearsal(FIRST_REHEARSAL_TOPIC),)
+
+
+def test_a_rehearsal_started_from_the_menu_uses_the_latest_plan_not_the_starter_topic():
+    assert StartRehearsal().topic_id is None
+
+
+@pytest.mark.parametrize("answer", ["no", "नहीं"])
+def test_declining_the_first_practice_goes_to_the_menu(answer: str):
+    t = handle(FIRST_OFFERED, answer)
+
+    assert t.state == ENROLLED
+    assert _keys(t) == ["menu"]
+    assert not any(isinstance(e, StartRehearsal) for e in t.effects)
+
+
+def test_a_menu_word_instead_of_answering_the_offer_just_works():
+    t = handle(FIRST_OFFERED, "plan")
+
+    assert t.state.phase is Phase.PLAN_TOPIC
+
+
+def test_a_question_instead_of_answering_the_offer_is_answered():
+    t = handle(FIRST_OFFERED, "How do I teach place value?")
+
+    assert t.state == ENROLLED
+    assert t.effects == (AskQuestion("How do I teach place value?"),)
+
+
+def test_anything_else_at_the_offer_shows_the_menu():
+    t = handle(FIRST_OFFERED, "thanks")
+
+    assert t.state == ENROLLED
+    assert _keys(t) == ["menu"]
+
+
+def test_an_offer_left_overnight_lapses_so_a_late_yes_starts_nothing():
+    t = handle(FIRST_OFFERED, "yes", idle_for=INACTIVITY_TIMEOUT)
+
+    assert t.state == ENROLLED
+    assert not any(isinstance(e, StartRehearsal) for e in t.effects)
+
+
+def test_the_offer_never_starts_a_practice_without_consent():
+    unconsented = replace(FIRST_OFFERED, consented=False)
+
+    t = handle(unconsented, "yes")
+
+    assert not any(isinstance(e, StartRehearsal) for e in t.effects)
+    assert t.state.phase is Phase.IDLE

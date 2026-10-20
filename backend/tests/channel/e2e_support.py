@@ -63,9 +63,9 @@ async def _voice_note(wav: bytes) -> bytes:
     return b"ogg-opus"
 
 
-def welcome_to_menu(lang: str) -> str:
+def welcome_to_first_practice(lang: str) -> str:
     """What the teacher reads right after agreeing to the consent notice."""
-    return f"{render('consent_thanks', lang)}\n\n{render('menu', lang)}"
+    return f"{render('consent_thanks', lang)}\n\n{render('first_rehearsal_offer', lang)}"
 
 
 def transcript(text: str, code: str = "hi-IN") -> Transcript:
