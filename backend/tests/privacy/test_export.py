@@ -1,3 +1,5 @@
+from datetime import date, time
+
 import pytest
 
 from app.content.copy import render
@@ -51,3 +53,54 @@ def test_without_a_language_the_summary_is_given_in_both():
 
     assert render("export_header", "hi") in text
     assert render("export_header", "en") in text
+
+
+BUSY = TeacherExport(
+    lang="en",
+    grade_band="2",
+    consents=(ConsentRecord("v1", "cd" * 32),),
+    reminders_opt_in=True,
+    reminder_time=time(7, 30),
+    last_reminded_on=date(2026, 10, 19),
+    practice_count=3,
+    scored_question_count=11,
+    plan_topic_id="NUM.G2.SUB.REGROUP",
+    practice_in_progress=True,
+)
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_the_summary_counts_the_practice_without_repeating_what_the_teacher_said(lang: str):
+    text = render_export(BUSY, lang)
+
+    assert f"{render('export_practices', lang)}: 3" in text
+    assert f"{render('export_questions', lang)}: 11" in text
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_the_summary_shows_the_saved_plan_and_whether_a_practice_is_open(lang: str):
+    text = render_export(BUSY, lang)
+
+    assert f"{render('export_plan', lang)}: NUM.G2.SUB.REGROUP" in text
+    assert f"{render('export_in_progress', lang)}: {render('export_yes', lang)}" in text
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_the_summary_shows_the_reminder_time_and_the_last_reminder_day(lang: str):
+    text = render_export(BUSY, lang)
+
+    assert f"{render('export_reminder_time', lang)}: 07:30" in text
+    assert f"{render('export_last_reminder', lang)}: 2026-10-19" in text
+
+
+def test_a_teacher_with_no_practice_sees_zeros_and_dashes_not_missing_lines():
+    sparse = TeacherExport(lang="en", grade_band="2", consents=(), reminders_opt_in=False)
+
+    text = render_export(sparse, "en")
+
+    assert f"{render('export_practices', 'en')}: 0" in text
+    assert f"{render('export_questions', 'en')}: 0" in text
+    assert f"{render('export_plan', 'en')}: –" in text
+    assert f"{render('export_in_progress', 'en')}: {render('export_no', 'en')}" in text
+    assert f"{render('export_reminder_time', 'en')}: –" in text
+    assert f"{render('export_last_reminder', 'en')}: –" in text

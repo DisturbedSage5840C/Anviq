@@ -8,7 +8,7 @@ import asyncio
 from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Protocol
 
 from app.core.rehearsal_log import LoggedTurn
@@ -91,12 +91,22 @@ class ConsentRecord:
 
 @dataclass(frozen=True)
 class TeacherExport:
-    """What a teacher is shown when they ask for their data. Deliberately omits the phone number."""
+    """What a teacher is shown when they ask for their data. Deliberately omits the phone number.
+
+    Practice appears as counts and a topic id, never as the teacher's words or the saved progress:
+    a summary sent over WhatsApp should say what is kept, not repeat it.
+    """
 
     lang: str | None
     grade_band: str | None
     consents: tuple[ConsentRecord, ...]
     reminders_opt_in: bool
+    reminder_time: time | None = None
+    last_reminded_on: date | None = None
+    practice_count: int = 0
+    scored_question_count: int = 0
+    plan_topic_id: str | None = None
+    practice_in_progress: bool = False
 
 
 @dataclass(frozen=True)
@@ -125,6 +135,8 @@ class StoredTeacher:
     consents: tuple[ConsentRecord, ...] = ()
     reminders_opt_in: bool = False
     rehearsal: RehearsalSlot = RehearsalSlot()
+    reminder_time: time | None = None
+    last_reminded_on: date | None = None
 
 
 @dataclass
@@ -250,11 +262,18 @@ class _InMemorySession:
         stored = self.store.teachers.get(self.phone_hash)
         if stored is None:
             return None
+        practices = self.store.practices.get(self.phone_hash, ())
         return TeacherExport(
             lang=stored.state.lang,
             grade_band=stored.state.grade_band,
             consents=stored.consents,
             reminders_opt_in=stored.reminders_opt_in,
+            reminder_time=stored.reminder_time,
+            last_reminded_on=stored.last_reminded_on,
+            practice_count=len(practices),
+            scored_question_count=sum(len(p.turns) for p in practices),
+            plan_topic_id=stored.rehearsal.topic_id,
+            practice_in_progress=stored.rehearsal.rehearsal_json is not None,
         )
 
 

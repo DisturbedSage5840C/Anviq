@@ -210,7 +210,8 @@ class _PostgresSession:
         row = (
             await self.conn.execute(
                 text(
-                    "select id, state, lang, grade_band, reminders_opt_in "
+                    "select id, state, lang, grade_band, reminders_opt_in, reminder_time, "
+                    "last_reminded_on, last_topic_id, rehearsal_json is not null as in_progress "
                     "from teachers where phone_hash = :h"
                 ),
                 {"h": self.phone_hash},
@@ -225,9 +226,25 @@ class _PostgresSession:
             ),
             {"id": row.id},
         )
+        practices = (
+            await self.conn.execute(
+                text(
+                    "select count(distinct s.id), count(t.id) from sessions s "
+                    "left join turns t on t.session_id = s.id "
+                    "where s.teacher_id = :id and s.kind = 'rehearse'"
+                ),
+                {"id": row.id},
+            )
+        ).one()
         return TeacherExport(
             lang=None if Phase(row.state) in LANGUAGE_UNKNOWN_PHASES else row.lang,
             grade_band=row.grade_band,
             consents=tuple(ConsentRecord(r[0], r[1], bool(r[2])) for r in consents),
             reminders_opt_in=row.reminders_opt_in,
+            reminder_time=row.reminder_time,
+            last_reminded_on=row.last_reminded_on,
+            practice_count=practices[0],
+            scored_question_count=practices[1],
+            plan_topic_id=row.last_topic_id,
+            practice_in_progress=bool(row.in_progress),
         )

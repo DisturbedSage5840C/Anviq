@@ -5,7 +5,7 @@ import os
 import secrets
 from collections.abc import AsyncIterator
 from dataclasses import replace
-from datetime import timedelta
+from datetime import date, time, timedelta
 
 import pytest
 from sqlalchemy import text
@@ -686,3 +686,123 @@ async def test_erase_takes_the_practices_with_the_teacher(harness: Harness, phon
         await session.erase()
 
     assert await _practices(harness, phone_hash) == []
+
+
+# --- the export lists the practice, the saved plan and the reminder times ------------------------
+
+
+async def _set_reminder(h: Harness, phone_hash: bytes, at: time, sent_on: date) -> None:
+    """Stand in for the reminder scheduler, which owns these two columns."""
+    if h.memory is not None:
+        h.memory.teachers[phone_hash] = replace(
+            h.memory.teachers[phone_hash], reminder_time=at, last_reminded_on=sent_on
+        )
+        return
+    assert h.engine is not None
+    async with h.engine.begin() as conn:
+        await conn.execute(
+            text(
+                "update teachers set reminder_time = :at, last_reminded_on = :on "
+                "where phone_hash = :h"
+            ),
+            {"at": at, "on": sent_on, "h": phone_hash},
+        )
+
+
+async def _exported(h: Harness, phone_hash: bytes) -> TeacherExport:
+    found = await _export(h, phone_hash)
+    assert found is not None
+    return found
+
+
+async def test_export_counts_every_practice_and_every_scored_question(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    await _log_turns(harness, phone_hash, _scored("one"), _scored("two"))
+    await _close_practice(harness, phone_hash)
+    await _log_turns(harness, phone_hash, _scored("three"))
+
+    exported = await _exported(harness, phone_hash)
+
+    assert (exported.practice_count, exported.scored_question_count) == (2, 3)
+
+
+async def test_export_of_a_teacher_who_never_practised_counts_zero(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+
+    exported = await _exported(harness, phone_hash)
+
+    assert (exported.practice_count, exported.scored_question_count) == (0, 0)
+
+
+async def test_export_shows_the_saved_plan_and_whether_a_practice_is_in_progress(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    async with harness.store.locked(phone_hash) as session:
+        await session.save_last_topic(TOPIC)
+        await session.save_rehearsal('{"turn": 1}')
+
+    exported = await _exported(harness, phone_hash)
+
+    assert exported.plan_topic_id == TOPIC
+    assert exported.practice_in_progress is True
+
+
+async def test_export_shows_no_plan_and_no_practice_in_progress_before_either_exists(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+
+    exported = await _exported(harness, phone_hash)
+
+    assert exported.plan_topic_id is None
+    assert exported.practice_in_progress is False
+
+
+async def test_export_never_carries_the_practice_content(harness: Harness, phone_hash: bytes):
+    await _save(harness, phone_hash, ENROLLED)
+    await _log_turns(harness, phone_hash, _scored("a secret question"))
+    async with harness.store.locked(phone_hash) as session:
+        await session.save_rehearsal('{"secret": "progress"}')
+
+    exported = await _exported(harness, phone_hash)
+
+    assert "secret" not in repr(exported)
+
+
+async def test_export_shows_the_reminder_time_and_the_day_of_the_last_reminder(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    await _set_reminder(harness, phone_hash, time(7, 30), date(2026, 10, 19))
+
+    exported = await _exported(harness, phone_hash)
+
+    assert exported.reminder_time == time(7, 30)
+    assert exported.last_reminded_on == date(2026, 10, 19)
+
+
+async def test_export_has_no_reminder_time_until_one_is_set(harness: Harness, phone_hash: bytes):
+    await _save(harness, phone_hash, ENROLLED)
+
+    exported = await _exported(harness, phone_hash)
+
+    assert (exported.reminder_time, exported.last_reminded_on) == (None, None)
+
+
+async def test_one_teachers_practice_is_not_counted_for_another(
+    harness: Harness, phone_hash: bytes
+):
+    other = secrets.token_bytes(32)
+    harness.hashes.append(other)
+    await _save(harness, phone_hash, ENROLLED)
+    await _save(harness, other, ENROLLED)
+    await _log_turns(harness, other, _scored("theirs"))
+
+    exported = await _exported(harness, phone_hash)
+
+    assert (exported.practice_count, exported.scored_question_count) == (0, 0)
