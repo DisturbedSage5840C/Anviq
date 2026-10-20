@@ -1,3 +1,4 @@
+import asyncio
 import random
 
 import pytest
@@ -411,3 +412,45 @@ async def test_a_log_that_fails_never_breaks_the_practice():
     assert reply.text.startswith(f"{RIYA.name}: ")
     assert reply.finished is False
     assert load(reply.rehearsal_json or "") is not None
+
+
+class BrokenLog:
+    """Fails before it ever returns an awaitable, which `async def` methods never do."""
+
+    def begin(self, teacher: bytes) -> None:
+        raise RuntimeError("not even a coroutine")
+
+    def record(self, teacher: bytes, turn: LoggedTurn) -> None:
+        raise RuntimeError("not even a coroutine")
+
+    def end(self, teacher: bytes) -> None:
+        raise RuntimeError("not even a coroutine")
+
+
+class HangingLog(RecordingLog):
+    async def _note(self, name: str, teacher: bytes, turn: LoggedTurn | None = None) -> None:
+        await asyncio.sleep(3600)
+
+
+async def test_a_log_that_raises_before_awaiting_never_breaks_the_practice():
+    engine = RehearsalEngine(EchoVoice(), Coach(verdict(0)))
+    flow = RehearsalFlow(engine, FakePositions(), lambda: random.Random(1), log=BrokenLog())
+
+    started = await flow.begin(TEACHER, "en", TOPIC)
+    reply = await flow.turn(TEACHER, "en", "Who can tell me?", started.rehearsal_json)
+
+    assert reply.text.startswith(f"{RIYA.name}: ")
+    assert reply.finished is False
+
+
+async def test_a_log_that_hangs_is_cut_off_instead_of_holding_the_teacher_up(monkeypatch):
+    monkeypatch.setattr("app.core.rehearsal_flow.LOG_TIMEOUT_SECONDS", 0.01)
+    log = HangingLog()
+
+    started = await logged_flow(log).begin(TEACHER, "en", TOPIC)
+    reply = await logged_flow(log, verdict(0)).turn(
+        TEACHER, "en", "Who can tell me?", started.rehearsal_json
+    )
+
+    assert render("rehearsal_started", "en") in started.text
+    assert reply.text.startswith(f"{RIYA.name}: ")

@@ -20,6 +20,15 @@ async def log_turn(conn: AsyncConnection, phone_hash: bytes, turn: LoggedTurn) -
     teacher_id = await _consented_teacher_id(conn, phone_hash)
     if teacher_id is None:
         return
+    # A practice left open for another move or topic (its end was lost) is not this one.
+    await conn.execute(
+        text(
+            "update sessions set ended_at = now() "
+            "where teacher_id = :teacher_id and kind = 'rehearse' and ended_at is null "
+            "and (move_id, topic_id) is distinct from (cast(:move_id as smallint), :topic_id)"
+        ),
+        {"teacher_id": teacher_id, "move_id": turn.move_id, "topic_id": turn.topic_id},
+    )
     # Reusing the open practice is an upsert, so a concurrent close cannot slip between two steps.
     opened = await conn.execute(
         text(

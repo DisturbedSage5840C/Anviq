@@ -125,6 +125,20 @@ async def test_closing_the_practice_ends_its_session_and_the_next_turn_starts_an
     assert closed["id"] != reopened["id"]
 
 
+async def test_a_practice_left_open_for_another_move_is_closed_not_joined(conn: AsyncConnection):
+    teacher = await _teacher(conn)
+    await log_turn(conn, HASH, _turn("old"))
+    other_move = LoggedTurn(
+        3, TOPIC, "A", "new", {"C1": True, "C2": False, "C3": False, "C4": False}
+    )
+
+    await log_turn(conn, HASH, other_move)
+
+    open_sessions = [s for s in await _sessions(conn, teacher) if s["ended_at"] is None]
+    assert [s["move_id"] for s in open_sessions] == [3]
+    assert len(await _sessions(conn, teacher)) == 2
+
+
 async def test_closing_with_no_practice_open_is_harmless(conn: AsyncConnection):
     teacher = await _teacher(conn)
 
