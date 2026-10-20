@@ -1,5 +1,6 @@
 """A practice leaves one session and its scored turns, which is what the Day-14 mirror compares."""
 
+import logging
 import os
 from datetime import UTC, datetime, timedelta
 
@@ -276,5 +277,41 @@ async def test_a_log_that_fails_rolls_back_alone_and_the_message_still_commits(m
                 {"h": phone_hash},
             )
             assert kept.scalar_one() == TOPIC
+    finally:
+        await _forget(engine, phone_hash)
+
+
+async def test_a_close_that_fails_is_logged_by_type_alone_and_the_message_still_commits(
+    monkeypatch, caplog
+):
+    if not os.environ.get("DATABASE_URL"):
+        pytest.skip("DATABASE_URL not set")
+    engine = create_async_engine(os.environ["DATABASE_URL"])
+    store = PostgresTeacherStore(engine, FieldCipher(os.urandom(32)))
+    phone_hash = os.urandom(32)
+
+    class Carries(Exception):
+        """Stands in for a driver error whose text quotes the statement and its values."""
+
+    async def breaks_quoting_words(conn: AsyncConnection, who: bytes) -> None:
+        raise Carries("update sessions ... teacher said: a private question")
+
+    try:
+        await _enrolled_teacher(store, phone_hash)
+        monkeypatch.setattr("app.db.teacher_store.close_practices", breaks_quoting_words)
+        caplog.set_level(logging.ERROR, logger="app.db.teacher_store")
+
+        async with store.locked(phone_hash) as session:
+            await session.close_practice()
+            await session.save_last_topic(TOPIC)  # would raise if the failure had poisoned it
+
+        async with engine.connect() as conn:
+            kept = await conn.execute(
+                text("select last_topic_id from teachers where phone_hash = :h"),
+                {"h": phone_hash},
+            )
+            assert kept.scalar_one() == TOPIC
+        assert [r.getMessage() for r in caplog.records] == ["practice close failed: Carries"]
+        assert "private question" not in caplog.text
     finally:
         await _forget(engine, phone_hash)
