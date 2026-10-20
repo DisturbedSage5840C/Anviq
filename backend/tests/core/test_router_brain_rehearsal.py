@@ -6,6 +6,7 @@ from app.content.copy import render
 from app.core.daily_loop import LoopReply
 from app.core.dialogue import Utterance
 from app.core.rehearsal_flow import RehearsalReply
+from app.core.rehearsal_log import LoggedTurn
 from app.core.router import FIRST_REHEARSAL_TOPIC, Phase
 from app.core.router_brain import RouterBrain
 from app.core.teacher_store import InMemoryTeacherStore
@@ -386,3 +387,129 @@ async def test_if_the_first_practice_cannot_start_the_teacher_is_told_and_lands_
 
     assert render("rehearsal_unavailable", "en") in reply.text
     assert store.teachers[_hash()].state.phase is Phase.IDLE
+
+
+# --- the practice log is written inside the message's own locked block --------------------------
+
+
+def _scored(words: str) -> LoggedTurn:
+    return LoggedTurn(2, TOPIC, "A", words, {"C1": True, "C2": False, "C3": False, "C4": False})
+
+
+def _practices(store: InMemoryTeacherStore) -> list[tuple[list[str], bool]]:
+    return [([t.teacher_text for t in p.turns], p.ended) for p in store.practices.get(_hash(), ())]
+
+
+async def _practising(store: InMemoryTeacherStore, *replies: RehearsalReply) -> RouterBrain:
+    brain = await _brain(store, RecordingRehearsals(_started(), *replies))
+    await _plan(brain)
+    await brain.respond(_say("yes"))
+    return brain
+
+
+async def test_a_scored_turn_that_stands_is_logged(store: InMemoryTeacherStore):
+    brain = await _practising(store, RehearsalReply("RIYA: 25", AFTER_TURN, False, _scored("one")))
+
+    await brain.respond(_say("Riya, what is 52 - 27?"))
+
+    assert _practices(store) == [(["one"], False)]
+
+
+async def test_a_turn_without_a_score_leaves_no_practice_behind(store: InMemoryTeacherStore):
+    brain = await _practising(store, RehearsalReply("RIYA: 25", AFTER_TURN, False))
+
+    await brain.respond(_say("hmm"))
+
+    assert _practices(store) == []
+
+
+async def test_a_slow_turn_that_was_dropped_is_not_logged(store: InMemoryTeacherStore):
+    slow = RehearsalReply("SLOW CHILD", '{"turns": 1, "slow": true}', False, _scored("slow"))
+    quick = RehearsalReply("QUICK CHILD", AFTER_TURN, False, _scored("quick"))
+
+    await _two_turns_at_once(store, slow, quick)
+
+    assert _practices(store) == [(["quick"], False)]
+
+
+async def test_a_turn_that_arrives_after_consent_was_withdrawn_is_not_logged(
+    store: InMemoryTeacherStore,
+):
+    brain_holder: list[RouterBrain] = []
+
+    class WithdrawsDuringTurn(RecordingRehearsals):
+        async def turn(
+            self, teacher: bytes, lang: str, text: str, saved: str | None
+        ) -> RehearsalReply:
+            await brain_holder[0].respond(_say("withdraw consent"))
+            return await super().turn(teacher, lang, text, saved)
+
+    scored = RehearsalReply("RIYA: 25", AFTER_TURN, False, _scored("late"))
+    brain = await _brain(store, WithdrawsDuringTurn(_started(), scored))
+    brain_holder.append(brain)
+    await _plan(brain)
+    await brain.respond(_say("yes"))
+
+    await brain.respond(_say("Riya, what is 52 - 27?"))
+
+    assert _practices(store) == []
+
+
+async def test_a_finished_practice_closes_its_logged_session(store: InMemoryTeacherStore):
+    brain = await _practising(
+        store,
+        RehearsalReply("RIYA: 25", AFTER_TURN, False, _scored("one")),
+        RehearsalReply("WELL DONE", None, True, _scored("two")),
+    )
+
+    await brain.respond(_say("one"))
+    await brain.respond(_say("two"))
+
+    assert _practices(store) == [(["one", "two"], True)]
+
+
+async def test_saying_enough_closes_the_logged_session(store: InMemoryTeacherStore):
+    brain = await _practising(
+        store,
+        RehearsalReply("RIYA: 25", AFTER_TURN, False, _scored("one")),
+        RehearsalReply("WELL DONE", None, True),
+    )
+
+    await brain.respond(_say("one"))
+    await brain.respond(_say("enough"))
+
+    assert _practices(store) == [(["one"], True)]
+
+
+async def test_a_practice_that_timed_out_closes_its_logged_session():
+    clock = _Clock()
+    store = InMemoryTeacherStore(clock=clock)
+    brain = await _practising(store, RehearsalReply("RIYA: 25", AFTER_TURN, False, _scored("one")))
+    await brain.respond(_say("one"))
+
+    clock.now += timedelta(minutes=31)
+    await brain.respond(_say("help"))
+
+    assert _practices(store) == [(["one"], True)]
+
+
+async def test_starting_a_practice_closes_one_the_teacher_left_open(store: InMemoryTeacherStore):
+    brain = await _brain(store, RecordingRehearsals(_started()))
+    async with store.locked(_hash()) as session:
+        await session.log_practice_turn(_scored("abandoned"))
+    await _plan(brain)
+
+    await brain.respond(_say("yes"))
+
+    assert _practices(store) == [(["abandoned"], True)]
+
+
+async def test_withdrawing_consent_closes_the_practice_the_teacher_left_open(
+    store: InMemoryTeacherStore,
+):
+    brain = await _practising(store, RehearsalReply("RIYA: 25", AFTER_TURN, False, _scored("one")))
+    await brain.respond(_say("one"))
+
+    await brain.respond(_say("withdraw consent"))
+
+    assert _practices(store) == [(["one"], True)]

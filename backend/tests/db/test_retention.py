@@ -177,6 +177,64 @@ async def test_a_practice_still_inside_its_day_is_kept(conn: AsyncConnection):
     assert report.rehearsals == 0
 
 
+async def _open_practice(conn: AsyncConnection, teacher_id: str, last_active_at: datetime) -> str:
+    await conn.execute(
+        text("update teachers set last_active_at = :at where id = :t"),
+        {"t": teacher_id, "at": last_active_at},
+    )
+    row = await conn.execute(
+        text(
+            "insert into sessions (teacher_id, kind, started_at) "
+            "values (:t, 'rehearse', :at) returning id"
+        ),
+        {"t": teacher_id, "at": last_active_at},
+    )
+    return str(row.scalar_one())
+
+
+async def _ended_at(conn: AsyncConnection, session_id: str) -> datetime | None:
+    row = await conn.execute(text("select ended_at from sessions where id = :s"), {"s": session_id})
+    return row.scalar_one()
+
+
+async def test_a_practice_left_open_for_over_a_day_is_closed_when_the_teacher_last_spoke(
+    conn: AsyncConnection,
+):
+    teacher = await _teacher(conn)
+    stale_since = NOW - REHEARSAL_RETENTION - timedelta(minutes=1)
+    session = await _open_practice(conn, teacher, stale_since)
+
+    report = await purge_expired(conn, now=NOW)
+
+    assert await _ended_at(conn, session) == stale_since
+    assert report.practices_closed == 1
+
+
+async def test_a_practice_whose_teacher_is_still_inside_the_day_stays_open(conn: AsyncConnection):
+    teacher = await _teacher(conn)
+    session = await _open_practice(conn, teacher, NOW - REHEARSAL_RETENTION)
+
+    report = await purge_expired(conn, now=NOW)
+
+    assert await _ended_at(conn, session) is None
+    assert report.practices_closed == 0
+
+
+async def test_closing_abandoned_practices_leaves_their_turns_and_other_sessions(
+    conn: AsyncConnection,
+):
+    teacher = await _teacher(conn)
+    stale = NOW - 2 * DAY
+    session = await _open_practice(conn, teacher, stale)
+    turn = await _turn(conn, session, stale)
+    finished = await _session(conn, await _teacher(conn), stale)
+
+    await purge_expired(conn, now=NOW)
+
+    assert await _exists(conn, "turns", turn)
+    assert await _ended_at(conn, finished) == stale
+
+
 async def test_purging_never_touches_the_teacher_or_their_progress(conn: AsyncConnection):
     teacher = await _teacher(conn)
     await _clip(conn, teacher, NOW - DAY)
@@ -193,5 +251,5 @@ async def test_a_second_purge_finds_nothing_to_do(conn: AsyncConnection):
     await purge_expired(conn, now=NOW)
 
     assert await purge_expired(conn, now=NOW) == PurgeReport(
-        turns=0, sessions=0, mirror_clips=0, demo_codes=0
+        turns=0, sessions=0, mirror_clips=0, demo_codes=0, practices_closed=0
     )

@@ -4,7 +4,8 @@ Transcripts live 90 days. A session row only carries a derived summary, so it go
 last transcript has. Mirror clips carry their own expiry. Teachers, consents and rubric
 results stay until the teacher asks for deletion. Webhook dedupe ids live in Redis with a TTL,
 so they need no purge here. Demo codes go once expired. A practice with the AI children holds
-the teacher's own words, so one left unfinished for a day is cleared (the topic stays).
+the teacher's own words, so one left unfinished for a day is cleared (the topic stays) and its
+logged session is closed where the teacher last spoke, so the next practice starts a fresh one.
 """
 
 from dataclasses import dataclass
@@ -24,6 +25,7 @@ class PurgeReport:
     mirror_clips: int
     demo_codes: int = 0
     rehearsals: int = 0
+    practices_closed: int = 0
 
 
 async def purge_expired(conn: AsyncConnection, *, now: datetime) -> PurgeReport:
@@ -47,12 +49,20 @@ async def purge_expired(conn: AsyncConnection, *, now: datetime) -> PurgeReport:
         "where rehearsal_json is not null and last_active_at < :stale",
         stale=now - REHEARSAL_RETENTION,
     )
+    practices_closed = await _delete(
+        conn,
+        "update sessions s set ended_at = t.last_active_at from teachers t "
+        "where t.id = s.teacher_id and s.kind = 'rehearse' and s.ended_at is null "
+        "and t.last_active_at < :stale",
+        stale=now - REHEARSAL_RETENTION,
+    )
     return PurgeReport(
         turns=turns,
         sessions=sessions,
         mirror_clips=mirror_clips,
         demo_codes=demo_codes,
         rehearsals=rehearsals,
+        practices_closed=practices_closed,
     )
 
 

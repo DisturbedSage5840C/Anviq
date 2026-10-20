@@ -1,5 +1,6 @@
 """Postgres implementation of the teacher store: one transaction per message."""
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -8,6 +9,7 @@ from datetime import timedelta
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
+from app.core.rehearsal_log import LoggedTurn
 from app.core.router import Phase, TeacherState
 from app.core.teacher_store import (
     ConsentRecord,
@@ -15,7 +17,10 @@ from app.core.teacher_store import (
     TeacherExport,
     deletion_log_prefix,
 )
+from app.db.rehearsal_log import close_practices, log_turn
 from app.privacy.crypto import FieldCipher
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_LANG = "hi"  # teachers.lang is NOT NULL; the real choice arrives one step after the stub
 LANGUAGE_UNKNOWN_PHASES = frozenset({Phase.NEW, Phase.ONB_LANG})
@@ -185,6 +190,21 @@ class _PostgresSession:
             {"new": new, "expected": expected, "h": self.phone_hash},
         )
         return result.rowcount > 0
+
+    async def log_practice_turn(self, turn: LoggedTurn) -> None:
+        # A savepoint, so a failing log rolls back alone and the message still commits.
+        try:
+            async with self.conn.begin_nested():
+                await log_turn(self.conn, self.phone_hash, turn)
+        except Exception as exc:  # only the type is safe to keep: the statement carries content
+            logger.error("practice log failed: %s", type(exc).__name__)
+
+    async def close_practice(self) -> None:
+        try:
+            async with self.conn.begin_nested():
+                await close_practices(self.conn, self.phone_hash)
+        except Exception as exc:
+            logger.error("practice close failed: %s", type(exc).__name__)
 
     async def export(self) -> TeacherExport | None:
         row = (

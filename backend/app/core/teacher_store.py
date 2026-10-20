@@ -11,6 +11,7 @@ from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
+from app.core.rehearsal_log import LoggedTurn
 from app.core.router import TeacherState
 
 DELETION_LOG_PREFIX_BYTES = 8
@@ -60,6 +61,18 @@ class TeacherSession(Protocol):
         """Swap the practice for `new` only if it is still `expected`; False if it moved on."""
         ...
 
+    async def log_practice_turn(self, turn: LoggedTurn) -> None:
+        """Add a scored question to the teacher's open practice, opening one if there is none.
+
+        Kept only for a teacher who has consented. Never raises: a practice that cannot be logged
+        still goes on, and the message that carries it must still commit.
+        """
+        ...
+
+    async def close_practice(self) -> None:
+        """End whatever practice the teacher has open; the next scored turn starts a fresh one."""
+        ...
+
     async def export(self) -> "TeacherExport | None":
         """Everything stored about the teacher that they may ask to see; None if nothing is."""
         ...
@@ -95,6 +108,16 @@ class RehearsalSlot:
 
 
 @dataclass(frozen=True)
+class PracticeSession:
+    """One practice as the in-memory store keeps it: the scored questions, and whether it ended."""
+
+    move_id: int
+    topic_id: str
+    turns: tuple[LoggedTurn, ...] = ()
+    ended: bool = False
+
+
+@dataclass(frozen=True)
 class StoredTeacher:
     state: TeacherState
     wa_id: str
@@ -110,6 +133,7 @@ class InMemoryTeacherStore:
 
     teachers: dict[bytes, StoredTeacher] = field(default_factory=dict)
     deletion_log: list[str] = field(default_factory=list)
+    practices: dict[bytes, tuple[PracticeSession, ...]] = field(default_factory=dict)
     clock: Callable[[], datetime] = lambda: datetime.now(UTC)
     _locks: dict[bytes, asyncio.Lock] = field(default_factory=dict)
 
@@ -169,6 +193,7 @@ class _InMemorySession:
         )
 
     async def erase(self) -> None:
+        self.store.practices.pop(self.phone_hash, None)
         if self.store.teachers.pop(self.phone_hash, None) is not None:
             self.store.deletion_log.append(deletion_log_prefix(self.phone_hash))
 
@@ -200,6 +225,27 @@ class _InMemorySession:
         await self.save_rehearsal(new)
         return True
 
+    async def log_practice_turn(self, turn: LoggedTurn) -> None:
+        stored = self.store.teachers.get(self.phone_hash)
+        if stored is None or all(c.revoked for c in stored.consents):
+            return
+        # A practice left open for another move or topic (its end was lost) is not this one.
+        sessions = [
+            replace(p, ended=True) if not p.ended and (p.move_id, p.topic_id) != _key(turn) else p
+            for p in self.store.practices.get(self.phone_hash, ())
+        ]
+        open_at = next((i for i, p in enumerate(sessions) if not p.ended), None)
+        if open_at is None:
+            sessions.append(PracticeSession(*_key(turn), turns=(turn,)))
+        else:
+            sessions[open_at] = replace(sessions[open_at], turns=(*sessions[open_at].turns, turn))
+        self.store.practices[self.phone_hash] = tuple(sessions)
+
+    async def close_practice(self) -> None:
+        sessions = self.store.practices.get(self.phone_hash)
+        if sessions is not None:
+            self.store.practices[self.phone_hash] = tuple(replace(p, ended=True) for p in sessions)
+
     async def export(self) -> TeacherExport | None:
         stored = self.store.teachers.get(self.phone_hash)
         if stored is None:
@@ -210,3 +256,7 @@ class _InMemorySession:
             consents=stored.consents,
             reminders_opt_in=stored.reminders_opt_in,
         )
+
+
+def _key(turn: LoggedTurn) -> tuple[int, str]:
+    return turn.move_id, turn.topic_id

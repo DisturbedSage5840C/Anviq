@@ -86,17 +86,19 @@ async def handle_inbound(ctx: dict[str, Any], envelope: dict[str, Any]) -> None:
 
 async def purge_retention(ctx: dict[str, Any]) -> None:
     """Hourly: delete expired transcripts, empty sessions, mirror clips and demo codes, and
-    clear practices left unfinished."""
+    close practices left unfinished."""
     resources: Resources = ctx["resources"]
     async with resources.engine.begin() as conn:
         report = await purge_expired(conn, now=datetime.now(UTC))
     logger.info(
-        "retention purge: turns=%d sessions=%d mirror_clips=%d demo_codes=%d rehearsals=%d",
+        "retention purge: turns=%d sessions=%d mirror_clips=%d demo_codes=%d rehearsals=%d "
+        "practices_closed=%d",
         report.turns,
         report.sessions,
         report.mirror_clips,
         report.demo_codes,
         report.rehearsals,
+        report.practices_closed,
     )
 
 

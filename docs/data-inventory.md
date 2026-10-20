@@ -14,7 +14,7 @@ Last reviewed against the schema at migration `0006`.
 | Raw voice notes | **No.** Decoded in memory and dropped | Nowhere (Meta keeps its own copy under its policy) | n/a | Nobody |
 | Transcripts, scrubbed | Only the teacher's scored practice questions, with the coach's judgment | Postgres `turns` | **90 days rolling** | Backend only; the teacher on request |
 | Rubric results | Yes | Postgres `turns`, `move_progress` | Until the teacher deletes | The teacher only |
-| Session summaries | Yes, derived | Postgres `sessions` | Removed with the last transcript of the session | Backend only |
+| Session summaries | Yes, derived; a practice left open for a day is closed, not deleted | Postgres `sessions` | Removed with the last transcript of the session | Backend only |
 | Mirror voice clips | Opt-in only, encrypted | Postgres `mirror_clips` | Own `expires_at` (cycle end plus 7 days) | The teacher only |
 | Consent records | Yes: version, text hash, grant and revoke time | Postgres `consents` | Until the teacher deletes | Backend only |
 | Reminder preference | Opt-in flag and time of day | Postgres `teachers` | Until the teacher deletes | Backend only |

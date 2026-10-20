@@ -11,6 +11,7 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
+from app.core.rehearsal_log import LoggedTurn
 from app.core.router import Phase, TeacherState
 from app.core.teacher_store import (
     ConsentRecord,
@@ -560,3 +561,128 @@ async def test_saving_again_restarts_the_idle_clock(harness: Harness, phone_hash
     idle = await _idle_for(harness, phone_hash)
     assert idle is not None
     assert idle < timedelta(minutes=1)
+
+
+# --- the practice log: written inside the same locked block as the message ----------------------
+
+
+def _scored(words: str = "How did you get that?", move: int = 2, topic: str = TOPIC) -> LoggedTurn:
+    return LoggedTurn(move, topic, "A", words, {"C1": True, "C2": False, "C3": False, "C4": False})
+
+
+async def _log_turns(h: Harness, phone_hash: bytes, *turns: LoggedTurn) -> None:
+    async with h.store.locked(phone_hash) as session:
+        for turn in turns:
+            await session.log_practice_turn(turn)
+
+
+async def _close_practice(h: Harness, phone_hash: bytes) -> None:
+    async with h.store.locked(phone_hash) as session:
+        await session.close_practice()
+
+
+async def _practices(h: Harness, phone_hash: bytes) -> list[tuple[list[str], bool]]:
+    """Per practice, oldest first: what the teacher said in it, and whether it has ended."""
+    if h.memory is not None:
+        found = h.memory.practices.get(phone_hash, ())
+        return [([t.teacher_text for t in p.turns], p.ended) for p in found]
+    assert h.engine is not None
+    async with h.engine.connect() as conn:
+        rows = await conn.execute(
+            text(
+                "select s.id, s.ended_at is not null from sessions s "
+                "join teachers t on t.id = s.teacher_id "
+                "where t.phone_hash = :h and s.kind = 'rehearse' order by s.started_at, s.id"
+            ),
+            {"h": phone_hash},
+        )
+        found = [(r[0], bool(r[1])) for r in rows]
+        practices = []
+        for session_id, ended in found:
+            turns = await conn.execute(
+                text(
+                    "select text_scrubbed from turns where session_id = :s order by created_at, id"
+                ),
+                {"s": session_id},
+            )
+            practices.append(([r[0] for r in turns], ended))
+        return practices
+
+
+async def test_a_scored_turn_opens_a_practice_for_a_consenting_teacher(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+
+    await _log_turns(harness, phone_hash, _scored("first"))
+
+    assert await _practices(harness, phone_hash) == [(["first"], False)]
+
+
+async def test_later_turns_join_the_open_practice(harness: Harness, phone_hash: bytes):
+    await _save(harness, phone_hash, ENROLLED)
+
+    await _log_turns(harness, phone_hash, _scored("first"), _scored("second"))
+
+    [(said, ended)] = await _practices(harness, phone_hash)
+    assert sorted(said) == ["first", "second"]
+    assert ended is False
+
+
+async def test_closing_the_practice_ends_it_and_the_next_turn_starts_another(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    await _log_turns(harness, phone_hash, _scored("first"))
+
+    await _close_practice(harness, phone_hash)
+    await _log_turns(harness, phone_hash, _scored("second"))
+
+    assert await _practices(harness, phone_hash) == [(["first"], True), (["second"], False)]
+
+
+async def test_a_practice_left_open_for_another_move_is_closed_not_joined(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, ENROLLED)
+    await _log_turns(harness, phone_hash, _scored("old", move=2))
+
+    await _log_turns(harness, phone_hash, _scored("new", move=3))
+
+    assert await _practices(harness, phone_hash) == [(["old"], True), (["new"], False)]
+
+
+async def test_closing_with_no_practice_open_is_harmless(harness: Harness, phone_hash: bytes):
+    await _save(harness, phone_hash, ENROLLED)
+
+    await _close_practice(harness, phone_hash)
+
+    assert await _practices(harness, phone_hash) == []
+
+
+async def test_a_teacher_without_consent_leaves_no_practice_behind(
+    harness: Harness, phone_hash: bytes
+):
+    await _save(harness, phone_hash, replace(ENROLLED, consented=False))
+
+    await _log_turns(harness, phone_hash, _scored())
+
+    assert await _practices(harness, phone_hash) == []
+
+
+async def test_an_unknown_teacher_leaves_no_practice_behind(harness: Harness, phone_hash: bytes):
+    await _log_turns(harness, phone_hash, _scored())
+    await _close_practice(harness, phone_hash)
+
+    assert await _practices(harness, phone_hash) == []
+    assert not await _row_exists(harness, phone_hash)
+
+
+async def test_erase_takes_the_practices_with_the_teacher(harness: Harness, phone_hash: bytes):
+    await _save(harness, phone_hash, ENROLLED)
+    await _log_turns(harness, phone_hash, _scored())
+
+    async with harness.store.locked(phone_hash) as session:
+        await session.erase()
+
+    assert await _practices(harness, phone_hash) == []

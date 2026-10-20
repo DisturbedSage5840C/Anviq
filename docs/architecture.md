@@ -113,8 +113,12 @@ database effects under a per-teacher lock and runs the model calls after the com
    the text.
 7. The reply is sent. Usage counts are recorded for every model call. A practice also keeps its
    own scored questions: one `rehearse` session per practice, and one `turns` row per question with
-   the scrubbed text and the coach's criteria. The Day-1/Day-14 mirror reads those rows. Other
-   conversation text is not stored, and the usage tables hold no content.
+   the scrubbed text and the coach's criteria. The Day-1/Day-14 mirror reads those rows. They are
+   written under the teacher's lock, in the same transaction as the practice state, and only for a
+   turn that stands: a turn dropped for a newer one, or arriving after consent was withdrawn,
+   leaves nothing. Finishing, ending or restarting a practice closes its session, and the hourly
+   retention job closes one the teacher abandoned for a day. Other conversation text is not
+   stored, and the usage tables hold no content.
 
 The web room follows the same path from step 4 with a visitor id derived from the demo code, and
 returns the reply (text and a WAV) in the HTTP response instead of sending through Meta.

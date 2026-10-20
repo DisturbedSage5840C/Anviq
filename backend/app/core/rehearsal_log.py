@@ -1,13 +1,12 @@
 """What a practice leaves behind: the teacher's scored questions, for the Day-1/Day-14 mirror.
 
-The flow decides *what* happened in a turn; the log decides where it is kept. Keeping the two apart
-means the practice never depends on a database being up: a log that fails is only a lost row.
+The flow decides *what* happened in a turn and hands it back as a `LoggedTurn`; the router writes it
+through the teacher's session, inside the same locked block that decides whether the turn stands.
 """
 
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Protocol
 
 
 @dataclass(frozen=True)
@@ -24,28 +23,3 @@ class LoggedTurn:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "criteria", MappingProxyType(dict(self.criteria)))
-
-
-class RehearsalLog(Protocol):
-    async def begin(self, teacher: bytes) -> None:
-        """A practice is starting: close whatever the teacher left open before."""
-        ...
-
-    async def record(self, teacher: bytes, turn: LoggedTurn) -> None: ...
-
-    async def end(self, teacher: bytes) -> None:
-        """The practice is over; the next scored turn starts a new session."""
-        ...
-
-
-class NoRehearsalLog:
-    """Keeps nothing, for a flow that is not wired to a database."""
-
-    async def begin(self, teacher: bytes) -> None:
-        return None
-
-    async def record(self, teacher: bytes, turn: LoggedTurn) -> None:
-        return None
-
-    async def end(self, teacher: bytes) -> None:
-        return None

@@ -173,6 +173,7 @@ class RouterBrain:
 
         A teacher who left the practice meanwhile leaves nothing behind. False means another
         turn of this practice was saved first, so this one is dropped rather than rewinding it.
+        The scored question is logged here, under the same lock, so only a turn that stands is kept.
         """
         async with self._store.locked(key) as session:
             state = await session.load()
@@ -180,7 +181,10 @@ class RouterBrain:
                 return True
             if not await session.replace_rehearsal(expected, reply.rehearsal_json):
                 return False
+            if reply.scored is not None:
+                await session.log_practice_turn(reply.scored)
             if reply.finished:
+                await session.close_practice()
                 await session.save(replace(state, phase=Phase.IDLE), wa_id)
             return True
 
@@ -203,13 +207,17 @@ async def _apply_effects(
             case RecordConsent(version):
                 await session.record_consent(version, consent_text_sha256(transition.state.lang))
             case WithdrawConsent():
+                await session.close_practice()  # a practice is not left open past the withdrawal
                 await session.withdraw_consent()
             case EraseTeacher():
                 await session.erase()
             case OptOutReminders():
                 await session.opt_out_reminders()
+            case StartRehearsal():
+                await session.close_practice()  # whatever was left open is not the new practice
             case EndRehearsal():
                 await session.save_rehearsal(None)
+                await session.close_practice()
             case ExportData():
                 exports.append(await session.export())
             case (
@@ -218,7 +226,6 @@ async def _apply_effects(
                 | MakeReflection()
                 | ShowMirror()
                 | AskQuestion()
-                | StartRehearsal()
                 | RehearseTurn()
             ):
                 pass  # spoken or run after the transaction commits, not stored

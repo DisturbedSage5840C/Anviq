@@ -9,9 +9,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
 
 from app.core.rehearsal_log import LoggedTurn
+from app.core.router import Phase, TeacherState
 from app.db.mirror_store import mirror_pair
-from app.db.rehearsal_log import PostgresRehearsalLog, close_practices, log_turn
+from app.db.rehearsal_log import close_practices, log_turn
+from app.db.teacher_store import PostgresTeacherStore
 from app.guardrails.pii import PHONE_PLACEHOLDER
+from app.privacy.crypto import FieldCipher
 
 HASH = b"h" * 32
 OTHER_HASH = b"o" * 32
@@ -213,27 +216,65 @@ async def test_two_closed_practices_give_the_mirror_its_day_1_and_day_14_turns(
     assert (pair.latest.text, pair.latest.met_count) == ("How did you get that?", 3)
 
 
-async def test_the_engine_backed_log_commits_what_it_records():
+async def _enrolled_teacher(store: PostgresTeacherStore, phone_hash: bytes) -> None:
+    async with store.locked(phone_hash) as session:
+        await session.save(TeacherState(Phase.IDLE, lang="en", grade_band="2"), "919876543210")
+        await session.record_consent("v1", "cd" * 32)
+
+
+async def _forget(engine, phone_hash: bytes) -> None:
+    async with engine.begin() as conn:
+        await conn.execute(text("delete from teachers where phone_hash = :h"), {"h": phone_hash})
+    await engine.dispose()
+
+
+async def test_the_session_commits_the_practice_with_the_message():
     if not os.environ.get("DATABASE_URL"):
         pytest.skip("DATABASE_URL not set")
     engine = create_async_engine(os.environ["DATABASE_URL"])
+    store = PostgresTeacherStore(engine, FieldCipher(os.urandom(32)))
     phone_hash = os.urandom(32)
     try:
-        async with engine.begin() as conn:
-            teacher = await _teacher(conn, phone_hash)
-        log = PostgresRehearsalLog(engine)
+        await _enrolled_teacher(store, phone_hash)
 
-        await log.begin(phone_hash)
-        await log.record(phone_hash, _turn("engine"))
-        await log.end(phone_hash)
+        async with store.locked(phone_hash) as session:
+            await session.log_practice_turn(_turn("engine"))
+            await session.close_practice()
 
         async with engine.connect() as conn:
-            [session] = await _sessions(conn, teacher)
-            assert session["ended_at"] is not None
-            assert [t["text_scrubbed"] for t in await _turns(conn, session["id"])] == ["engine"]
-    finally:
-        async with engine.begin() as conn:
-            await conn.execute(
-                text("delete from teachers where phone_hash = :h"), {"h": phone_hash}
+            teacher = await conn.execute(
+                text("select id from teachers where phone_hash = :h"), {"h": phone_hash}
             )
-        await engine.dispose()
+            [session_row] = await _sessions(conn, str(teacher.scalar_one()))
+            assert session_row["ended_at"] is not None
+            assert [t["text_scrubbed"] for t in await _turns(conn, session_row["id"])] == ["engine"]
+    finally:
+        await _forget(engine, phone_hash)
+
+
+async def test_a_log_that_fails_rolls_back_alone_and_the_message_still_commits(monkeypatch):
+    if not os.environ.get("DATABASE_URL"):
+        pytest.skip("DATABASE_URL not set")
+    engine = create_async_engine(os.environ["DATABASE_URL"])
+    store = PostgresTeacherStore(engine, FieldCipher(os.urandom(32)))
+    phone_hash = os.urandom(32)
+
+    async def breaks_the_statement(conn: AsyncConnection, who: bytes, turn: LoggedTurn) -> None:
+        await conn.execute(text("select 1 / 0"))  # aborts a transaction that has no savepoint
+
+    try:
+        await _enrolled_teacher(store, phone_hash)
+        monkeypatch.setattr("app.db.teacher_store.log_turn", breaks_the_statement)
+
+        async with store.locked(phone_hash) as session:
+            await session.log_practice_turn(_turn())
+            await session.save_last_topic(TOPIC)  # would raise if the failure had poisoned it
+
+        async with engine.connect() as conn:
+            kept = await conn.execute(
+                text("select last_topic_id from teachers where phone_hash = :h"),
+                {"h": phone_hash},
+            )
+            assert kept.scalar_one() == TOPIC
+    finally:
+        await _forget(engine, phone_hash)

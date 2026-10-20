@@ -5,7 +5,7 @@ here is a mirror that never fires.
 """
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncConnection
 
 from app.core.rehearsal_log import LoggedTurn
 from app.db.loop_store import teacher_id_for
@@ -76,22 +76,3 @@ async def close_practices(conn: AsyncConnection, phone_hash: bytes) -> None:
         ),
         {"teacher_id": teacher_id},
     )
-
-
-class PostgresRehearsalLog:
-    """Each call is its own transaction, so a turn is kept even if the reply later fails."""
-
-    def __init__(self, engine: AsyncEngine) -> None:
-        self._engine = engine
-
-    async def begin(self, teacher: bytes) -> None:
-        async with self._engine.begin() as conn:
-            await close_practices(conn, teacher)
-
-    async def record(self, teacher: bytes, turn: LoggedTurn) -> None:
-        async with self._engine.begin() as conn:
-            await log_turn(conn, teacher, turn)
-
-    async def end(self, teacher: bytes) -> None:
-        async with self._engine.begin() as conn:
-            await close_practices(conn, teacher)

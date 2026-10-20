@@ -5,10 +5,9 @@ teaching logic and the codec turns its state into text, so the flow only chooses
 reads and what is saved. It never raises: whatever goes wrong, the teacher gets a sentence.
 """
 
-import asyncio
 import logging
 import random
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -17,14 +16,11 @@ from app.core.children.personas import Persona
 from app.core.daily_loop import Positions
 from app.core.rehearsal import RehearsalEngine, RehearsalState, TurnOutcome, start
 from app.core.rehearsal_codec import dump, load
-from app.core.rehearsal_log import LoggedTurn, NoRehearsalLog, RehearsalLog
+from app.core.rehearsal_log import LoggedTurn
 from app.core.self_rating import rating_prompt
 from app.guardrails.pii import scrub
 
 logger = logging.getLogger(__name__)
-
-# The reply waits for the log, so a database that hangs must not hold the teacher up.
-LOG_TIMEOUT_SECONDS = 2.0
 
 
 @dataclass(frozen=True)
@@ -34,6 +30,8 @@ class RehearsalReply:
     rehearsal_json: str | None
     # True once the practice is over and the teacher is back at the menu.
     finished: bool
+    # The question the coach scored this turn, for the router to log once the turn stands.
+    scored: LoggedTurn | None = None
 
 
 class Rehearsals(Protocol):
@@ -54,12 +52,10 @@ class RehearsalFlow:
         engine: RehearsalEngine,
         positions: Positions,
         rng_factory: Callable[[], random.Random] = random.Random,
-        log: RehearsalLog | None = None,
     ) -> None:
         self._engine = engine
         self._positions = positions
         self._rng_factory = rng_factory
-        self._log = NoRehearsalLog() if log is None else log
 
     async def begin(self, teacher: bytes, lang: str, topic_id: str | None) -> RehearsalReply:
         if topic_id is None:
@@ -70,7 +66,6 @@ class RehearsalFlow:
         except Exception as exc:  # the teacher is told; the type is the only safe detail to log
             logger.error("rehearsal could not start: %s", type(exc).__name__)
             return _over(render("rehearsal_unavailable", lang))
-        await _keep(lambda: self._log.begin(teacher))
         board = render("rehearsal_problem", lang).format(problem=state.problem.statement())
         return RehearsalReply(f"{render('rehearsal_started', lang)}\n{board}", dump(state), False)
 
@@ -86,19 +81,12 @@ class RehearsalFlow:
         except Exception as exc:  # keep the practice: the teacher can say it again
             logger.error("rehearsal turn failed: %s", type(exc).__name__)
             return RehearsalReply(render("rehearsal_turn_failed", state.lang), saved, False)
-        await _keep(lambda: self._record(teacher, state, outcome))
-        if outcome.finished:
-            await _keep(lambda: self._log.end(teacher))
         return RehearsalReply(
             _compose(outcome, state.lang),
             None if outcome.finished else dump(outcome.state),
             outcome.finished,
+            _logged(state, outcome),
         )
-
-    async def _record(self, teacher: bytes, before: RehearsalState, outcome: TurnOutcome) -> None:
-        logged = _logged(before, outcome)
-        if logged is not None:
-            await self._log.record(teacher, logged)
 
 
 def _logged(before: RehearsalState, outcome: TurnOutcome) -> LoggedTurn | None:
@@ -114,17 +102,6 @@ def _logged(before: RehearsalState, outcome: TurnOutcome) -> LoggedTurn | None:
         child_name=outcome.child.name if outcome.child else None,
         malrule_id=outcome.malrule_id,
     )
-
-
-async def _keep(write: Callable[[], Awaitable[None]]) -> None:
-    """A practice that cannot be logged still goes on: only the type of the failure is kept.
-
-    Building the write is inside the guard too, and a slow database is cut off.
-    """
-    try:
-        await asyncio.wait_for(write(), LOG_TIMEOUT_SECONDS)
-    except Exception as exc:
-        logger.error("rehearsal log failed: %s", type(exc).__name__)
 
 
 def _compose(outcome: TurnOutcome, lang: str) -> str:
