@@ -81,10 +81,12 @@ class RouterBrain:
             before = await session.load()
             idle_for = await session.idle_for()
             transition = handle(before, utterance.text, idle_for=idle_for)
-            if any(isinstance(effect, _REHEARSAL_EFFECTS) for effect in transition.effects):
-                slot = await session.load_rehearsal()
             await session.save(transition.state, utterance.sender_wa_id)
             exports = await _apply_effects(session, transition)
+            if any(isinstance(effect, _REHEARSAL_EFFECTS) for effect in transition.effects):
+                # After the effects: a lapsed practice is ended in this same message, and the
+                # new one must start from what that left, not from the practice just cleared.
+                slot = await session.load_rehearsal()
         # After an erase the new state has forgotten the language, but the goodbye should not.
         lang = transition.state.lang or before.lang
         reply = _compose(transition, lang, exports)

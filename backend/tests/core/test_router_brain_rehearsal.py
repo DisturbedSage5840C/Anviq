@@ -513,3 +513,55 @@ async def test_withdrawing_consent_closes_the_practice_the_teacher_left_open(
     await brain.respond(_say("withdraw consent"))
 
     assert _practices(store) == [(["one"], True)]
+
+
+async def test_a_slow_turn_cannot_land_in_a_practice_started_after_its_own_timed_out():
+    clock = _Clock()
+    store = InMemoryTeacherStore(clock=clock)
+    brain_holder: list[RouterBrain] = []
+
+    class RestartsDuringTurn(RecordingRehearsals):
+        async def turn(
+            self, teacher: bytes, lang: str, text: str, saved: str | None
+        ) -> RehearsalReply:
+            reply = await super().turn(teacher, lang, text, saved)
+            clock.now += timedelta(minutes=31)  # the practice lapses, then the teacher starts anew
+            await brain_holder[0].respond(_say("rehearsal"))
+            return reply
+
+    fresh = '{"turns": 0, "again": true}'
+    slow = RehearsalReply("SLOW CHILD", '{"turns": 1, "slow": true}', False, _scored("slow"))
+    brain = await _brain(
+        store, RestartsDuringTurn(_started(), slow, RehearsalReply("NEW CHILDREN", fresh, False))
+    )
+    brain_holder.append(brain)
+    await _plan(brain)
+    await brain.respond(_say("yes"))
+
+    reply = await brain.respond(_say("first"))
+
+    assert render("rehearsal_turn_failed", "en") in reply.text
+    assert "SLOW CHILD" not in reply.text
+    stored = store.teachers[_hash()]
+    assert stored.rehearsal.rehearsal_json == fresh
+    assert stored.state.phase is Phase.REHEARSE
+    assert _practices(store) == []  # the dropped turn was neither saved nor logged
+
+
+async def test_a_practice_can_be_started_in_the_message_that_ends_a_timed_out_one():
+    clock = _Clock()
+    store = InMemoryTeacherStore(clock=clock)
+    fresh = '{"turns": 0, "again": true}'
+    rehearsals = RecordingRehearsals(_started(), RehearsalReply("NEW CHILDREN", fresh, False))
+    brain = await _brain(store, rehearsals)
+    await _plan(brain)
+    await brain.respond(_say("yes"))
+
+    clock.now += timedelta(minutes=31)
+    reply = await brain.respond(_say("rehearsal"))
+
+    assert "NEW CHILDREN" in reply.text
+    assert render("rehearsal_turn_failed", "en") not in reply.text
+    stored = store.teachers[_hash()]
+    assert stored.rehearsal.rehearsal_json == fresh
+    assert stored.state.phase is Phase.REHEARSE
