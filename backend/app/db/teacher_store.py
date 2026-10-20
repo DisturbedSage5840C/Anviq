@@ -230,7 +230,7 @@ class _PostgresSession:
             await self.conn.execute(
                 text(
                     "select count(distinct s.id), count(t.id) from sessions s "
-                    "left join turns t on t.session_id = s.id "
+                    "left join turns t on t.session_id = s.id and t.role = 'teacher' "
                     "where s.teacher_id = :id and s.kind = 'rehearse'"
                 ),
                 {"id": row.id},

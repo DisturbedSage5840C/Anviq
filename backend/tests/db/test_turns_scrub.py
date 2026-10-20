@@ -60,3 +60,13 @@ async def test_a_turn_with_no_labels_stores_none_for_them():
 
     [bound] = conn.params
     assert (bound["child_name"], bound["malrule_id"], bound["criteria"]) == (None, None, None)
+
+
+async def test_two_labels_that_scrub_alike_still_count_both_judgments():
+    conn = _RecordingConnection()
+    criteria = {"a@x.org": True, "b@y.org": True}
+
+    await record_turn(conn, "session-1", "teacher", "hi", criteria=criteria)  # type: ignore[arg-type]
+
+    [bound] = conn.params
+    assert bound["met_count"] == 2

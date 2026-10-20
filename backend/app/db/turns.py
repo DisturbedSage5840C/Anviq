@@ -21,7 +21,8 @@ async def record_turn(
 ) -> str:
     """Store one turn and return its id. `raw_text` never reaches the database unscrubbed.
 
-    `criteria` is the coach's judgment of a teacher turn; its true count becomes `met_count`. The
+    `criteria` is the coach's judgment of a teacher turn; its true count, taken before any label is
+    scrubbed so two labels that scrub alike still count twice, becomes `met_count`. The
     labels (`child_name`, `malrule_id`, the criteria ids) come from fixed lists today, but they are
     scrubbed too, so the guarantee does not depend on every caller keeping to that.
     """
@@ -40,7 +41,7 @@ async def record_turn(
             "malrule_id": None if malrule_id is None else scrub(malrule_id),
             "child_name": None if child_name is None else scrub(child_name),
             "criteria": None if judged is None else json.dumps(judged),
-            "met_count": None if judged is None else sum(judged.values()),
+            "met_count": None if criteria is None else sum(bool(met) for met in criteria.values()),
         },
     )
     return str(result.scalar_one())
