@@ -7,15 +7,16 @@ reads and what is saved. It never raises: whatever goes wrong, the teacher gets 
 
 import logging
 import random
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Protocol
 
 from app.content.copy import render
 from app.core.children.personas import Persona
 from app.core.daily_loop import Positions
-from app.core.rehearsal import RehearsalEngine, TurnOutcome, start
+from app.core.rehearsal import RehearsalEngine, RehearsalState, TurnOutcome, start
 from app.core.rehearsal_codec import dump, load
+from app.core.rehearsal_log import LoggedTurn, NoRehearsalLog, RehearsalLog
 from app.core.self_rating import rating_prompt
 from app.guardrails.pii import scrub
 
@@ -34,7 +35,9 @@ class RehearsalReply:
 class Rehearsals(Protocol):
     async def begin(self, teacher: bytes, lang: str, topic_id: str | None) -> RehearsalReply: ...
 
-    async def turn(self, lang: str, text: str, saved: str | None) -> RehearsalReply: ...
+    async def turn(
+        self, teacher: bytes, lang: str, text: str, saved: str | None
+    ) -> RehearsalReply: ...
 
 
 def _over(text: str) -> RehearsalReply:
@@ -47,10 +50,12 @@ class RehearsalFlow:
         engine: RehearsalEngine,
         positions: Positions,
         rng_factory: Callable[[], random.Random] = random.Random,
+        log: RehearsalLog | None = None,
     ) -> None:
         self._engine = engine
         self._positions = positions
         self._rng_factory = rng_factory
+        self._log = log or NoRehearsalLog()
 
     async def begin(self, teacher: bytes, lang: str, topic_id: str | None) -> RehearsalReply:
         if topic_id is None:
@@ -61,10 +66,11 @@ class RehearsalFlow:
         except Exception as exc:  # the teacher is told; the type is the only safe detail to log
             logger.error("rehearsal could not start: %s", type(exc).__name__)
             return _over(render("rehearsal_unavailable", lang))
+        await _keep(self._log.begin(teacher))
         board = render("rehearsal_problem", lang).format(problem=state.problem.statement())
         return RehearsalReply(f"{render('rehearsal_started', lang)}\n{board}", dump(state), False)
 
-    async def turn(self, lang: str, text: str, saved: str | None) -> RehearsalReply:
+    async def turn(self, teacher: bytes, lang: str, text: str, saved: str | None) -> RehearsalReply:
         state = None if saved is None else load(saved)
         if state is None:
             if saved is not None:
@@ -76,11 +82,39 @@ class RehearsalFlow:
         except Exception as exc:  # keep the practice: the teacher can say it again
             logger.error("rehearsal turn failed: %s", type(exc).__name__)
             return RehearsalReply(render("rehearsal_turn_failed", state.lang), saved, False)
+        logged = _logged(state, outcome)
+        if logged is not None:
+            await _keep(self._log.record(teacher, logged))
+        if outcome.finished:
+            await _keep(self._log.end(teacher))
         return RehearsalReply(
             _compose(outcome, state.lang),
             None if outcome.finished else dump(outcome.state),
             outcome.finished,
         )
+
+
+def _logged(before: RehearsalState, outcome: TurnOutcome) -> LoggedTurn | None:
+    """The scored question of this turn; a rating reply, an exit or a coach outage has none."""
+    if outcome.verdict is None or not outcome.state.exchanges:
+        return None
+    return LoggedTurn(
+        move_id=before.move_id,
+        topic_id=before.topic_id,
+        week=before.week,
+        teacher_text=outcome.state.exchanges[-1].teacher_text,
+        criteria=outcome.verdict.criteria,
+        child_name=outcome.child.name if outcome.child else None,
+        malrule_id=outcome.malrule_id,
+    )
+
+
+async def _keep(write: Awaitable[None]) -> None:
+    """A practice that cannot be logged still goes on: only the type of the failure is kept."""
+    try:
+        await write
+    except Exception as exc:
+        logger.error("rehearsal log failed: %s", type(exc).__name__)
 
 
 def _compose(outcome: TurnOutcome, lang: str) -> str:

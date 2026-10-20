@@ -10,6 +10,7 @@ from app.core.daily_loop import Position
 from app.core.rehearsal import RehearsalEngine
 from app.core.rehearsal_codec import load
 from app.core.rehearsal_flow import RehearsalFlow
+from app.core.rehearsal_log import LoggedTurn
 
 TEACHER = b"t" * 32
 TOPIC = "NUM.G2.SUB.REGROUP"
@@ -100,7 +101,7 @@ async def test_if_the_teachers_position_cannot_be_found_the_practice_does_not_st
 async def test_a_turn_gets_the_childs_answer_under_her_name_and_saves_progress():
     started = await flow().begin(TEACHER, "en", TOPIC)
 
-    reply = await flow(verdict(0)).turn("en", "Who can tell me?", started.rehearsal_json)
+    reply = await flow(verdict(0)).turn(TEACHER, "en", "Who can tell me?", started.rehearsal_json)
 
     saved = load(reply.rehearsal_json or "")
     assert reply.text.startswith(f"{RIYA.name}: ")
@@ -111,7 +112,7 @@ async def test_a_turn_gets_the_childs_answer_under_her_name_and_saves_progress()
 async def test_the_children_are_named_in_hindi_for_a_hindi_teacher():
     started = await flow().begin(TEACHER, "hi", TOPIC)
 
-    reply = await flow(verdict(0)).turn("hi", "कौन बताएगा?", started.rehearsal_json)
+    reply = await flow(verdict(0)).turn(TEACHER, "hi", "कौन बताएगा?", started.rehearsal_json)
 
     assert reply.text.startswith(f"{RIYA.name_hi}: ")
 
@@ -119,7 +120,7 @@ async def test_the_children_are_named_in_hindi_for_a_hindi_teacher():
 async def test_a_weak_question_gets_a_kind_nudge():
     started = await flow().begin(TEACHER, "en", TOPIC)
 
-    reply = await flow(verdict(0)).turn("en", "Who can tell me?", started.rehearsal_json)
+    reply = await flow(verdict(0)).turn(TEACHER, "en", "Who can tell me?", started.rehearsal_json)
 
     assert "Try asking how." in reply.text
 
@@ -127,7 +128,9 @@ async def test_a_weak_question_gets_a_kind_nudge():
 async def test_if_the_coach_is_down_the_teacher_is_told_and_can_carry_on():
     started = await flow().begin(TEACHER, "en", TOPIC)
 
-    reply = await flow(CoachUnavailableError("x")).turn("en", "Who?", started.rehearsal_json)
+    reply = await flow(CoachUnavailableError("x")).turn(
+        TEACHER, "en", "Who?", started.rehearsal_json
+    )
 
     assert render("rehearsal_coach_unavailable", "en") in reply.text
     assert reply.finished is False
@@ -138,7 +141,7 @@ async def test_three_good_turns_end_the_practice_with_a_summary_and_clear_the_sa
     saved = (await flow().begin(TEACHER, "en", TOPIC)).rehearsal_json
     reply = None
     for _ in range(3):
-        reply = await flow(verdict(4)).turn("en", "How did you get that?", saved)
+        reply = await flow(verdict(4)).turn(TEACHER, "en", "How did you get that?", saved)
         saved = reply.rehearsal_json
 
     assert reply is not None and reply.finished is True
@@ -149,7 +152,7 @@ async def test_three_good_turns_end_the_practice_with_a_summary_and_clear_the_sa
 async def test_saying_enough_ends_the_practice_without_scoring_anything():
     started = await flow().begin(TEACHER, "en", TOPIC)
 
-    reply = await flow().turn("en", "enough", started.rehearsal_json)
+    reply = await flow().turn(TEACHER, "en", "enough", started.rehearsal_json)
 
     assert reply.text == render("rehearsal_summary_none", "en")
     assert reply.rehearsal_json is None
@@ -158,7 +161,7 @@ async def test_saying_enough_ends_the_practice_without_scoring_anything():
 
 @pytest.mark.parametrize("saved", [None, "", "not json", '{"topic_id": "NUM.NOPE"}'])
 async def test_a_practice_with_nothing_usable_saved_ends_instead_of_crashing(saved: str | None):
-    reply = await flow().turn("en", "Who can tell me?", saved)
+    reply = await flow().turn(TEACHER, "en", "Who can tell me?", saved)
 
     assert reply.text == render("rehearsal_unavailable", "en")
     assert reply.rehearsal_json is None
@@ -193,7 +196,7 @@ async def test_a_phone_number_the_teacher_says_never_reaches_the_model():
     started = await practice.begin(TEACHER, "en", TOPIC)
 
     await practice.turn(
-        "en", "How did you get that? Call me on 98765 43210.", started.rehearsal_json
+        TEACHER, "en", "How did you get that? Call me on 98765 43210.", started.rehearsal_json
     )
 
     assert coach.seen and voice.seen
@@ -204,7 +207,7 @@ async def test_a_failing_turn_keeps_the_practice_so_the_teacher_can_try_again():
     started = await flow().begin(TEACHER, "en", TOPIC)
     broken = flow(verdict(0), voice=EchoVoice(RuntimeError("model down")))
 
-    reply = await broken.turn("en", "Who can tell me?", started.rehearsal_json)
+    reply = await broken.turn(TEACHER, "en", "Who can tell me?", started.rehearsal_json)
 
     assert reply.text == render("rehearsal_turn_failed", "en")
     assert reply.rehearsal_json == started.rehearsal_json
@@ -225,7 +228,9 @@ def faded_flow(*verdicts: CoachVerdict | Exception) -> RehearsalFlow:
 async def test_in_week_b_the_teacher_is_asked_to_rate_before_hearing_the_nudge():
     started = await faded_flow().begin(TEACHER, "en", TOPIC)
 
-    reply = await faded_flow(verdict(1)).turn("en", "Who can tell me?", started.rehearsal_json)
+    reply = await faded_flow(verdict(1)).turn(
+        TEACHER, "en", "Who can tell me?", started.rehearsal_json
+    )
 
     assert reply.text.startswith(f"{RIYA.name}: ")
     assert render("self_rating_prompt", "en") in reply.text
@@ -237,9 +242,11 @@ async def test_in_week_b_the_teacher_is_asked_to_rate_before_hearing_the_nudge()
 
 async def test_replying_with_a_rating_then_shows_the_nudge_and_keeps_the_practice():
     started = await faded_flow().begin(TEACHER, "en", TOPIC)
-    asked = await faded_flow(verdict(1)).turn("en", "Who can tell me?", started.rehearsal_json)
+    asked = await faded_flow(verdict(1)).turn(
+        TEACHER, "en", "Who can tell me?", started.rehearsal_json
+    )
 
-    reply = await faded_flow().turn("en", "🌳", asked.rehearsal_json)
+    reply = await faded_flow().turn(TEACHER, "en", "🌳", asked.rehearsal_json)
 
     assert render("self_rating_higher", "en").format(mine="🌳", coach="🌱") in reply.text
     assert "Try asking how." in reply.text
@@ -252,7 +259,7 @@ async def test_replying_with_a_rating_then_shows_the_nudge_and_keeps_the_practic
 async def test_the_rating_prompt_is_in_hindi_for_a_hindi_teacher():
     started = await faded_flow().begin(TEACHER, "hi", TOPIC)
 
-    reply = await faded_flow(verdict(1)).turn("hi", "कौन बताएगा?", started.rehearsal_json)
+    reply = await faded_flow(verdict(1)).turn(TEACHER, "hi", "कौन बताएगा?", started.rehearsal_json)
 
     assert render("self_rating_prompt", "hi") in reply.text
 
@@ -261,11 +268,146 @@ async def test_the_last_turn_of_week_b_still_ends_with_the_nudge_and_summary():
     saved = (await faded_flow().begin(TEACHER, "en", TOPIC)).rehearsal_json
     reply = None
     for _ in range(3):
-        reply = await faded_flow(verdict(4)).turn("en", "How did you get that?", saved)
+        reply = await faded_flow(verdict(4)).turn(TEACHER, "en", "How did you get that?", saved)
         saved = reply.rehearsal_json
         if not reply.finished:
-            saved = (await faded_flow().turn("en", "2", saved)).rehearsal_json
+            saved = (await faded_flow().turn(TEACHER, "en", "2", saved)).rehearsal_json
 
     assert reply is not None and reply.finished is True
     assert render("self_rating_prompt", "en") not in reply.text
     assert render("rehearsal_summary_best", "en") in reply.text
+
+
+class RecordingLog:
+    """Notes every call; `failure` makes each one raise, as a database that has gone away would."""
+
+    def __init__(self, failure: Exception | None = None) -> None:
+        self.failure = failure
+        self.events: list[tuple[str, bytes, LoggedTurn | None]] = []
+
+    async def _note(self, name: str, teacher: bytes, turn: LoggedTurn | None = None) -> None:
+        self.events.append((name, teacher, turn))
+        if self.failure is not None:
+            raise self.failure
+
+    async def begin(self, teacher: bytes) -> None:
+        await self._note("begin", teacher)
+
+    async def record(self, teacher: bytes, turn: LoggedTurn) -> None:
+        await self._note("record", teacher, turn)
+
+    async def end(self, teacher: bytes) -> None:
+        await self._note("end", teacher)
+
+
+def logged_flow(
+    log: RecordingLog, *verdicts: CoachVerdict | Exception, positions: FakePositions | None = None
+) -> RehearsalFlow:
+    engine = RehearsalEngine(EchoVoice(), Coach(*verdicts))
+    return RehearsalFlow(engine, positions or FakePositions(), lambda: random.Random(1), log=log)
+
+
+async def test_starting_a_practice_closes_any_the_teacher_left_open():
+    log = RecordingLog()
+
+    await logged_flow(log).begin(TEACHER, "en", TOPIC)
+
+    assert log.events == [("begin", TEACHER, None)]
+
+
+async def test_a_practice_that_never_starts_leaves_the_log_alone():
+    log = RecordingLog()
+
+    await logged_flow(log).begin(TEACHER, "en", None)
+    await logged_flow(log).begin(TEACHER, "en", "NUM.NOPE")
+
+    assert log.events == []
+
+
+async def test_a_scored_question_is_logged_with_what_the_coach_judged():
+    log = RecordingLog()
+    started = await logged_flow(log).begin(TEACHER, "en", TOPIC)
+
+    await logged_flow(log, verdict(2)).turn(
+        TEACHER, "en", "Who can tell me?", started.rehearsal_json
+    )
+
+    name, teacher, turn = log.events[-1]
+    assert (name, teacher) == ("record", TEACHER)
+    assert turn is not None
+    assert (turn.move_id, turn.topic_id, turn.week) == (2, TOPIC, "A")
+    assert turn.teacher_text == "Who can tell me?"
+    assert dict(turn.criteria) == {"C1": True, "C2": True, "C3": False, "C4": False}
+    assert turn.child_name == RIYA.name
+
+
+async def test_what_the_teacher_said_is_scrubbed_before_it_is_logged():
+    log = RecordingLog()
+    started = await logged_flow(log).begin(TEACHER, "en", TOPIC)
+
+    await logged_flow(log, verdict(1)).turn(
+        TEACHER, "en", "How did you get that? Call me on 98765 43210.", started.rehearsal_json
+    )
+
+    turn = log.events[-1][2]
+    assert turn is not None and "98765" not in turn.teacher_text
+
+
+async def test_a_turn_the_coach_could_not_score_is_not_logged():
+    log = RecordingLog()
+    started = await logged_flow(log).begin(TEACHER, "en", TOPIC)
+
+    await logged_flow(log, CoachUnavailableError("x")).turn(
+        TEACHER, "en", "Who?", started.rehearsal_json
+    )
+
+    assert [name for name, _, _ in log.events] == ["begin"]
+
+
+async def test_rating_the_question_in_week_b_does_not_log_it_twice():
+    log = RecordingLog()
+    started = await logged_flow(log, positions=WeekBPositions()).begin(TEACHER, "en", TOPIC)
+    asked = await logged_flow(log, verdict(1), positions=WeekBPositions()).turn(
+        TEACHER, "en", "Who can tell me?", started.rehearsal_json
+    )
+
+    await logged_flow(log, positions=WeekBPositions()).turn(
+        TEACHER, "en", "2", asked.rehearsal_json
+    )
+
+    assert [name for name, _, _ in log.events] == ["begin", "record"]
+
+
+async def test_finishing_the_practice_closes_its_session():
+    log = RecordingLog()
+    saved = (await logged_flow(log).begin(TEACHER, "en", TOPIC)).rehearsal_json
+    for _ in range(3):
+        saved = (
+            await logged_flow(log, verdict(4)).turn(TEACHER, "en", "How did you get that?", saved)
+        ).rehearsal_json
+
+    assert [name for name, _, _ in log.events] == ["begin", "record", "record", "record", "end"]
+    assert all(teacher == TEACHER for _, teacher, _ in log.events)
+
+
+async def test_saying_enough_closes_the_session_without_logging_a_turn():
+    log = RecordingLog()
+    started = await logged_flow(log).begin(TEACHER, "en", TOPIC)
+
+    await logged_flow(log).turn(TEACHER, "en", "enough", started.rehearsal_json)
+
+    assert [name for name, _, _ in log.events] == ["begin", "end"]
+
+
+async def test_a_log_that_fails_never_breaks_the_practice():
+    log = RecordingLog(failure=RuntimeError("db down"))
+
+    started = await logged_flow(log).begin(TEACHER, "en", TOPIC)
+    reply = await logged_flow(log, verdict(0)).turn(
+        TEACHER, "en", "Who can tell me?", started.rehearsal_json
+    )
+
+    assert render("rehearsal_started", "en") in started.text
+    assert reply.text.startswith(f"{RIYA.name}: ")
+    assert reply.finished is False
+    assert load(reply.rehearsal_json or "") is not None

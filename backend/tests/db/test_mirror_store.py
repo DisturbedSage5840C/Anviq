@@ -24,8 +24,8 @@ async def _teacher(conn: AsyncConnection, *, move: int = 1, cycle: int = 1) -> s
 async def _session(conn: AsyncConnection, teacher: str, move: int, started: datetime) -> str:
     row = await conn.execute(
         text(
-            "insert into sessions (teacher_id, kind, move_id, started_at) "
-            "values (:t, 'rehearse', :move, :at) returning id"
+            "insert into sessions (teacher_id, kind, move_id, started_at, ended_at) "
+            "values (:t, 'rehearse', :move, :at, :at) returning id"
         ),
         {"t": teacher, "move": move, "at": started},
     )

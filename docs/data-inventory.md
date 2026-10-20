@@ -12,7 +12,7 @@ Last reviewed against the schema at migration `0006`.
 |---|---|---|---|---|
 | Phone number | A keyed hash for lookup, plus the WhatsApp id encrypted so we can reply | Postgres (Mumbai) | Until the teacher deletes | Backend only |
 | Raw voice notes | **No.** Decoded in memory and dropped | Nowhere (Meta keeps its own copy under its policy) | n/a | Nobody |
-| Transcripts, scrubbed | Yes | Postgres `turns` | **90 days rolling** | Backend only; the teacher on request |
+| Transcripts, scrubbed | Only the teacher's scored practice questions, with the coach's judgment | Postgres `turns` | **90 days rolling** | Backend only; the teacher on request |
 | Rubric results | Yes | Postgres `turns`, `move_progress` | Until the teacher deletes | The teacher only |
 | Session summaries | Yes, derived | Postgres `sessions` | Removed with the last transcript of the session | Backend only |
 | Mirror voice clips | Opt-in only, encrypted | Postgres `mirror_clips` | Own `expires_at` (cycle end plus 7 days) | The teacher only |
@@ -35,7 +35,7 @@ Last reviewed against the schema at migration `0006`.
 | `teachers.wa_id_enc` | AES-256-GCM with `FIELD_KEY`, random 96-bit nonce per value. The one reversible field, kept only because a reply needs the id. |
 | `mirror_clips.audio_enc` | Encrypted the same way. Written only after an explicit opt-in. |
 | `turns.text_scrubbed` | Passed through `guardrails.pii.scrub` before it is written. |
-| `turns.child_name`, `turns.criteria_json` | **Not scrubbed today.** See [Known gaps](#known-gaps). |
+| `turns.child_name`, `turns.malrule_id`, `turns.criteria_json` | **Not scrubbed.** They are written by the practice log from fixed values (the three AI children's names, the misconception id, rubric ids with true/false). No teacher text reaches them. See [Known gaps](#known-gaps). |
 
 ## Who is allowed to read what (database roles)
 
@@ -74,7 +74,8 @@ differencing harder. It is not differential privacy; see the [DPIA](DPIA.md).
 
 These are tracked and not hidden. Each needs a decision or a change before the full pilot.
 
-1. `turns.child_name` and `turns.criteria_json` are not passed through the scrubber.
+1. `turns.child_name`, `turns.malrule_id` and `turns.criteria_json` are not passed through the scrubber.
+   Their writer only passes fixed values, but nothing in `record_turn` enforces it.
 2. The web room records consent under channel `whatsapp`, which blurs the record for audit.
 3. Web-room teacher rows are not purged when their demo code expires.
 4. `export` does not yet list the reminder time or the last reminder date.

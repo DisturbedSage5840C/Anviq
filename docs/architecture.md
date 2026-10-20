@@ -111,8 +111,10 @@ database effects under a per-teacher lock and runs the model calls after the com
    is doing (onboarding, consent, planning, deleting, asking) from the stored state.
 6. The reply is chosen, then synthesised and encoded to OGG/Opus. A failed voice reply still sends
    the text.
-7. The reply is sent and the turn is persisted: scrubbed text, results, latency, usage counts.
-   Usage tables hold no content.
+7. The reply is sent. Usage counts are recorded for every model call. A practice also keeps its
+   own scored questions: one `rehearse` session per practice, and one `turns` row per question with
+   the scrubbed text and the coach's criteria. The Day-1/Day-14 mirror reads those rows. Other
+   conversation text is not stored, and the usage tables hold no content.
 
 The web room follows the same path from step 4 with a visitor id derived from the demo code, and
 returns the reply (text and a WAV) in the HTTP response instead of sending through Meta.

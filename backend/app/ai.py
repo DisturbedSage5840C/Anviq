@@ -20,6 +20,7 @@ from app.core.topics import TopicResolverWithModel
 from app.core.writers import LLMPlanWriter, LLMReflectionWriter
 from app.db.corpus import PostgresFullTextSearch
 from app.db.loop_store import PostgresMirrors, PostgresPositions, PostgresUsageSink
+from app.db.rehearsal_log import PostgresRehearsalLog
 from app.llm.client import LLMClient
 from app.resources import Resources
 
@@ -62,7 +63,7 @@ def build_rehearsals(resources: Resources, settings: Settings) -> RehearsalFlow 
         LLMChildVoice(llm, settings.model_fast), Coach(llm, settings.model_smart)
     )
     positions = PostgresPositions(resources.engine, demo_minutes=settings.demo_cycle_minutes)
-    return RehearsalFlow(engine, positions)
+    return RehearsalFlow(engine, positions, log=PostgresRehearsalLog(resources.engine))
 
 
 def build_ask(resources: Resources, settings: Settings) -> AskAnviq | None:

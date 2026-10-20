@@ -31,8 +31,9 @@ async def _session_with_turn(
 ) -> None:
     session = await conn.execute(
         text(
-            "insert into sessions (teacher_id, kind, move_id, started_at) "
-            "select id, 'rehearse', :move, :at from teachers where phone_hash = :h returning id"
+            "insert into sessions (teacher_id, kind, move_id, started_at, ended_at) "
+            "select id, 'rehearse', :move, :at, :at from teachers where phone_hash = :h "
+            "returning id"
         ),
         {"h": phone_hash, "move": move, "at": at},
     )

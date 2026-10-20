@@ -40,7 +40,7 @@ class RecordingRehearsals:
     def __init__(self, *replies: RehearsalReply | Exception) -> None:
         self.replies = list(replies)
         self.begun: list[tuple[bytes, str, str | None]] = []
-        self.turns: list[tuple[str, str, str | None]] = []
+        self.turns: list[tuple[bytes, str, str, str | None]] = []
 
     def _next(self) -> RehearsalReply:
         item = self.replies.pop(0)
@@ -52,8 +52,8 @@ class RecordingRehearsals:
         self.begun.append((teacher, lang, topic_id))
         return self._next()
 
-    async def turn(self, lang: str, text: str, saved: str | None) -> RehearsalReply:
-        self.turns.append((lang, text, saved))
+    async def turn(self, teacher: bytes, lang: str, text: str, saved: str | None) -> RehearsalReply:
+        self.turns.append((teacher, lang, text, saved))
         return self._next()
 
 
@@ -148,7 +148,7 @@ async def test_each_message_in_the_practice_is_a_turn_and_progress_is_kept(
 
     reply = await brain.respond(_say("Riya, what is 52 - 27?"))
 
-    assert rehearsals.turns == [("en", "Riya, what is 52 - 27?", STARTED)]
+    assert rehearsals.turns == [(_hash(), "en", "Riya, what is 52 - 27?", STARTED)]
     assert reply.text == "RIYA: 25"
     assert reply.speak is True
     stored = store.teachers[_hash()]
@@ -232,9 +232,11 @@ async def test_withdrawing_consent_mid_practice_leaves_nothing_behind(
     brain_holder: list[RouterBrain] = []
 
     class WithdrawsDuringTurn(RecordingRehearsals):
-        async def turn(self, lang: str, text: str, saved: str | None) -> RehearsalReply:
+        async def turn(
+            self, teacher: bytes, lang: str, text: str, saved: str | None
+        ) -> RehearsalReply:
             await brain_holder[0].respond(_say("withdraw consent"))  # arrives while we think
-            return await super().turn(lang, text, saved)
+            return await super().turn(teacher, lang, text, saved)
 
     rehearsals = WithdrawsDuringTurn(_started(), RehearsalReply("RIYA: 25", AFTER_TURN, False))
     brain = await _brain(store, rehearsals)
@@ -257,8 +259,10 @@ async def _two_turns_at_once(
     brain_holder: list[RouterBrain] = []
 
     class AnotherTurnGetsThrough(RecordingRehearsals):
-        async def turn(self, lang: str, text: str, saved: str | None) -> RehearsalReply:
-            reply = await super().turn(lang, text, saved)
+        async def turn(
+            self, teacher: bytes, lang: str, text: str, saved: str | None
+        ) -> RehearsalReply:
+            reply = await super().turn(teacher, lang, text, saved)
             if text == "first":
                 await brain_holder[0].respond(_say("second"))
             return reply
@@ -312,7 +316,7 @@ async def test_a_corrupt_save_ends_the_practice_instead_of_trapping_the_teacher(
 
     reply = await brain.respond(_say("Riya, what is 52 - 27?"))
 
-    assert rehearsals.turns == [("en", "Riya, what is 52 - 27?", "{not json")]
+    assert rehearsals.turns == [(_hash(), "en", "Riya, what is 52 - 27?", "{not json")]
     assert reply.text == "LET US START AGAIN"
     stored = store.teachers[_hash()]
     assert stored.state.phase is Phase.IDLE
@@ -330,7 +334,7 @@ async def test_a_rating_reaches_the_practice_instead_of_being_taken_for_a_comman
 
     reply = await brain.respond(_say(rating))
 
-    assert rehearsals.turns == [("en", rating, STARTED)]
+    assert rehearsals.turns == [(_hash(), "en", rating, STARTED)]
     assert reply.text == "NUDGE"
     assert store.teachers[_hash()].state.phase is Phase.REHEARSE
 

@@ -22,7 +22,7 @@ def _utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-async def _teacher_id(conn: AsyncConnection, phone_hash: bytes) -> str | None:
+async def teacher_id_for(conn: AsyncConnection, phone_hash: bytes) -> str | None:
     row = await conn.execute(
         text("select id from teachers where phone_hash = :h"), {"h": phone_hash}
     )
@@ -68,7 +68,7 @@ class PostgresUsageSink:
 async def position_for(
     conn: AsyncConnection, phone_hash: bytes, now: datetime, *, demo_minutes: int | None
 ) -> Position:
-    teacher_id = await _teacher_id(conn, phone_hash)
+    teacher_id = await teacher_id_for(conn, phone_hash)
     if teacher_id is None:
         return Position(1, "A")
     move = await conn.execute(
@@ -82,7 +82,7 @@ async def due_pair(
     conn: AsyncConnection, phone_hash: bytes, now: datetime, *, demo_minutes: int | None
 ) -> tuple[MirrorTurn, MirrorTurn] | None:
     """The Day 1 and latest turns, once the cycle has run its length; else None."""
-    teacher_id = await _teacher_id(conn, phone_hash)
+    teacher_id = await teacher_id_for(conn, phone_hash)
     if teacher_id is None:
         return None
     started = await cycle_started_at(conn, teacher_id)
@@ -93,7 +93,7 @@ async def due_pair(
 
 
 async def complete_mirror(conn: AsyncConnection, phone_hash: bytes) -> None:
-    teacher_id = await _teacher_id(conn, phone_hash)
+    teacher_id = await teacher_id_for(conn, phone_hash)
     if teacher_id is None:
         return
     pair = await mirror_pair(conn, teacher_id)
