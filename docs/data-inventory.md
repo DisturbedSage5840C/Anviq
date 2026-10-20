@@ -83,3 +83,6 @@ These are tracked and not hidden. Each needs a decision or a change before the f
    (see the [runbook](runbook.md)).
 6. The `demo_codes` grants are broader than the table needs.
 7. Correction (DPDP S.12) has no in-chat command; see the rights table.
+8. `export` does not yet list the practice sessions and scored questions that are now recorded, nor
+   the saved plan topic and in-progress practice. What to show over WhatsApp, and in which words,
+   needs a decision and reviewed Hindi copy.
