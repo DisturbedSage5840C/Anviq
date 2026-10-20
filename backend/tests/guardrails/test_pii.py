@@ -23,6 +23,18 @@ def test_aadhaar_like_numbers_are_redacted():
     assert scrub("my id is 2345 6789 0123") == "my id is [id]"
 
 
+@pytest.mark.parametrize(
+    "written",
+    ["2345-6789-0123", "2345 6789-0123", "2345-6789 0123", "234567890123"],
+)
+def test_aadhaar_like_numbers_are_redacted_whatever_separates_the_groups(written: str):
+    assert scrub(f"id {written} ok") == "id [id] ok"
+
+
+def test_a_longer_unbroken_run_of_digits_is_not_taken_for_an_aadhaar():
+    assert scrub("2345678901234567") == "2345678901234567"
+
+
 def test_emails_are_redacted():
     assert scrub("mail teacher.k@example.org please") == "mail [email] please"
 

@@ -15,7 +15,7 @@ CHILD_PLACEHOLDER = "[बच्चा]"
 
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 _PHONE = re.compile(r"(?<!\d)(?:\+?91[\s-]?)?[6-9६-९]\d{4}[\s-]?\d{5}(?!\d)")
-_AADHAAR = re.compile(r"(?<!\d)\d{4}\s?\d{4}\s?\d{4}(?!\d)")
+_AADHAAR = re.compile(r"(?<!\d)\d{4}[\s-]?\d{4}[\s-]?\d{4}(?!\d)")
 
 # Excludes the AI children (riya, aman, meena and their Devanagari spellings).
 _CHILD_NAMES = (
