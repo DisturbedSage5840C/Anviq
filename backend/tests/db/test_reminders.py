@@ -1,10 +1,13 @@
 """Reminder claims against a real Postgres: only consenting, opted-in, due teachers, once a day."""
 
+import asyncio
+import os
 from datetime import UTC, date, datetime, time
 from uuid import UUID
 
+import pytest
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncConnection
+from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
 
 from app.channel.reminders import claim_due_reminders, reminder_window, still_reachable
 
@@ -131,3 +134,40 @@ async def test_a_teacher_who_withdrew_or_was_erased_after_the_claim_is_no_longer
     ]
 
     assert reachable == [False, False, False, True]
+
+
+async def test_the_claim_is_served_by_an_index_in_its_own_order(conn: AsyncConnection):
+    row = await conn.execute(
+        text("select indexdef from pg_indexes where indexname = 'teachers_reminder_due'")
+    )
+
+    definition = row.scalar_one()
+
+    assert "(reminder_time, id)" in definition
+    assert "reminders_opt_in" in definition and "consent_at IS NOT NULL" in definition
+
+
+async def test_two_workers_claiming_at_once_get_different_teachers():
+    if not os.environ.get("DATABASE_URL"):
+        pytest.skip("DATABASE_URL not set")
+    engine = create_async_engine(os.environ["DATABASE_URL"])
+    async with engine.begin() as setup:
+        await _clear(setup)
+        ids = [await _teacher(setup, reminder_time=time(5, minute)) for minute in range(6)]
+    try:
+        async with engine.connect() as first, engine.connect() as second:
+            await first.begin()
+            await second.begin()
+            held = await claim_due_reminders(first, WINDOW, limit=3)
+            # The first worker's rows stay locked until it commits. The second must step over
+            # them, not wait for them, and still fill its own batch from the rest.
+            taken = await asyncio.wait_for(claim_due_reminders(second, WINDOW, limit=3), timeout=5)
+            await first.commit()
+            await second.commit()
+        both = [reminder.teacher_id for reminder in (*held, *taken)]
+        assert len(held) == len(taken) == 3
+        assert sorted(both) == sorted(ids)
+    finally:
+        async with engine.begin() as cleanup:
+            await cleanup.execute(text("delete from teachers where id = any(:ids)"), {"ids": ids})
+        await engine.dispose()
