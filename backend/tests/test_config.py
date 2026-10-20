@@ -172,3 +172,21 @@ def test_demo_cycle_length_is_read_in_minutes(monkeypatch: pytest.MonkeyPatch):
 def test_a_demo_cycle_must_last_a_positive_number_of_minutes(minutes: int):
     with pytest.raises(ValidationError, match="demo_cycle_minutes"):
         _local(demo_cycle_minutes=minutes)
+
+
+def test_a_teacher_may_use_sixty_paid_model_steps_a_day_unless_told_otherwise():
+    settings = Settings(app_env="local", wa_verify_token="v", wa_app_secret="s", _env_file=None)
+
+    assert settings.max_model_steps_per_day == 60
+
+
+@pytest.mark.parametrize("bad", [0, -1])
+def test_the_daily_model_allowance_must_be_positive(bad: int):
+    with pytest.raises(ValidationError):
+        Settings(
+            app_env="local",
+            wa_verify_token="v",
+            wa_app_secret="s",
+            max_model_steps_per_day=bad,
+            _env_file=None,
+        )

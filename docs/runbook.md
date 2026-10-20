@@ -215,6 +215,14 @@ crash can drop a reminder but never sends one twice. The log line is
 
 - Per sender: 60 messages an hour, then messages are dropped with a log line and no reply.
 - Per demo code: the same 60 an hour, plus the code's own turn budget.
+- Per teacher: `MAX_MODEL_STEPS_PER_DAY` (default 60) paid model steps a day, counted by IST date. Each Plan,
+  Reflect, Ask, Mirror, practice start and practice turn is one step. Past it the teacher is told to come back
+  tomorrow (`daily_limit`) and nothing paid runs; an open practice ends. To lift one teacher's day, delete the
+  Redis key `modelsteps:<phone hash hex>:<YYYY-MM-DD>`. If Redis is down the step answers "unavailable"
+  and an open practice carries on.
+- The cap counts steps, not model calls: one step can make up to three calls (a practice turn asks the coach and
+  two children), so the worst-case cost is about three times the setting. Speech to text and voice replies are
+  not capped; the 60 messages an hour limit is what bounds them.
 - To block a number entirely, raise it with the incident owner; there is no block list yet.
 - Watch the daily cost digest. A day that costs several times the trailing average is the signal.
 

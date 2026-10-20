@@ -109,6 +109,9 @@ database effects under a per-teacher lock and runs the model calls after the com
 4. Speech to text (Sarvam by default). Audio bytes are dropped.
 5. The transcript passes through `guardrails.pii.scrub`, then the router decides what the teacher
    is doing (onboarding, consent, planning, deleting, asking) from the stored state.
+   Each step that calls a paid model is first charged to the teacher's daily allowance (60 a day,
+   `MAX_MODEL_STEPS_PER_DAY`, counted in Redis by IST date); past it the teacher is asked to come
+   back tomorrow and nothing paid runs.
 6. The reply is chosen, then synthesised and encoded to OGG/Opus. A failed voice reply still sends
    the text.
 7. The reply is sent. Usage counts are recorded for every model call. A practice also keeps its

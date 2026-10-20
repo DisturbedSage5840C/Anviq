@@ -78,6 +78,7 @@ rehearsal_unavailable = "I couldn't start the practice just now. Please try agai
 rehearsal_needs_plan = "Let's make a plan first, then practise it with the children. Say 'plan' to begin."
 rehearsal_timed_out = "The practice paused because it was quiet for a while. Say 'rehearse' to start again."
 rehearsal_turn_failed = "I couldn't answer that just now. Please say it once more."
+daily_limit = "You've used up today's time with me. Please come back tomorrow and we'll continue."
 rehearsal_problem = "The problem on the board: {problem}"
 plan_topic_unsure = "Which topic do you mean: {options}? Please tell me."
 

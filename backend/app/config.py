@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     # A starting guess; tune it on eval/datasets/ask_*.jsonl with app.evaluation.citations.
     ask_min_score: float = Field(default=0.05, ge=0, le=1)
 
+    # Paid model steps (Plan, Reflect, Ask, Mirror, each practice turn) one teacher may use a day.
+    max_model_steps_per_day: int = Field(default=60, gt=0)
+
     # Vendors rename and retire models, so model ids are config, not code.
     sarvam_api_key: SecretStr | None = None
     google_speech_api_key: SecretStr | None = None

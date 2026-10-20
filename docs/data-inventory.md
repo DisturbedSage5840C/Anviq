@@ -20,6 +20,7 @@ Last reviewed against the schema at migration `0006`.
 | Reminder preference | Opt-in flag and time of day | Postgres `teachers` | Until the teacher deletes | Backend only |
 | Webhook dedupe ids | Yes | Redis | 7 days (TTL) | Backend only |
 | Per-sender rate-limit counters | Yes, keyed by an opaque hash | Redis | 1 hour window | Backend only |
+| Daily model-step counters | Yes, keyed by an opaque hash and the IST date | Redis | 2 days (TTL) | Backend only |
 | Deletion proof | First 8 hex characters of the phone hash and a timestamp | Postgres `deletion_log` | Indefinite; holds no personal data | Backend only |
 | Cost telemetry | Model, token counts, seconds or characters, estimated cost. **No content** | Postgres `llm_usage`, `speech_usage` | Indefinite | Backend only |
 | Aggregates | Anonymous, only for groups of 20 or more teachers | View `public_trends` | Indefinite | Mentors and DIET, via the dashboard |

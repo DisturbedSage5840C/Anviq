@@ -1,12 +1,15 @@
 """One web turn: text or a recording in, the brain's reply (and a spoken copy) out."""
 
+from types import SimpleNamespace
+
 import pytest
 
 from app.channel import replies
 from app.channel.audio import AudioDecodeError, AudioTooLongError, PreparedAudio
+from app.config import Settings
 from app.core.dialogue import Reply, Utterance
 from app.speech.base import SpeechProviderError, Transcript, Voice
-from app.web.turn import WebTurn
+from app.web.turn import WebTurn, build_web_turn
 
 SENDER = "web:abc"
 WAV = b"RIFF-fake-wav"
@@ -158,3 +161,24 @@ async def test_a_coach_reply_is_not_marked_refused():
 
     assert (spoken.refused, typed.refused) == (False, False)
     assert (spoken.free, typed.free) == (False, False)
+
+
+def test_the_web_room_caps_model_steps_at_the_configured_limit_on_the_resources_redis():
+    from app.channel.model_budget import RedisModelBudget
+
+    redis = object()
+    resources = SimpleNamespace(
+        stt=None,
+        tts=None,
+        teacher_store=object(),
+        keyring=SimpleNamespace(phone_pepper=bytes(32)),
+        redis=redis,
+    )
+    settings = Settings(
+        wa_verify_token="v", wa_app_secret="s", max_model_steps_per_day=9, _env_file=None
+    )
+
+    budget = build_web_turn(resources, settings)._brain._budget  # type: ignore[arg-type,attr-defined]
+
+    assert isinstance(budget, RedisModelBudget)
+    assert (budget._redis, budget._limit) == (redis, 9)

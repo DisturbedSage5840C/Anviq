@@ -7,6 +7,7 @@ from dataclasses import replace
 from app.content.copy import render
 from app.core.daily_loop import DailyLoop, LoopReply
 from app.core.dialogue import Reply, Utterance
+from app.core.model_budget import ModelBudget
 from app.core.rehearsal_flow import RehearsalReply, Rehearsals
 from app.core.router import (
     AskQuestion,
@@ -43,6 +44,7 @@ RehearsalEffect = StartRehearsal | RehearseTurn
 _REHEARSAL_EFFECTS = (StartRehearsal, RehearseTurn)
 
 PARAGRAPH_BREAK = "\n\n"
+DAILY_LIMIT = "daily_limit"
 UNKNOWN_LANG_TTS = "hi"
 
 
@@ -54,7 +56,8 @@ def consent_text_sha256(lang: str | None) -> str:
 class RouterBrain:
     """`loop` runs Plan, Reflect, Ask and Mirror; `rehearsal` runs the practice with the children.
 
-    Without them those steps say "unavailable".
+    Without them those steps say "unavailable". With a `budget`, each model step is charged to the
+    teacher first, and a teacher who has used the day's allowance is told so instead.
     """
 
     def __init__(
@@ -63,11 +66,13 @@ class RouterBrain:
         pepper: bytes,
         loop: DailyLoop | None = None,
         rehearsal: Rehearsals | None = None,
+        budget: ModelBudget | None = None,
     ) -> None:
         self._store = store
         self._pepper = pepper
         self._loop = loop
         self._rehearsal = rehearsal
+        self._budget = budget
 
     async def respond(self, utterance: Utterance) -> Reply:
         key = phone_hash(self._pepper, utterance.sender_wa_id)
@@ -108,6 +113,8 @@ class RouterBrain:
         if self._loop is None:
             return LoopReply(render(unavailable, lang))
         try:
+            if not await self._may_spend(key):
+                return LoopReply(render(DAILY_LIMIT, lang))
             match effect:
                 case MakePlan(text):
                     return await self._loop.plan(key, lang, text)
@@ -158,6 +165,8 @@ class RouterBrain:
         self, key: bytes, lang: str, effect: RehearsalEffect, slot: RehearsalSlot
     ) -> RehearsalReply:
         if self._rehearsal is not None:
+            if (stopped := await self._stopped_by_budget(key, lang, effect, slot)) is not None:
+                return stopped
             try:
                 if isinstance(effect, StartRehearsal):
                     return await self._rehearsal.begin(key, lang, effect.topic_id or slot.topic_id)
@@ -165,6 +174,24 @@ class RouterBrain:
             except Exception as exc:  # the teacher is told; the type is the only safe detail
                 logger.error("rehearsal step failed: %s", type(exc).__name__)
         return RehearsalReply(render("rehearsal_unavailable", lang), None, True)
+
+    async def _stopped_by_budget(
+        self, key: bytes, lang: str, effect: RehearsalEffect, slot: RehearsalSlot
+    ) -> RehearsalReply | None:
+        """The reply that stands in for the model step when the budget says no; None to go ahead."""
+        try:
+            if await self._may_spend(key):
+                return None
+            return RehearsalReply(render(DAILY_LIMIT, lang), None, True)
+        except Exception as exc:  # an outage must not end a practice a model error would keep
+            logger.error("model budget unavailable: %s", type(exc).__name__)
+            if isinstance(effect, RehearseTurn):
+                failed = render("rehearsal_turn_failed", lang)
+                return RehearsalReply(failed, slot.rehearsal_json, False)
+            return RehearsalReply(render("rehearsal_unavailable", lang), None, True)
+
+    async def _may_spend(self, key: bytes) -> bool:
+        return self._budget is None or await self._budget.spend(key)
 
     async def _keep_rehearsal(
         self, key: bytes, wa_id: str, expected: str | None, reply: RehearsalReply

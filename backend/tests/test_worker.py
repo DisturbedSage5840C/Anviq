@@ -90,6 +90,25 @@ def test_build_brain_runs_the_router_on_the_resources_store_and_pepper():
     assert isinstance(brain, RouterBrain)
 
 
+def test_build_brain_caps_model_steps_at_the_configured_limit_on_the_resources_redis(
+    settings: Settings,
+):
+    from app.channel.model_budget import RedisModelBudget
+
+    redis = object()
+    keyring = type("K", (), {"phone_pepper": bytes(32)})()
+    resources: Any = type(
+        "R", (), {"teacher_store": object(), "keyring": keyring, "redis": redis}
+    )()
+    capped = settings.model_copy(update={"max_model_steps_per_day": 7})
+
+    brain = worker.build_brain(resources, capped)
+
+    budget = brain._budget  # type: ignore[attr-defined]
+    assert isinstance(budget, RedisModelBudget)
+    assert (budget._redis, budget._limit) == (redis, 7)
+
+
 class _FakeTransaction:
     def __init__(self, log: list[str]) -> None:
         self._log = log

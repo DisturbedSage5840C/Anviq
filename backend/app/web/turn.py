@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from app.ai import build_daily_loop, build_rehearsals
 from app.channel import replies
 from app.channel.audio import prepare_for_stt
+from app.channel.model_budget import RedisModelBudget
 from app.channel.pipeline import PrepareAudio, spoken_utterance, transcribe_audio
 from app.config import Settings
 from app.core.dialogue import Brain, Reply, Utterance
@@ -91,6 +92,7 @@ def build_web_turn(resources: Resources, settings: Settings) -> WebTurn:
             resources.keyring.phone_pepper,
             build_daily_loop(resources, settings),
             build_rehearsals(resources, settings),
+            RedisModelBudget(resources.redis, settings.max_model_steps_per_day),
         ),
         voice=voice_for(settings.tts_provider, COACH_PERSONA),
     )
