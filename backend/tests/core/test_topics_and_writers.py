@@ -1,3 +1,4 @@
+import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -15,6 +16,7 @@ from app.core.planner import (
     PlanWriterError,
     Resolved,
     Unsure,
+    render_plan,
 )
 from app.core.reflect import (
     ReflectBrief,
@@ -23,6 +25,7 @@ from app.core.reflect import (
     ReflectRequest,
     ReflectWriterError,
 )
+from app.core.speech_budget import PLAN_BUDGET_SECONDS, fits
 from app.core.topics import KeywordTopicResolver, TopicResolverWithModel, load_topics
 from app.core.writers import LLMPlanWriter, LLMReflectionWriter, _PlanOut, _ReflectOut
 from app.llm.client import LLMError, SystemBlock
@@ -42,7 +45,6 @@ class Scripted:
         messages: Sequence[Mapping[str, Any]],
         schema: type[BaseModel],
         max_tokens: int = 1024,
-        temperature: float | None = None,
     ) -> Any:
         self.calls.append({"purpose": purpose, "system": system, "messages": messages})
         reply = self.replies.pop(0)
@@ -153,6 +155,33 @@ async def test_plan_writer_gives_the_model_the_move_misconceptions_and_wrapped_w
     assert system.cache and "Use the wrong answer" in system.text
     user = call["messages"][0]["content"]
     assert '"answer":"45"' in user and user.count("</teacher_utterance>") == 1
+
+
+def _stated_limit(text: str) -> int:
+    found = re.search(r"at most (\d+) characters", text)
+    assert found, "the plan prompt must give the model a number to aim at"
+    return int(found.group(1))
+
+
+@pytest.mark.parametrize("lang", ["en", "hi"])
+async def test_a_plan_that_obeys_the_stated_limit_fits_the_speaking_budget(lang: str):
+    scripted = Scripted(_questions())
+    await LLMPlanWriter(scripted, "m").write(_brief(lang=lang))
+    limit = _stated_limit(scripted.calls[0]["system"][0].text)
+    share = limit // 9  # three questions, three fields each
+    questions = tuple(PlanQuestion("क" * share, "ख" * share, "ग" * share) for _ in range(3))
+
+    assert fits(render_plan(questions, lang), PLAN_BUDGET_SECONDS)
+
+
+async def test_a_retry_after_a_long_draft_asks_for_a_tighter_limit():
+    first, retry = Scripted(_questions()), Scripted(_questions())
+    await LLMPlanWriter(first, "m").write(_brief())
+    await LLMPlanWriter(retry, "m").write(_brief(shorter=True))
+
+    assert _stated_limit(retry.calls[0]["system"][0].text) < _stated_limit(
+        first.calls[0]["system"][0].text
+    )
 
 
 async def test_plan_writer_failure_is_the_planners_error():

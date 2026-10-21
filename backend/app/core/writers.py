@@ -8,14 +8,18 @@ teacher's own words, wrapped as data.
 
 from pydantic import BaseModel
 
-from app.core.planner import PlanBrief, PlanQuestion, PlanWriterError
+from app.core.planner import QUESTIONS_PER_PLAN, PlanBrief, PlanQuestion, PlanWriterError
 from app.core.reflect import ReflectBrief, ReflectionDraft, ReflectWriterError
 from app.core.rubric import Rubric, load_rubric
+from app.core.speech_budget import PLAN_BUDGET_SECONDS, PLAN_FRAMING_CHARS, SPOKEN_CHARS_PER_SECOND
 from app.guardrails.checks import wrap_teacher_text
 from app.llm.client import LLMError, SystemBlock, dumps_compact
 from app.llm.ports import StructuredClient
 
 PLAN_MAX_TOKENS = 900
+SHORTER_PLAN_SHARE = 0.7  # a retry after an over-long draft asks for this share of the room
+PLAN_FIELDS = 3  # ask, likely_answer, guidance
+CHARS_PER_WORD = 6  # a word and its space, as a rough guide for the model
 REFLECT_MAX_TOKENS = 500
 _LANGUAGE = {"hi": "Hindi (Devanagari)", "en": "simple English"}
 
@@ -37,7 +41,9 @@ For each question give:
 child and give the number they would say);
 - guidance: what the teacher does if a child answers like that. Never tell the teacher to say \
 'wrong' before the child has explained.
-Write in {language}. Keep the whole plan short enough to say aloud in under a minute."""
+Write in {language}. It is spoken aloud, so keep it brief: every field is ONE short sentence of at \
+most {words} words, and ask, likely_answer and guidance of all three questions together are at \
+most {limit} characters in total."""
 
 _REFLECT = """{common}
 
@@ -47,6 +53,12 @@ Task: the teacher tells you, after school, what a child said that surprised them
 - next_step: one small thing to try next time, as an action;
 - model_example: one sentence they could say in class, in their own voice.
 Each part is one or two short sentences. Write in {language}."""
+
+
+def _plan_char_limit(shorter: bool) -> int:
+    """How much the model may write: what fits the speaking budget, less the framing around it."""
+    room = PLAN_BUDGET_SECONDS * SPOKEN_CHARS_PER_SECOND - PLAN_FRAMING_CHARS
+    return int(room * SHORTER_PLAN_SHARE) if shorter else room
 
 
 def _move_text(rubric: Rubric, lang: str) -> str:
@@ -71,10 +83,13 @@ class LLMPlanWriter:
         self._model = model
 
     async def write(self, brief: PlanBrief) -> tuple[PlanQuestion, ...]:
+        limit = _plan_char_limit(brief.shorter)
         system = _PLAN.format(
             common=_COMMON,
             move=_move_text(load_rubric(brief.move_id), brief.lang),
             language=_LANGUAGE.get(brief.lang, _LANGUAGE["en"]),
+            limit=limit,
+            words=limit // (QUESTIONS_PER_PLAN * PLAN_FIELDS * CHARS_PER_WORD),
         )
         facts = {
             "topic": brief.topic_id,

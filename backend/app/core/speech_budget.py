@@ -9,6 +9,7 @@ import re
 
 SPOKEN_CHARS_PER_SECOND = 13
 PLAN_BUDGET_SECONDS = 60
+PLAN_FRAMING_CHARS = 180  # numbering, labels and the invitation spoken around the questions
 REFLECT_BUDGET_SECONDS = 45
 MIRROR_BUDGET_SECONDS = 60
 MIRROR_QUOTE_SECONDS = 25
