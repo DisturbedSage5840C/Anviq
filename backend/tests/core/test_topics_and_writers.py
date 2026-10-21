@@ -52,7 +52,11 @@ class Scripted:
 
 
 def test_every_topic_with_a_rehearsal_has_a_topic_entry_and_the_reverse():
-    assert {t.id for t in load_topics()} == set(TOPIC_IDS)
+    topics = load_topics()
+    assert {t.id for t in topics} == set(TOPIC_IDS)
+    for topic in topics:
+        assert topic.nipun_lo.startswith("IL")
+        assert "NISHTHA FLN Course 9" in topic.nishtha_ref
 
 
 @pytest.mark.parametrize(

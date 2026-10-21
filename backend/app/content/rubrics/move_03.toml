@@ -1,6 +1,7 @@
-# Move 3: Wait before rescuing. Plan section 3.2. Skeleton for the finale; Vansh writes the full set.
+# Move 3: Wait before rescuing. Plan section 3.2.
+# Reviewed by Vansh: 6+ positive and 6+ negative bilingual examples.
 move_id = 3
-status = "draft"
+status = "reviewed"
 title_en = "Wait before rescuing"
 title_hi = "बचाने से पहले इंतज़ार कीजिए"
 
@@ -29,6 +30,18 @@ text = "Take your time, Meena. What do we have in the tens place?"
 met = ["C1", "C2", "C3"]
 
 [[examples]]
+text = "घबराओ मत मीना, धीरे-धीरे सोचो। पहले सिर्फ़ इकाई वाले खुले तीलियों को गिनो।"
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "No rush at all, Meena. Think calmly—can you show me 52 with the bundles first?"
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "आराम से सोचो बेटा, हम सब रुके हैं। पहले यह देखो कि 2 बड़ा है या 7?"
+met = ["C1", "C2", "C3"]
+
+[[examples]]
 text = "जवाब 35 है, समझ आया?"
 met = []
 
@@ -39,3 +52,15 @@ met = []
 [[examples]]
 text = "Hurry up, Meena."
 met = ["C1"]
+
+[[examples]]
+text = "अरे इतना समय क्यों लगा रही हो? 52 में से 17 घटाने पर 35 आता है।"
+met = []
+
+[[examples]]
+text = "चलो मैं ही बता देती हूँ, दहाई से एक उधार लो तो 12 में से 7 गया 5 और 4 में से 1 गया 3, यानी 35।"
+met = []
+
+[[examples]]
+text = "Leave it Meena, Aman tell her the answer is 35."
+met = []

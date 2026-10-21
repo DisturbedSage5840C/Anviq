@@ -133,3 +133,30 @@ def test_a_hindi_page_without_devanagari_is_flagged_for_ocr():
     assert looks_broken("abcdefghij " * 10, "hi")
     assert not looks_broken("बच्चों को बंडल से गिनती सिखाएँ " * 5, "hi")
     assert not looks_broken("abcdefghij " * 10, "en")
+
+
+def test_shipped_eval_datasets_and_manifests_are_well_formed():
+    from app.core.rubric import load_rubric
+    from app.evaluation.citations import _jsonl
+    from app.speech.benchmark import load_manifest as load_stt_manifest
+
+    repo_root = Path(__file__).parents[3]
+    gold = coach_kappa.load_gold(repo_root / "eval" / "datasets" / "gold_turns.jsonl")
+    assert len(gold) == 150
+    assert {g.move_id for g in gold} == {1, 2}
+    for row in gold:
+        rubric = load_rubric(row.move_id)
+        assert set(row.labels) == set(rubric.criterion_ids)
+
+    inscope = _jsonl(repo_root / "eval" / "datasets" / "ask_inscope.jsonl")
+    oos = _jsonl(repo_root / "eval" / "datasets" / "ask_oos.jsonl")
+    assert len(inscope) == 100
+    assert len(oos) == 40
+    assert all(q.get("question") and q.get("gold") for q in inscope)
+    assert all(q.get("question") and q.get("lang") in {"hi", "en"} for q in oos)
+
+    corpus_docs = read_manifest(repo_root / "content" / "corpus" / "manifest.csv")
+    assert len(corpus_docs) == 26
+
+    stt_clips = load_stt_manifest(repo_root / "eval" / "datasets" / "stt_clips" / "manifest.csv")
+    assert len(stt_clips) == 30

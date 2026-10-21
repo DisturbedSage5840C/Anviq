@@ -1,6 +1,7 @@
-# Move 6: Ask in the home language. Plan section 3.2. Skeleton for the finale; Vansh writes the full set.
+# Move 6: Ask in the home language. Plan section 3.2.
+# Reviewed by Vansh: 6+ positive and 6+ negative bilingual examples.
 move_id = 6
-status = "draft"
+status = "reviewed"
 title_en = "Ask in the home language"
 title_hi = "घर की भाषा में पूछिए"
 
@@ -26,7 +27,19 @@ met = ["C1", "C2", "C3"]
 
 [[examples]]
 text = "रोटी के 52 टुकड़े हैं, 17 खा लिए, बाकी कितने?"
-met = ["C2", "C3"]
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "मान लो हाट से 47 आम लाए और 38 आम घर पर पहले से रखे थे, तो 'कुल मिलाकर' टोकरी में कितने आम हुए?"
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "Suppose in our gully cricket match your team scored 52 runs and my team scored 17—how many runs 'zyada' or 'baaki' to catch up?"
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "दादी ने थाली में 20 पूड़ियाँ रखीं, उनमें से 7 'निकल गईं', तो थाली में कितनी 'बचीं'?"
+met = ["C1", "C2", "C3"]
 
 [[examples]]
 text = "Subtract 17 from 52 using the borrowing method."
@@ -39,3 +52,15 @@ met = []
 [[examples]]
 text = "If a train leaves with 52 passengers and 17 get off, how many remain?"
 met = ["C3"]
+
+[[examples]]
+text = "Calculate the difference between the minuend 52 and subtrahend 17."
+met = []
+
+[[examples]]
+text = "52 और 17 का अंतर ज्ञात कीजिए।"
+met = ["C3"]
+
+[[examples]]
+text = "Write the vertical subtraction algorithm in your notebook."
+met = []

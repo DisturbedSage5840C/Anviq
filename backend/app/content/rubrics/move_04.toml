@@ -1,6 +1,7 @@
-# Move 4: Build on what a child said. Plan section 3.2. Skeleton for the finale; Vansh writes the full set.
+# Move 4: Build on what a child said. Plan section 3.2.
+# Reviewed by Vansh: 6+ positive and 6+ negative bilingual examples.
 move_id = 4
-status = "draft"
+status = "reviewed"
 title_en = "Build on what a child said"
 title_hi = "बच्चे की बात को आगे बढ़ाइए"
 
@@ -29,6 +30,18 @@ text = "तो अमन ने दहाई से एक लिया। म�
 met = ["C1", "C2", "C3"]
 
 [[examples]]
+text = "Riya is saying that 4 tens and 7 ones make 47. Meena, do you agree with Riya's way of counting 47?"
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "मीना का कहना है कि 39 बड़ा है क्योंकि इसमें 9 है। अमन, क्या तुम मीना की बात से सहमत हो जब हम 39 और 41 की तुलना कर रहे हैं?"
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "So Aman added the tens first and then the ones to get 85. Riya, what would you add to Aman's method?"
+met = ["C1", "C2"]
+
+[[examples]]
 text = "अच्छा। अगला सवाल।"
 met = []
 
@@ -38,4 +51,16 @@ met = []
 
 [[examples]]
 text = "ठीक है, बैठो। मीना बताओ।"
+met = []
+
+[[examples]]
+text = "हाँ सही है, अब किताब का पेज नंबर 14 खोलो।"
+met = []
+
+[[examples]]
+text = "Good answer. Now everyone copy this from the blackboard."
+met = []
+
+[[examples]]
+text = "चलो छोड़ो, अब दूसरा सवाल करते हैं।"
 met = []

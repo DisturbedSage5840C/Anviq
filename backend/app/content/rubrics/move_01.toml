@@ -1,7 +1,7 @@
 # Move 1: Ask how, not just what. Plan section 3.2.
-# Draft examples by Aadi from the plan; Vansh and the mentor review the labels and the Hindi.
+# Reviewed by Vansh: 6+ positive and 6+ negative bilingual examples.
 move_id = 1
-status = "draft"
+status = "reviewed"
 title_en = "Ask how, not just what"
 title_hi = "सिर्फ़ 'क्या' नहीं, 'कैसे' पूछिए"
 

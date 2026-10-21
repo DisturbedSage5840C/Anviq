@@ -32,6 +32,8 @@ class Topic:
     title_en: str
     title_hi: str
     keywords: tuple[str, ...]
+    nipun_lo: str = ""
+    nishtha_ref: str = ""
 
     def title(self, lang: str) -> str:
         return self.title_hi if lang == "hi" else self.title_en
@@ -42,7 +44,15 @@ def load_topics() -> tuple[Topic, ...]:
     with TOPICS_FILE.open("rb") as handle:
         raw = tomllib.load(handle)
     return tuple(
-        Topic(t["id"], t["grade"], t["title_en"], t["title_hi"], tuple(t["keywords"]))
+        Topic(
+            t["id"],
+            t["grade"],
+            t["title_en"],
+            t["title_hi"],
+            tuple(t["keywords"]),
+            t.get("nipun_lo", ""),
+            t.get("nishtha_ref", ""),
+        )
         for t in raw["topic"]
     )
 
