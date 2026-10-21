@@ -172,3 +172,11 @@ def test_with_a_dsn_sentry_starts_with_pii_off_and_the_scrubbers_wired(
     assert options["environment"] == "staging"
     assert options["before_send"] is sentry_module.scrub_event
     assert options["before_breadcrumb"] is sentry_module.scrub_breadcrumb
+
+
+def test_the_twilio_signature_header_is_redacted_like_meta_s():
+    event = {"request": {"headers": {"X-Twilio-Signature": "abc=", "Accept": "*/*"}}}
+
+    headers = scrub_event(event, {})["request"]["headers"]
+
+    assert headers == {"X-Twilio-Signature": REDACTED, "Accept": "*/*"}

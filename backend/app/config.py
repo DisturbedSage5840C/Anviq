@@ -11,6 +11,9 @@ from app.privacy.crypto import InvalidKeyError, decode_key
 
 DEPLOYED_ENVS = ("staging", "prod")
 MIN_DASHBOARD_TOKEN_CHARS = 24
+TWILIO_SID_PATTERN = r"^AC[0-9a-fA-F]{32}$"
+TWILIO_FROM_PATTERN = r"^\+\d{8,15}$"
+HTTPS_URL_PATTERN = r"^https://[^\s/]+\S*$"
 
 
 class Settings(BaseSettings):
@@ -24,6 +27,17 @@ class Settings(BaseSettings):
     wa_access_token: SecretStr | None = None
     # Meta retires Graph versions on a schedule, so the version is config, not code.
     wa_graph_version: str = Field(default="v25.0", pattern=r"^v\d+\.\d+$")
+
+    # Which WhatsApp channel carries the teachers' messages. Twilio's sandbox is the pilot channel
+    # while Meta's business verification is pending; both feed the same pipeline.
+    whatsapp_provider: Literal["meta", "twilio"] = "meta"
+    twilio_account_sid: str | None = Field(default=None, pattern=TWILIO_SID_PATTERN)
+    twilio_auth_token: SecretStr | None = None
+    # The number replies come from, e.g. the sandbox's +14155238886.
+    twilio_whatsapp_from: str | None = Field(default=None, pattern=TWILIO_FROM_PATTERN)
+    # The exact public URL configured in Twilio. Its signature covers this string, and a proxy
+    # rewrites the scheme and host, so it cannot be rebuilt from the request.
+    twilio_webhook_url: str | None = Field(default=None, pattern=HTTPS_URL_PATTERN)
 
     database_url: str = "postgresql+asyncpg://anviq:anviq@localhost:5432/anviq"
     redis_url: str = "redis://localhost:6379/0"
@@ -69,10 +83,48 @@ class Settings(BaseSettings):
     sarvam_tts_model: str = "bulbul:v3"
     sarvam_tts_sample_rate: int = 24000
 
+    @field_validator("whatsapp_provider", mode="before")
+    @classmethod
+    def _provider_name_is_forgiving(cls, raw: object) -> object:
+        # Compose passes the variable empty when unset; "Twilio " should not crash-loop the API.
+        if not isinstance(raw, str):
+            return raw
+        return raw.strip().lower() or "meta"
+
+    @field_validator(
+        "twilio_account_sid",
+        "twilio_auth_token",
+        "twilio_whatsapp_from",
+        "twilio_webhook_url",
+        mode="before",
+    )
+    @classmethod
+    def _blank_twilio_value_is_unset(cls, raw: object) -> object:
+        # Compose passes every listed variable, empty when the host has not set it.
+        return None if isinstance(raw, str) and not raw.strip() else raw
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def wa_graph_base_url(self) -> str:
         return f"https://graph.facebook.com/{self.wa_graph_version}"
+
+    @model_validator(mode="after")
+    def require_twilio_settings(self) -> Self:
+        if self.whatsapp_provider != "twilio":
+            return self
+        missing = [
+            name
+            for name, value in (
+                ("TWILIO_ACCOUNT_SID", self.twilio_account_sid),
+                ("TWILIO_AUTH_TOKEN", self.twilio_auth_token),
+                ("TWILIO_WHATSAPP_FROM", self.twilio_whatsapp_from),
+                ("TWILIO_WEBHOOK_URL", self.twilio_webhook_url),
+            )
+            if value is None
+        ]
+        if missing:
+            raise ValueError(f"{', '.join(missing)} required when WHATSAPP_PROVIDER=twilio")
+        return self
 
     @model_validator(mode="after")
     def require_deployed_secrets(self) -> Self:

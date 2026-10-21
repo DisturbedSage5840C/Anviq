@@ -25,7 +25,6 @@ from app.channel.reminders import (
     reminder_window,
     still_reachable,
 )
-from app.channel.whatsapp_client import WhatsAppClient
 from app.config import Settings, get_settings
 from app.core.dialogue import Brain
 from app.core.router_brain import RouterBrain
@@ -34,7 +33,7 @@ from app.ops.cost_report import build_cost_report, previous_ist_day, render_cost
 from app.ops.sentry import init_sentry
 from app.privacy.crypto import FieldCipher
 from app.privacy.retention import purge_expired
-from app.resources import Resources, open_resources
+from app.resources import Resources, WhatsAppChannel, open_resources
 from app.speech.voices import COACH_PERSONA, voice_for
 
 
@@ -57,18 +56,32 @@ SENT, FAILED, SKIPPED = "sent", "failed", "skipped"
 MAX_TRIES = 2
 JOB_TIMEOUT_S = 60
 REMINDER_JOB_TIMEOUT_S = 300  # a claimed batch of sends, not a single inbound message
+META_CREDENTIALS = "WA_PHONE_NUMBER_ID and WA_ACCESS_TOKEN"
 
 
 def build_pipeline(resources: Resources, settings: Settings, *, brain: Brain) -> InboundPipeline:
     if resources.whatsapp is None:
-        raise RuntimeError("WA_PHONE_NUMBER_ID and WA_ACCESS_TOKEN are required to run the worker")
+        raise RuntimeError(f"{_missing_credentials(settings)} are required to run the worker")
     return InboundPipeline(
         whatsapp=resources.whatsapp,
         stt=resources.stt,
-        tts=resources.tts,
+        # The Twilio sandbox cannot send voice notes, so its replies are text only.
+        tts=None if settings.whatsapp_provider == "twilio" else resources.tts,
         brain=brain,
         voice=voice_for(settings.tts_provider, COACH_PERSONA),
     )
+
+
+def _missing_credentials(settings: Settings) -> str:
+    if settings.whatsapp_provider == "twilio":
+        return "TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM"
+    return META_CREDENTIALS
+
+
+def _credentials_hint(ctx: dict[str, Any]) -> str:
+    """Which variables to set; a job context without settings (tests) defaults to Meta's."""
+    settings: Settings | None = ctx.get("settings")
+    return _missing_credentials(settings) if settings is not None else META_CREDENTIALS
 
 
 def build_brain(resources: Resources, settings: Settings | None = None) -> Brain:
@@ -81,7 +94,7 @@ def build_brain(resources: Resources, settings: Settings | None = None) -> Brain
 async def handle_inbound(ctx: dict[str, Any], envelope: dict[str, Any]) -> None:
     pipeline: InboundPipeline | None = ctx["pipeline"]
     if pipeline is None:
-        raise RuntimeError("WA_PHONE_NUMBER_ID and WA_ACCESS_TOKEN are required to handle inbound")
+        raise RuntimeError(f"{_credentials_hint(ctx)} are required to handle inbound")
     await pipeline.handle(InboundMessage.from_envelope(envelope))
 
 
@@ -129,9 +142,15 @@ async def send_daily_reminders(ctx: dict[str, Any]) -> None:
     failed teacher never stops the rest, and the log carries counts only, never a number.
     """
     resources: Resources = ctx["resources"]
+    settings: Settings | None = ctx.get("settings")
+    if settings is not None and settings.whatsapp_provider == "twilio":
+        # Reminders are template messages and the sandbox only allows free-form replies inside
+        # 24 hours. Skip before claiming, so no teacher is stamped as reminded without a send.
+        logger.info("daily reminders skipped: the Twilio sandbox cannot send templates")
+        return
     whatsapp = resources.whatsapp
     if whatsapp is None:
-        raise RuntimeError("WA_PHONE_NUMBER_ID and WA_ACCESS_TOKEN are required to send reminders")
+        raise RuntimeError(f"{_credentials_hint(ctx)} are required to send reminders")
     async with resources.engine.begin() as conn:
         due = await claim_due_reminders(conn, reminder_window(datetime.now(UTC)))
     cipher = resources.keyring.field_cipher
@@ -146,7 +165,7 @@ async def send_daily_reminders(ctx: dict[str, Any]) -> None:
 
 
 async def _send_reminder(
-    resources: Resources, whatsapp: WhatsAppClient, cipher: FieldCipher, reminder: DueReminder
+    resources: Resources, whatsapp: WhatsAppChannel, cipher: FieldCipher, reminder: DueReminder
 ) -> str:
     try:
         async with resources.engine.begin() as conn:

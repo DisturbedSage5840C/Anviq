@@ -22,7 +22,14 @@ PHONE_REDACTED = "[phone]"
 _REQUEST_CONTENT_KEYS = ("data", "cookies", "query_string")
 _BREADCRUMB_CONTENT_KEYS = ("body",)
 _CREDENTIAL_HEADERS = frozenset(
-    {"authorization", "cookie", "x-demo-code", "x-hub-signature", "x-hub-signature-256"}
+    {
+        "authorization",
+        "cookie",
+        "x-demo-code",
+        "x-hub-signature",
+        "x-hub-signature-256",
+        "x-twilio-signature",
+    }
 )
 # Dropped wherever they appear: locals hold transcripts, `user` holds the sender id and IP.
 _DROPPED_KEYS = frozenset({"vars", "user"})

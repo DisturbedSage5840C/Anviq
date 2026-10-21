@@ -22,6 +22,11 @@ x-backend: &backend
     - DEMO_CYCLE_MINUTES
     - WA_PHONE_NUMBER_ID
     - WA_ACCESS_TOKEN
+    - WHATSAPP_PROVIDER
+    - TWILIO_ACCOUNT_SID
+    - TWILIO_AUTH_TOKEN
+    - TWILIO_WHATSAPP_FROM
+    - TWILIO_WEBHOOK_URL
   depends_on:
     db-roles:
       condition: service_completed_successfully

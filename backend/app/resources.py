@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from app.channel.inbound_guard import InboundGuard
 from app.channel.job_queue import ArqJobQueue, JobQueue
+from app.channel.twilio_client import TwilioWhatsAppClient
 from app.channel.whatsapp_client import WhatsAppClient
 from app.config import Settings
 from app.core.teacher_store import TeacherStore
@@ -23,6 +24,9 @@ from app.speech.factory import build_speech
 HTTP_TIMEOUT_S = 20.0
 DEFAULT_CONN_RETRIES = 3
 
+# Meta's Cloud API client or Twilio's sandbox client; both satisfy the pipeline's WhatsAppPort.
+WhatsAppChannel = WhatsAppClient | TwilioWhatsAppClient
+
 
 @dataclass(frozen=True)
 class Resources:
@@ -31,7 +35,7 @@ class Resources:
     http: httpx.AsyncClient
     inbound_guard: InboundGuard
     job_queue: JobQueue
-    whatsapp: WhatsAppClient | None
+    whatsapp: WhatsAppChannel | None
     stt: STTProvider | None
     tts: TTSProvider | None
     engine: AsyncEngine
@@ -65,7 +69,7 @@ async def open_resources(
             http=http,
             inbound_guard=InboundGuard(redis),
             job_queue=ArqJobQueue(arq_pool),
-            whatsapp=_build_whatsapp(settings, http),
+            whatsapp=build_whatsapp(settings, http),
             stt=stt,
             tts=tts,
             engine=engine,
@@ -79,7 +83,10 @@ async def open_resources(
         await arq_pool.aclose()
 
 
-def _build_whatsapp(settings: Settings, http: httpx.AsyncClient) -> WhatsAppClient | None:
+def build_whatsapp(settings: Settings, http: httpx.AsyncClient) -> WhatsAppChannel | None:
+    """The outbound client for the configured provider, or None when it has no credentials."""
+    if settings.whatsapp_provider == "twilio":
+        return _build_twilio(settings, http)
     if settings.wa_phone_number_id is None or settings.wa_access_token is None:
         return None
     return WhatsAppClient(
@@ -87,4 +94,20 @@ def _build_whatsapp(settings: Settings, http: httpx.AsyncClient) -> WhatsAppClie
         phone_number_id=settings.wa_phone_number_id,
         access_token=settings.wa_access_token.get_secret_value(),
         base_url=settings.wa_graph_base_url,
+    )
+
+
+def _build_twilio(settings: Settings, http: httpx.AsyncClient) -> TwilioWhatsAppClient | None:
+    # Settings validation already requires all four when the provider is twilio.
+    if (
+        settings.twilio_account_sid is None
+        or settings.twilio_auth_token is None
+        or settings.twilio_whatsapp_from is None
+    ):
+        return None
+    return TwilioWhatsAppClient(
+        http,
+        account_sid=settings.twilio_account_sid,
+        auth_token=settings.twilio_auth_token.get_secret_value(),
+        from_number=settings.twilio_whatsapp_from,
     )

@@ -538,3 +538,48 @@ async def test_an_inbound_job_fails_loudly_when_there_is_no_whatsapp_pipeline():
 
     with pytest.raises(RuntimeError, match="WA_PHONE_NUMBER_ID"):
         await worker.handle_inbound(ctx, {})
+
+
+async def test_reminders_are_skipped_without_claiming_on_the_twilio_sandbox(
+    monkeypatch: pytest.MonkeyPatch, claimed: list[ReminderWindow], caplog: pytest.LogCaptureFixture
+):
+    log: list[str] = []
+    ctx, due = _reminder_ctx(log, _RecordingWhatsApp(log))
+    ctx["settings"] = Settings(
+        app_env="local",
+        wa_verify_token="v",
+        wa_app_secret="s",
+        whatsapp_provider="twilio",
+        twilio_account_sid="AC" + "3" * 32,
+        twilio_auth_token="t",
+        twilio_whatsapp_from="+14155238886",
+        twilio_webhook_url="https://demo.example.test/webhook/twilio",
+        _env_file=None,
+    )
+    _stub_claim(monkeypatch, log, due, claimed)
+
+    with caplog.at_level(logging.INFO):
+        await worker.send_daily_reminders(ctx)
+
+    assert log == []  # nothing claimed, so nobody loses today's reminder
+    assert "sandbox" in " ".join(record.getMessage() for record in caplog.records)
+
+
+async def test_the_inbound_job_error_names_the_twilio_settings_on_a_twilio_deploy():
+    ctx: dict[str, Any] = {
+        "pipeline": None,
+        "settings": Settings(
+            app_env="local",
+            wa_verify_token="v",
+            wa_app_secret="s",
+            whatsapp_provider="twilio",
+            twilio_account_sid="AC" + "3" * 32,
+            twilio_auth_token="t",
+            twilio_whatsapp_from="+14155238886",
+            twilio_webhook_url="https://demo.example.test/webhook/twilio",
+            _env_file=None,
+        ),
+    }
+
+    with pytest.raises(RuntimeError, match="TWILIO_ACCOUNT_SID"):
+        await worker.handle_inbound(ctx, {})
