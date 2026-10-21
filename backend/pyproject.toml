@@ -28,6 +28,7 @@ dev = [
   "respx>=0.23.1",
   "fakeredis>=2.40.0",
   "pip-audit>=2.10.1",
+  "pyyaml>=6.0",
 ]
 # Only `python -m app.core.ask.ingest` needs PDF extraction: uv sync --group ingest
 ingest = [
