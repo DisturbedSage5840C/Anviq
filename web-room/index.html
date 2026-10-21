@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Anviq · वेब अभ्यास कक्ष</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%230f766e'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <main class="room">
+    <header class="room-header">
+      <h1>Anviq <span class="sub">वेब अभ्यास कक्ष</span></h1>
+      <p class="tagline">बिना WhatsApp के, ब्राउज़र में ही अभ्यास करें। कोई रिकॉर्डिंग सेव नहीं होती।</p>
+    </header>
+
+    <section class="card" id="gate">
+      <label for="code">डेमो कोड <span class="hint">(टीम से मिला 22 अक्षरों का कोड)</span></label>
+      <div class="code-row">
+        <input id="code" name="demo-code" autocomplete="off" autocapitalize="none"
+               spellcheck="false" placeholder="xxxxxxxxxxxxxxxxxxxxxx" />
+        <button id="start" type="button" class="primary">शुरू करें</button>
+      </div>
+      <p id="gate-error" class="error" role="alert" hidden></p>
+      <p class="privacy-line">
+        <a href="#privacy">आपका डेटा किसे दिखता है?</a>
+      </p>
+    </section>
+
+    <section class="card" id="session" hidden>
+      <div class="session-head">
+        <div id="turn-status" class="pill" aria-live="polite">तैयार</div>
+        <button id="reset" type="button" class="ghost">कोड बदलें</button>
+      </div>
+
+      <ol id="transcript" class="transcript" aria-live="polite"></ol>
+
+      <div class="compose">
+        <button id="record" type="button" class="record" aria-label="दबाकर बोलिए">
+          <span class="record-label" id="record-label">दबाकर बोलिए</span>
+        </button>
+        <p class="hint">रिकॉर्डिंग केवल भेजने के लिए ब्राउज़र में रहती है, कहीं सेव नहीं होती।</p>
+        <details class="typed">
+          <summary>आवाज़ की जगह टाइप करना चाहें?</summary>
+          <textarea id="text" rows="2" maxlength="2000" placeholder="अपनी बात लिखिए…"></textarea>
+          <button id="send-text" type="button" class="secondary">भेजें</button>
+        </details>
+      </div>
+    </section>
+
+    <section class="card quiet" id="privacy">
+      <h2>गोपनीयता <span class="sub">Who sees this?</span></h2>
+      <ul>
+        <li>आपकी आवाज़ की रिकॉर्डिंग हम कभी नहीं रखते — ब्राउज़र से StT तक जाकर मिट जाती है। सिर्फ़ लिखा रूप 90 दिन तक रहता है।</li>
+        <li>बच्चों की कोई जानकारी नहीं रखी जाती। कृपया बच्चों के असली नाम न बोलें।</li>
+        <li>आपकी प्रगति सिर्फ़ आप देख सकते हैं। संस्थाओं को 20 या ज़्यादा शिक्षकों का गुमनाम औसत ही दिखता है।</li>
+        <li>यह डेमो कोड वाला ब्राउज़र सत्र है; हम सत्र की पहचान सिर्फ़ कोड के हैश से जानते हैं।</li>
+      </ul>
+    </section>
+
+    <footer class="foot">Anviq — निजी अभ्यास, सार्वजनिक प्रगति नहीं।</footer>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
