@@ -132,6 +132,7 @@
 
   function showReply(reply) {
     const li = addBubble("anviq", reply.text);
+    if (reply && reply.refused) li.classList.add("refused");
     const bytes = base64ToBytes(reply.audio_base64);
     if (bytes) {
       const url = URL.createObjectURL(new Blob([bytes], { type: reply.audio_mime || "audio/wav" }));
@@ -157,7 +158,8 @@
   }
 
   function ended(text) {
-    return STOP_WORDS.includes(text.trim());
+    const normalised = (text || "").trim().toLowerCase().replace(/[.!?।]+$/g, "");
+    return STOP_WORDS.some((word) => normalised === word.toLowerCase());
   }
 
   async function submitRecording() {

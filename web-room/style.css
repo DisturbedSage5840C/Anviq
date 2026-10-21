@@ -108,6 +108,7 @@ button:disabled { opacity: 0.5; cursor: wait; }
 .bubble { padding: 0.65rem 0.8rem; border-radius: 12px; max-width: 92%; white-space: pre-wrap; }
 .bubble.mine { background: var(--teal-100); margin-inline-start: auto; }
 .bubble.anviq { background: #f5f5f4; }
+.bubble.refused { background: #fef3c7; border-inline-start: 3px solid var(--danger, #b91c1c); }
 .bubble .src { color: var(--danger); font-weight: 700; margin-inline-end: 0.35rem; }
 .bubble button {
   display: block;
