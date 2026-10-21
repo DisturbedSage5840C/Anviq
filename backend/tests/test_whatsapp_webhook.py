@@ -118,3 +118,33 @@ def test_verify_rejects_a_non_ascii_token_not_a_server_error(client):
         params={"hub.mode": "subscribe", "hub.verify_token": "tokén", "hub.challenge": "1"},
     )
     assert response.status_code == 403
+
+
+def test_a_failed_delivery_is_logged_by_code_without_the_recipient(client, caplog):
+    payload = {
+        "entry": [
+            {
+                "changes": [
+                    {
+                        "value": {
+                            "statuses": [
+                                {
+                                    "status": "failed",
+                                    "recipient_id": "919999999999",
+                                    "errors": [{"code": 131030}],
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+    body = _body(payload)
+
+    with caplog.at_level("WARNING", logger="app.api.whatsapp_webhook"):
+        response = client.post(URL, content=body, headers={"X-Hub-Signature-256": sign(body)})
+
+    assert response.status_code == 200
+    assert "whatsapp delivery failed: code=131030" in caplog.text
+    assert "919999999999" not in caplog.text

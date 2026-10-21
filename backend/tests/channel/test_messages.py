@@ -1,4 +1,4 @@
-from app.channel.messages import InboundKind, parse_inbound
+from app.channel.messages import InboundKind, failed_delivery_codes, parse_inbound
 
 
 def _envelope(message: dict) -> dict:
@@ -107,3 +107,37 @@ def test_multiple_messages_in_one_delivery_keep_order() -> None:
     payload = {"entry": [{"changes": [{"value": {"messages": [first, second]}}]}]}
 
     assert [m.wa_message_id for m in parse_inbound(payload)] == ["a", "b"]
+
+
+def _status_payload(*statuses: dict) -> dict:
+    return {"entry": [{"changes": [{"value": {"statuses": list(statuses)}}]}]}
+
+
+def test_a_failed_delivery_status_yields_its_error_code() -> None:
+    payload = _status_payload(
+        {
+            "id": "wamid.9",
+            "recipient_id": "919800000001",
+            "status": "failed",
+            "errors": [{"code": 131030, "title": "Recipient not in allowed list"}],
+        }
+    )
+
+    assert failed_delivery_codes(payload) == [131030]
+
+
+def test_delivered_and_read_statuses_are_not_failures() -> None:
+    payload = _status_payload({"status": "delivered"}, {"status": "read"}, {"status": "sent"})
+
+    assert failed_delivery_codes(payload) == []
+
+
+def test_a_failed_status_without_a_usable_code_is_reported_as_zero() -> None:
+    payload = _status_payload({"status": "failed"}, {"status": "failed", "errors": ["nope"]})
+
+    assert failed_delivery_codes(payload) == [0, 0]
+
+
+def test_malformed_payload_yields_no_failed_codes() -> None:
+    assert failed_delivery_codes({"entry": "nope"}) == []
+    assert failed_delivery_codes({}) == []

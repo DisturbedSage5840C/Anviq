@@ -69,6 +69,26 @@ def parse_inbound(payload: Mapping[str, Any]) -> list[InboundMessage]:
     return messages
 
 
+def failed_delivery_codes(payload: Mapping[str, Any]) -> list[int]:
+    """Meta's error code for each reply it could not deliver (0 when it gave none).
+
+    Codes only: the status carries the recipient's number, which must never reach a log.
+    """
+    codes: list[int] = []
+    for entry in _as_list(payload.get("entry")):
+        for change in _as_list(_as_dict(entry).get("changes")):
+            value = _as_dict(_as_dict(change).get("value"))
+            for status in _as_list(value.get("statuses")):
+                if _as_dict(status).get("status") == "failed":
+                    codes.append(_first_error_code(_as_dict(status)))
+    return codes
+
+
+def _first_error_code(status: Mapping[str, Any]) -> int:
+    errors = _as_list(status.get("errors"))
+    return _to_int(_as_dict(errors[0]).get("code")) if errors else 0
+
+
 def _iter_raw_messages(payload: Mapping[str, Any]) -> Iterator[Mapping[str, Any]]:
     for entry in _as_list(payload.get("entry")):
         for change in _as_list(_as_dict(entry).get("changes")):

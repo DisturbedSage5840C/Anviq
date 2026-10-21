@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, R
 from app.api.deps import get_inbound_guard, get_job_queue
 from app.channel.inbound_guard import InboundGuard
 from app.channel.job_queue import JobQueue
-from app.channel.messages import InboundMessage, parse_inbound
+from app.channel.messages import InboundMessage, failed_delivery_codes, parse_inbound
 from app.channel.sender_key import sender_key
 from app.channel.signature import is_valid_signature
 from app.config import Settings, get_settings
@@ -53,6 +53,8 @@ async def receive_webhook(
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="invalid json")
 
+    for code in failed_delivery_codes(payload):
+        logger.warning("whatsapp delivery failed: code=%d", code)
     queued = 0
     for message in parse_inbound(payload):
         queued += await _admit(message, settings, guard, queue)
