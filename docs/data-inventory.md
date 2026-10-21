@@ -81,4 +81,3 @@ These are tracked and not hidden. Each needs a decision or a change before the f
    (see the [runbook](runbook.md)).
 4. The `demo_codes` grants are broader than the table needs.
 5. Correction (DPDP S.12) has no in-chat command; see the rights table.
-6. The Hindi copy for the export's reminder and practice lines is a draft, waiting for Vansh's review.

@@ -1,0 +1,31 @@
+clip,reference,lang,condition
+clips/01_hi_clean_f1.wav,नमस्ते मैं कक्षा दो और तीन को गणित पढ़ाती हूँ,hi,clean
+clips/02_hi_clean_m1.wav,कल मुझे दो अंकों का घटाना हासिल के साथ पढ़ाना है,hi,clean
+clips/03_hi_clean_f2.wav,रिया तुमने पैतालीस कैसे निकाला बंडल से दिखाओ,hi,clean
+clips/04_hi_clean_m2.wav,अमन पैंतीस आया है अब उंगलियों पर करके दिखाओ कि कैसे,hi,clean
+clips/05_hi_clean_f3.wav,मीना कोई जल्दी नहीं है आराम से सोचो और बताओ,hi,clean
+clips/06_hi_haryanvi_f1.wav,रिया बेटा सात में से दो क्यों घटाया या बात समझा के बता,hi,accent_haryanvi
+clips/07_hi_haryanvi_m1.wav,अमन भाई तेरा जवाब पैंतीस कैसे आया तीलियों से करके दिखा दे,hi,accent_haryanvi
+clips/08_hi_haryanvi_f2.wav,कल क्लास में दहाई और इकाई का स्थानीय मान सिखाना है,hi,accent_haryanvi
+clips/09_hi_bhojpuri_m1.wav,रिया बाबू इ बताव कि पचास और दो बावन में दहाई केतना बा,hi,accent_bhojpuri
+clips/10_hi_bhojpuri_f1.wav,मीना घबरा मत आराम से पहिले इकाई के तीली गिन ल,hi,accent_bhojpuri
+clips/11_hi_bhojpuri_m2.wav,आज क्लास में लइकन के जवाब सुन के बहुत अच्छा लागल,hi,accent_bhojpuri
+clips/12_hi_rajasthani_f1.wav,रिया बेटा बावन में से सत्रह घटाने पर पैंतालीस कैसे आयो बताओ,hi,accent_rajasthani
+clips/13_hi_rajasthani_m1.wav,पहली कक्षा वाला बंडल गिनो और दूसरी कक्षा वाला जोड़ बताओ,hi,accent_rajasthani
+clips/14_hi_rajasthani_f2.wav,मेले में बावन रुपये में से सत्रह की जलेबी खा ली तो कितने बचे,hi,accent_rajasthani
+clips/15_hi_noisy_f1.wav,रिया का जवाब पैंतालीस है अमन का पैंतीस दोनों में से किसका सही है,hi,classroom_noise
+clips/16_hi_noisy_m1.wav,अगर दो में से सात नहीं घटा सकते तो दहाई से क्या मदद लें,hi,classroom_noise
+clips/17_hi_noisy_f2.wav,बच्चों को शून्य की अवधारणा समझाने के लिए क्या गतिविधि करें,hi,classroom_noise
+clips/18_hi_noisy_m2.wav,तो अमन ने दहाई से एक लिया मीना क्या तुम इसमें कुछ जोड़ोगी,hi,classroom_noise
+clips/19_hi_noisy_f3.wav,आज किसी बच्चे ने ऐसा कहा कि उम्म मुझे सोचने दीजिए,hi,classroom_noise
+clips/20_hi_noisy_m3.wav,मेरा डेटा मिटाओ और सहमति वापस ले लो,hi,classroom_noise
+clips/21_hi_hinglish_f1.wav,Riya tumne 45 kaise nikala bundles se explain karo,hi,hinglish
+clips/22_hi_hinglish_m1.wav,kal mujhe Grade 2 mein subtraction with borrowing padhana hai,hi,hinglish
+clips/23_hi_hinglish_f2.wav,Aman answer toh right hai par steps batao kaise kiya,hi,hinglish
+clips/24_hi_hinglish_m2.wav,Meena take your time pehle tens place ke bundles count karo,hi,hinglish
+clips/25_hi_hinglish_f3.wav,multigrade class mein place value ki activity kaise karayein,hi,hinglish
+clips/26_en_clean_f1.wav,Tomorrow I have to teach two digit subtraction with borrowing in Grade 2,en,clean
+clips/27_en_clean_m1.wav,Riya where did the five come from show me with bundles of ten,en,clean
+clips/28_en_clean_f2.wav,Take your time Meena what do we have in the tens place right now,en,clean
+clips/29_en_noisy_m2.wav,So Riya says she took two from seven Aman do you agree with her step,en,classroom_noise
+clips/30_en_noisy_f3.wav,Class one count the sticks class two add the two groups and explain why,en,classroom_noise

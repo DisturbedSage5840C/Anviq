@@ -187,17 +187,18 @@ def test_weak_turn_gets_emoji_feedback_and_one_phrasing_without_digits():
     assert not any(ch.isdigit() for ch in text)
 
 
-def test_every_move_has_a_rubric_with_binary_criteria_and_examples():
+def test_every_move_has_a_reviewed_rubric_with_binary_criteria_and_examples():
     for move_id in MOVES:
         rubric = load_rubric(move_id)
+        assert rubric.status == "reviewed"
         assert 3 <= len(rubric.criteria) <= 4
-        assert len(rubric.examples) >= 6
+        assert len(rubric.examples) >= 12
         ids = set(rubric.criterion_ids)
         assert all(example.met <= ids for example in rubric.examples)
 
 
-def test_moves_one_and_two_have_six_positive_and_six_negative_examples():
-    for move_id in (1, 2):
+def test_every_move_has_at_least_six_positive_and_six_negative_examples():
+    for move_id in MOVES:
         rubric = load_rubric(move_id)
         positive = [e for e in rubric.examples if len(e.met) >= 2]
         negative = [e for e in rubric.examples if len(e.met) < 2]

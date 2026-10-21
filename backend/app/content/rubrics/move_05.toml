@@ -1,6 +1,7 @@
-# Move 5: Mixed-level questions (multigrade). Plan section 3.2. Skeleton for the finale; Vansh writes the full set.
+# Move 5: Mixed-level questions (multigrade). Plan section 3.2.
+# Reviewed by Vansh: 6+ positive and 6+ negative bilingual examples.
 move_id = 5
-status = "draft"
+status = "reviewed"
 title_en = "Mixed-level questions"
 title_hi = "अलग-अलग स्तर के सवाल"
 
@@ -29,6 +30,18 @@ text = "Riya, count the sticks. Aman, add the two groups, and then tell us how y
 met = ["C1", "C2", "C3"]
 
 [[examples]]
+text = "मीना, तुम खुले कंचे गिनो। रिया, तुम दोनों ढेर मिलाकर जोड़ बताओ और समझाओ कि दहाई कैसे बनी।"
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "Grade 1 children, show me 30 with bundles. Grade 2 children, take away 7 and explain why we had to open a bundle."
+met = ["C1", "C2", "C3"]
+
+[[examples]]
+text = "अमन, तुम 39 और 41 में से बड़ी संख्या बताओ और समझाओ क्यों; मीना, तुम पहले दोनों संख्याओं की दहाई गिनो।"
+met = ["C1", "C2", "C3"]
+
+[[examples]]
 text = "सब मिलकर बताओ 52 में से 17।"
 met = []
 
@@ -38,4 +51,16 @@ met = []
 
 [[examples]]
 text = "Everyone count the sticks."
+met = []
+
+[[examples]]
+text = "सारे बच्चे अपनी कॉपी में 47 जमा 38 लिखो और जवाब निकालो।"
+met = []
+
+[[examples]]
+text = "Who can tell me the answer on the board?"
+met = []
+
+[[examples]]
+text = "चलो सब एक साथ पहाड़ा बोलो।"
 met = []

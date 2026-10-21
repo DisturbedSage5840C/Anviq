@@ -57,9 +57,9 @@ Meta's retry window even when a vendor is slow.
 | Mentor dashboard page | **Not yet** | `dashboard/` is empty; the API it calls exists |
 | Web room front end | **Not yet** | `web-room/` is empty; the API it calls exists |
 | Evaluation harness | Built; needs a model key to produce real numbers | `app/evaluation/`, see `eval/README.md` |
-| Rubrics for coaching moves 1-6, personas, topic map | Built; every rubric is marked `status = "draft"` until the pedagogy lead signs it off (moves 3-6 are skeletons) | `app/content/rubrics/`, `app/content/topics.toml`, `app/core/children/` |
+| Rubrics for coaching moves 1-6, personas, topic map | Built and reviewed (`status = "reviewed"`, Moves 1-6 each have 6+ positive and 6+ negative bilingual examples; topics mapped to NIPUN LOs and NISHTHA Course 9) | `app/content/rubrics/`, `app/content/topics.toml`, `app/core/children/`, `content/` |
 | Opt-in encrypted mirror clips | **Not yet** | the `mirror_clips` table exists; no flow stores one |
-| Hindi copy | Draft, to be reviewed by a Hindi speaker | `app/content/copy/hi.toml` |
+| Hindi copy | Built and reviewed | `app/content/copy/hi.toml` |
 
 ## Modules (`backend/app/`)
 

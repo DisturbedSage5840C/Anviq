@@ -1,0 +1,39 @@
+# Move 1: Ask how, not just what (Build Plan §3.2; canonical TOML in backend/app/content/rubrics/move_01.toml)
+move_id: 1
+status: reviewed
+title_en: "Ask how, not just what"
+title_hi: "सिर्फ़ 'क्या' नहीं, 'कैसे' पूछिए"
+criteria:
+  - id: C1
+    text: "Asks for the child's process or reason (how / why / show me), not only the answer."
+  - id: C2
+    text: "Is not a closed question: not yes/no and not a single recall or calculation answer."
+  - id: C3
+    text: "Refers to the specific child's own answer or work, not to the class in general."
+  - id: C4
+    text: "Invites a representation: bundles, sticks, fingers, a drawing, or showing it."
+examples:
+  - text: "रिया, तुमने 45 कैसे निकाला? बंडल से दिखाओ।"
+    met: ["C1", "C2", "C3", "C4"]
+  - text: "Aman, how did you get your answer? Show me with sticks."
+    met: ["C1", "C2", "C3", "C4"]
+  - text: "मीना, तुमने क्या सोचा? मुझे बताओ।"
+    met: ["C1", "C2", "C3"]
+  - text: "Riya, why did you take 2 from 7? Tell me what you were thinking."
+    met: ["C1", "C2", "C3"]
+  - text: "अमन, 35 आया है, अब उंगलियों पर करके दिखाओ कि कैसे।"
+    met: ["C1", "C2", "C3", "C4"]
+  - text: "How would you work out 52 take away 17? Draw it for me."
+    met: ["C1", "C2", "C4"]
+  - text: "52 में से 17 क्या होगा?"
+    met: []
+  - text: "Is the answer 45?"
+    met: []
+  - text: "क्या यह सही है?"
+    met: []
+  - text: "Aman, what is 52 minus 17?"
+    met: []
+  - text: "सब बच्चे बताओ, जवाब क्या है?"
+    met: []
+  - text: "Do you all understand?"
+    met: []

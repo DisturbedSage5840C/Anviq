@@ -1,0 +1,37 @@
+# Move 4: Build on what a child said (Build Plan §3.2; canonical TOML in backend/app/content/rubrics/move_04.toml)
+move_id: 4
+status: reviewed
+title_en: "Build on what a child said"
+title_hi: "बच्चे की बात को आगे बढ़ाइए"
+criteria:
+  - id: C1
+    text: "Revoices the child's idea accurately, in the teacher's own words."
+  - id: C2
+    text: "Asks another child to add, agree or disagree with that idea."
+  - id: C3
+    text: "Links back to the original question being worked on."
+examples:
+  - text: "रिया कह रही है कि 7 में से 2 घटाकर 5 मिला। अमन, तुम क्या सोचते हो?"
+    met: ["C1", "C2"]
+  - text: "So Riya says she took 2 from 7. Aman, do you agree? Remember we were finding 52 minus 17."
+    met: ["C1", "C2", "C3"]
+  - text: "तो अमन ने दहाई से एक लिया। मीना, क्या तुम इसमें कुछ जोड़ोगी? हम 52 में से 17 घटा रहे थे न।"
+    met: ["C1", "C2", "C3"]
+  - text: "Riya is saying that 4 tens and 7 ones make 47. Meena, do you agree with Riya's way of counting 47?"
+    met: ["C1", "C2", "C3"]
+  - text: "मीना का कहना है कि 39 बड़ा है क्योंकि इसमें 9 है। अमन, क्या तुम मीना की बात से सहमत हो जब हम 39 और 41 की तुलना कर रहे हैं?"
+    met: ["C1", "C2", "C3"]
+  - text: "So Aman added the tens first and then the ones to get 85. Riya, what would you add to Aman's method?"
+    met: ["C1", "C2"]
+  - text: "अच्छा। अगला सवाल।"
+    met: []
+  - text: "Okay, sit down. Next."
+    met: []
+  - text: "ठीक है, बैठो। मीना बताओ।"
+    met: []
+  - text: "हाँ सही है, अब किताब का पेज नंबर 14 खोलो।"
+    met: []
+  - text: "Good answer. Now everyone copy this from the blackboard."
+    met: []
+  - text: "चलो छोड़ो, अब दूसरा सवाल करते हैं।"
+    met: []

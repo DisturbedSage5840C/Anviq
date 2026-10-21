@@ -1,0 +1,37 @@
+# Move 5: Mixed-level questions (Build Plan §3.2; canonical TOML in backend/app/content/rubrics/move_05.toml)
+move_id: 5
+status: reviewed
+title_en: "Mixed-level questions"
+title_hi: "अलग-अलग स्तर के सवाल"
+criteria:
+  - id: C1
+    text: "One prompt has at least two entry points (for example Grade 1 count, Grade 2 add, Grade 3 explain)."
+  - id: C2
+    text: "Names who answers which part (by grade group or by child)."
+  - id: C3
+    text: "The higher-level part asks for reasoning, not just an answer."
+examples:
+  - text: "Class 1, count the bundles of ten. Class 2, tell me the total. Class 3, explain why we regroup."
+    met: ["C1", "C2", "C3"]
+  - text: "पहली कक्षा वाले गिनो कितने बंडल हैं, दूसरी वाले जोड़कर बताओ, तीसरी वाले बताओ ऐसा क्यों करना पड़ा।"
+    met: ["C1", "C2", "C3"]
+  - text: "Riya, count the sticks. Aman, add the two groups, and then tell us how you know."
+    met: ["C1", "C2", "C3"]
+  - text: "मीना, तुम खुले कंचे गिनो। रिया, तुम दोनों ढेर मिलाकर जोड़ बताओ और समझाओ कि दहाई कैसे बनी।"
+    met: ["C1", "C2", "C3"]
+  - text: "Grade 1 children, show me 30 with bundles. Grade 2 children, take away 7 and explain why we had to open a bundle."
+    met: ["C1", "C2", "C3"]
+  - text: "अमन, तुम 39 और 41 में से बड़ी संख्या बताओ और समझाओ क्यों; मीना, तुम पहले दोनों संख्याओं की दहाई गिनो।"
+    met: ["C1", "C2", "C3"]
+  - text: "सब मिलकर बताओ 52 में से 17।"
+    met: []
+  - text: "What is 52 minus 17?"
+    met: []
+  - text: "Everyone count the sticks."
+    met: []
+  - text: "सारे बच्चे अपनी कॉपी में 47 जमा 38 लिखो और जवाब निकालो।"
+    met: []
+  - text: "Who can tell me the answer on the board?"
+    met: []
+  - text: "चलो सब एक साथ पहाड़ा बोलो।"
+    met: []

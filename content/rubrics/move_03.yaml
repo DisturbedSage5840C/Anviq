@@ -1,0 +1,37 @@
+# Move 3: Wait before rescuing (Build Plan §3.2; canonical TOML in backend/app/content/rubrics/move_03.toml)
+move_id: 3
+status: reviewed
+title_en: "Wait before rescuing"
+title_hi: "बचाने से पहले इंतज़ार कीजिए"
+criteria:
+  - id: C1
+    text: "When the child hesitates, the teacher does not supply the answer or do the step for them."
+  - id: C2
+    text: "Gives encouragement or wait language (take your time, think calmly)."
+  - id: C3
+    text: "Offers a smaller hint or a smaller step, not the solution."
+examples:
+  - text: "कोई जल्दी नहीं, आराम से सोचो मीना।"
+    met: ["C1", "C2"]
+  - text: "सोचो, आराम से। पहले बताओ, दहाई में हमारे पास कितने बंडल हैं?"
+    met: ["C1", "C2", "C3"]
+  - text: "Take your time, Meena. What do we have in the tens place?"
+    met: ["C1", "C2", "C3"]
+  - text: "घबराओ मत मीना, धीरे-धीरे सोचो। पहले सिर्फ़ इकाई वाले खुले तीलियों को गिनो।"
+    met: ["C1", "C2", "C3"]
+  - text: "No rush at all, Meena. Think calmly—can you show me 52 with the bundles first?"
+    met: ["C1", "C2", "C3"]
+  - text: "आराम से सोचो बेटा, हम सब रुके हैं। पहले यह देखो कि 2 बड़ा है या 7?"
+    met: ["C1", "C2", "C3"]
+  - text: "जवाब 35 है, समझ आया?"
+    met: []
+  - text: "Come on, quickly, we don't have all day. It's 35."
+    met: []
+  - text: "Hurry up, Meena."
+    met: ["C1"]
+  - text: "अरे इतना समय क्यों लगा रही हो? 52 में से 17 घटाने पर 35 आता है।"
+    met: []
+  - text: "चलो मैं ही बता देती हूँ, दहाई से एक उधार लो तो 12 में से 7 गया 5 और 4 में से 1 गया 3, यानी 35।"
+    met: []
+  - text: "Leave it Meena, Aman tell her the answer is 35."
+    met: []
