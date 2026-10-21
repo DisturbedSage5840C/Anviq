@@ -30,7 +30,7 @@ Treat any of these as one until shown otherwise:
 - The dashboard returned something other than an aggregate for a group of 20 or more.
 - Error reports or logs contained a transcript, a phone number or a credential.
 - A vendor tells us they had a breach that touched our data.
-- A device or account with access (laptop, the Oracle Cloud account or VM, Meta, GitHub) was lost or taken over.
+- A device or account with access (laptop, the Google Cloud account or VM, Meta, GitHub) was lost or taken over.
 
 When unsure, declare it. Closing a false alarm costs an hour. A missed breach costs the clock.
 

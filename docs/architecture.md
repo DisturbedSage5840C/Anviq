@@ -9,7 +9,7 @@ repository as it is, and marks every gap.
  Teacher (WhatsApp)                         Visitor (browser demo)
    │ voice note / text                        │ audio or text + X-Demo-Code
    ▼                                          ▼
- Meta WhatsApp Cloud API ──signed webhook──► api  (FastAPI, Oracle VM Mumbai)
+ Meta WhatsApp Cloud API ──signed webhook──► api  (FastAPI, Google Cloud VM Mumbai)
    ▲                                          │  POST /webhook/whatsapp   POST /web/turn
    │ send text / voice                        │  verify, dedupe, rate limit, enqueue
    │                                          ▼
@@ -148,7 +148,7 @@ What is stored and for how long: [data-inventory.md](data-inventory.md). Risk as
 | Env | Backend | Database | WhatsApp |
 |---|---|---|---|
 | local | `uvicorn` and `arq` against docker-compose Postgres (pgvector) and Redis | local | test number through a tunnel |
-| demo | One free Oracle Cloud VM (Mumbai) running `infra/docker-compose.demo.yml`: Caddy for HTTPS, `api`, `worker`, Postgres, Redis | Postgres container with a named volume | Meta test number (at most 5 whitelisted phones), plus the web room for everyone else |
+| demo | One Google Cloud VM (Mumbai, trial credit) running `infra/docker-compose.demo.yml`: Caddy for HTTPS, `api`, `worker`, Postgres, Redis | Postgres container with a named volume | Meta test number (at most 5 whitelisted phones), plus the web room for everyone else |
 
 There is one deployed environment and it is the demo. The `migrate` container runs
 `alembic upgrade head` before the API and worker start, so a failed migration leaves the old

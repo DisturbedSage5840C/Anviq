@@ -136,7 +136,7 @@ are broader than needed; there is no in-chat command for correcting details.
 | Sarvam | Speech to text and text to speech (India) | Commercial terms | **Confirm in writing: no retention, no training** |
 | Anthropic | Coach, planner and children (US) | Commercial API terms; no training on API data | Recorded; production path is Bedrock India |
 | Google | Speech fallback, off by default | Cloud terms | Only if enabled |
-| Oracle Cloud | One free VM in Mumbai running the API, worker, Postgres with pgvector and Redis | Standard terms | **File the DPA** |
+| Google Cloud | One VM in Mumbai (asia-south1, trial credit) running the API, worker, Postgres with pgvector and Redis | Standard terms | **File the DPA** |
 | Vercel | Dashboard hosting | Standard terms | The dashboard reads aggregates only |
 | Sentry | Scrubbed error events | Standard terms | Off unless `SENTRY_DSN` is set |
 
@@ -154,7 +154,7 @@ The grievance contact is printed in the consent note and on the privacy page.
 These are what would change the risk ratings above. Each needs an owner and a date.
 
 1. Obtain Sarvam's written confirmation of no retention and no training.
-2. File data processing terms for Oracle Cloud.
+2. Record Google Cloud's data processing terms (accepted in the console).
 3. Script the `FIELD_KEY` and `PHONE_PEPPER` re-key and test it on a copy of the database.
 4. Fill in the grievance contact and the Board reporting channel ([incident response](incident-response.md)).
 5. Have counsel read this page, the consent note and the incident process.

@@ -3,7 +3,7 @@
 What to do when something is broken. Written for whoever is on call at 2 a.m. with SSH access to
 the demo VM. Alerts go to Marutey and Aadi.
 
-Anviq runs on one free always-on VM (Oracle Cloud, Mumbai) from `infra/docker-compose.demo.yml`:
+Anviq runs on one always-on VM (Google Cloud, Mumbai) from `infra/docker-compose.demo.yml`:
 `caddy` (HTTPS), `api`, `worker`, `postgres` and `redis`. Setup is in
 [free-demo-deploy.md](free-demo-deploy.md). On the VM, from the repo folder, every command below
 uses this shorthand:
@@ -111,8 +111,8 @@ Applies once the LLM client is live (it is not yet part of the app, only its set
 - **Disk full** (`df -h /` on the VM; `docker system df`): the largest tables are `turns` and `mirror_clips`. Transcripts older than 90 days
   are removed by the hourly purge; confirm the worker log shows `retention purge:` every hour. If
   it does not, the worker is down: `$DC ps worker` and `$DC restart worker`. If the purge ran and
-  the disk is still full, `docker image prune` frees old builds; the Always Free boot volume can be
-  enlarged in the Oracle console. Do not delete rows by hand, because `sessions` and aggregates
+  the disk is still full, `docker image prune` frees old builds; the boot disk can be
+  enlarged in the Google Cloud console. Do not delete rows by hand, because `sessions` and aggregates
   depend on the purge's ordering.
 - **Bad migration**: the `migrate` container runs `alembic upgrade head` before the API and worker
   start, so a failed migration leaves them not starting. Read it with `$DC logs migrate`.
