@@ -22,6 +22,7 @@ from app.llm.ports import StructuredClient
 
 TOPICS_FILE = Path(__file__).parents[1] / "content" / "topics.toml"
 MAX_OPTIONS_IN_QUESTION = 2
+TOPIC_MAX_TOKENS = 200  # the answer is one id, but the model may speak a sentence before it
 _ASCII = re.compile(r"^[\x00-\x7f]+$")
 
 
@@ -127,8 +128,7 @@ class TopicResolverWithModel:
                     }
                 ],
                 schema=_Choice,
-                max_tokens=60,
-                temperature=0.0,
+                max_tokens=TOPIC_MAX_TOKENS,
             )
         except LLMError:
             return quick

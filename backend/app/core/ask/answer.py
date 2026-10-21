@@ -24,6 +24,7 @@ from app.llm.ports import RawClient, StructuredClient
 
 MAX_SPOKEN_SENTENCES = 3
 ANSWER_MAX_TOKENS = 600
+REWRITE_MAX_TOKENS = 400  # room for a sentence of preamble before the structured answer
 _SENTENCE = re.compile(r"[^।.?!]+[।.?!]*")
 
 _REWRITE = """You prepare a primary-school teacher's question for searching the NISHTHA FLN \
@@ -145,8 +146,7 @@ class AskAnviq:
                 system=[SystemBlock(_REWRITE, cache=True)],
                 messages=[{"role": "user", "content": f"{dumps_compact({'lang': lang})}\n{asked}"}],
                 schema=_Rewrite,
-                max_tokens=200,
-                temperature=0.0,
+                max_tokens=REWRITE_MAX_TOKENS,
             )
         except LLMError as exc:
             raise AskUnavailableError("query rewrite failed") from exc
@@ -163,7 +163,6 @@ class AskAnviq:
                 system=[SystemBlock(system, cache=True)],
                 messages=[{"role": "user", "content": content}],
                 max_tokens=ANSWER_MAX_TOKENS,
-                temperature=0.0,
             )
         except LLMError as exc:
             raise AskUnavailableError("answer failed") from exc

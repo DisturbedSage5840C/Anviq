@@ -46,6 +46,8 @@ _PER_MTOK = Decimal(1_000_000)
 
 T = TypeVar("T", bound=BaseModel)
 
+ANSWER_VIA_TOOL = "Give your answer only by calling the `answer` tool, and write nothing else."
+
 
 class LLMError(Exception):
     """The model call failed or returned something unusable. Never carries prompt or reply text."""
@@ -107,6 +109,17 @@ def estimate_cost(
     return cost.quantize(Decimal("0.000001"))
 
 
+def _error_type(response: httpx.Response | None) -> str:
+    """The API's short error class (e.g. invalid_request_error); never its message or body."""
+    if response is None:
+        return "none"
+    try:
+        kind = response.json()["error"]["type"]
+    except (ValueError, KeyError, TypeError):
+        return "unknown"
+    return kind if isinstance(kind, str) and kind.isidentifier() else "unknown"
+
+
 def _timeout_for(model: str) -> float:
     return FAST_TIMEOUT_S if "haiku" in model else SMART_TIMEOUT_S
 
@@ -141,7 +154,6 @@ class LLMClient:
         max_tokens: int = 1024,
         tools: Sequence[Mapping[str, Any]] | None = None,
         tool_choice: Mapping[str, Any] | None = None,
-        temperature: float | None = None,
     ) -> Reply:
         body: dict[str, Any] = {
             "model": model,
@@ -153,8 +165,6 @@ class LLMClient:
             body["tools"] = list(tools)
         if tool_choice:
             body["tool_choice"] = dict(tool_choice)
-        if temperature is not None:
-            body["temperature"] = temperature
         started = time.monotonic()
         data = await self._post(body, _timeout_for(model))
         latency_ms = int((time.monotonic() - started) * 1000)
@@ -171,7 +181,6 @@ class LLMClient:
         system: Sequence[SystemBlock],
         messages: Sequence[Mapping[str, Any]],
         max_tokens: int = 512,
-        temperature: float | None = None,
     ) -> str:
         reply = await self.complete(
             purpose,
@@ -179,7 +188,6 @@ class LLMClient:
             system=system,
             messages=messages,
             max_tokens=max_tokens,
-            temperature=temperature,
         )
         return reply.text.strip()
 
@@ -192,13 +200,15 @@ class LLMClient:
         messages: Sequence[Mapping[str, Any]],
         schema: type[T],
         max_tokens: int = 1024,
-        temperature: float | None = None,
     ) -> T:
         tool = {
             "name": "answer",
             "description": "Give your answer in exactly this structure.",
             "input_schema": schema.model_json_schema(),
         }
+        # Current models refuse a forced tool, so the tool is offered and the prompt asks for it.
+        # A reply in prose lands in the one repair attempt below.
+        system = [*system, SystemBlock(ANSWER_VIA_TOOL)]
         convo = list(messages)
         problem = ""
         for attempt in range(2):
@@ -209,8 +219,7 @@ class LLMClient:
                 messages=convo,
                 max_tokens=max_tokens,
                 tools=[tool],
-                tool_choice={"type": "tool", "name": "answer"},
-                temperature=temperature,
+                tool_choice={"type": "auto"},
             )
             call = next((b for b in reply.blocks if b.get("type") == "tool_use"), None)
             if call is None:
@@ -221,11 +230,7 @@ class LLMClient:
                 except ValidationError as exc:
                     problem = _short_problem(exc)
             if attempt == 0:
-                convo = [
-                    *messages,
-                    {"role": "assistant", "content": [dict(b) for b in reply.blocks]},
-                    *_repair_turn(reply.blocks, problem),
-                ]
+                convo = [*messages, *_repair_turns(reply.blocks, problem)]
         raise LLMError(f"{purpose}: structured answer rejected ({problem})")
 
     async def _post(self, body: Mapping[str, Any], timeout_s: float) -> dict[str, Any]:
@@ -241,6 +246,7 @@ class LLMClient:
                 return self._decode(response)
             retryable = response is None or response.status_code in RETRYABLE_STATUS
             if not retryable or attempt == MAX_ATTEMPTS:
+                logger.error("llm_failed status=%s type=%s", status, _error_type(response))
                 raise LLMError(f"model request failed: {status}")
             logger.warning("llm_retry attempt=%d status=%s", attempt, status)
             await self._sleep(RETRY_DELAY_S * 2 ** (attempt - 1))
@@ -281,24 +287,15 @@ def _short_problem(exc: ValidationError) -> str:
     return f"{where}: {first['type']}"
 
 
-def _repair_turn(blocks: Sequence[Mapping[str, Any]], problem: str) -> list[dict[str, Any]]:
+def _repair_turns(blocks: Sequence[Mapping[str, Any]], problem: str) -> list[dict[str, Any]]:
+    """The turns that ask for a second try: the model's reply (if it said anything) and a nudge."""
     note = f"That answer was not accepted ({problem}). Answer again in the required structure."
+    said = [{"role": "assistant", "content": [dict(b) for b in blocks]}] if blocks else []
     call = next((b for b in blocks if b.get("type") == "tool_use"), None)
     if call is None:
-        return [{"role": "user", "content": note}]
-    return [
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "tool_result",
-                    "tool_use_id": call["id"],
-                    "content": note,
-                    "is_error": True,
-                }
-            ],
-        }
-    ]
+        return [*said, {"role": "user", "content": note}]
+    result = {"type": "tool_result", "tool_use_id": call["id"], "content": note, "is_error": True}
+    return [*said, {"role": "user", "content": [result]}]
 
 
 def dumps_compact(value: object) -> str:

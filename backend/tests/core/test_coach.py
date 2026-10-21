@@ -61,7 +61,6 @@ class Scripted:
         messages: Sequence[Mapping[str, Any]],
         schema: type[BaseModel],
         max_tokens: int = 1024,
-        temperature: float | None = None,
     ) -> Any:
         self.calls.append({"system": system, "messages": messages, "model": model})
         reply = self.replies.pop(0)

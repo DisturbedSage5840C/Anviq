@@ -200,7 +200,6 @@ class Coach:
                 messages=[{"role": "user", "content": content}],
                 schema=_CoachOut,
                 max_tokens=MAX_TOKENS,
-                temperature=0.0,
             )
         except LLMError as exc:
             raise CoachUnavailableError("coach model call failed") from exc

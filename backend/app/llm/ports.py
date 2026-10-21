@@ -20,7 +20,6 @@ class StructuredClient(Protocol):
         messages: Sequence[Mapping[str, Any]],
         schema: type[T],
         max_tokens: int = 1024,
-        temperature: float | None = None,
     ) -> T: ...
 
 
@@ -33,7 +32,6 @@ class TextClient(Protocol):
         system: Sequence[SystemBlock],
         messages: Sequence[Mapping[str, Any]],
         max_tokens: int = 512,
-        temperature: float | None = None,
     ) -> str: ...
 
 
@@ -48,5 +46,4 @@ class RawClient(Protocol):
         max_tokens: int = 1024,
         tools: Sequence[Mapping[str, Any]] | None = None,
         tool_choice: Mapping[str, Any] | None = None,
-        temperature: float | None = None,
     ) -> Reply: ...

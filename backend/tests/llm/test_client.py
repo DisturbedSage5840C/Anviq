@@ -1,3 +1,4 @@
+import json
 from decimal import Decimal
 
 import httpx
@@ -105,6 +106,60 @@ async def test_gives_up_with_status_only_error(client: LLMClient):
 
 
 @respx.mock
+async def test_a_refused_request_is_logged_by_status_and_type_only(
+    client: LLMClient, caplog: pytest.LogCaptureFixture
+):
+    respx.post(API_URL).respond(
+        400,
+        json={"error": {"type": "invalid_request_error", "message": "secret prompt echoed back"}},
+    )
+
+    with caplog.at_level("ERROR", logger="app.llm.client"), pytest.raises(LLMError):
+        await client.complete_text("coach", model="m", system=SYSTEM, messages=MESSAGES)
+
+    assert "status=400" in caplog.text
+    assert "invalid_request_error" in caplog.text
+    assert "secret prompt" not in caplog.text
+
+
+@respx.mock
+@pytest.mark.parametrize(
+    ("reply", "expected"),
+    [
+        (httpx.Response(400, text="not json at all"), "type=unknown"),
+        (httpx.Response(400, json={"error": {"type": "bad\nline injected"}}), "type=unknown"),
+        (httpx.Response(400, json={"error": "flat"}), "type=unknown"),
+        (httpx.ConnectError("boom"), "type=none"),
+    ],
+)
+async def test_an_odd_failure_is_logged_without_echoing_what_the_server_said(
+    client: LLMClient, caplog: pytest.LogCaptureFixture, reply, expected: str
+):
+    if isinstance(reply, Exception):
+        respx.post(API_URL).mock(side_effect=reply)
+    else:
+        respx.post(API_URL).mock(return_value=reply)
+
+    with caplog.at_level("ERROR", logger="app.llm.client"), pytest.raises(LLMError):
+        await client.complete_text("coach", model="m", system=SYSTEM, messages=MESSAGES)
+
+    assert expected in caplog.text
+    assert "injected" not in caplog.text and "not json" not in caplog.text
+
+
+@respx.mock
+async def test_a_retried_failure_is_logged_as_failed_once(
+    client: LLMClient, caplog: pytest.LogCaptureFixture
+):
+    respx.post(API_URL).respond(503)
+
+    with caplog.at_level("ERROR", logger="app.llm.client"), pytest.raises(LLMError):
+        await client.complete_text("coach", model="m", system=SYSTEM, messages=MESSAGES)
+
+    assert caplog.text.count("llm_failed") == 1
+
+
+@respx.mock
 async def test_client_error_is_not_retried(client: LLMClient):
     route = respx.post(API_URL).respond(400)
     with pytest.raises(LLMError):
@@ -128,6 +183,34 @@ async def test_json_answer_is_validated_into_the_schema(client: LLMClient):
     assert verdict == Verdict(ok=True, note="fine")
     sent = route.calls.last.request.read().decode()
     assert '"tool_choice"' in sent and '"input_schema"' in sent
+
+
+@respx.mock
+async def test_no_request_carries_a_temperature_because_current_models_reject_it(
+    client: LLMClient,
+):
+    route = respx.post(API_URL).respond(
+        json={**tool_reply({"ok": True, "note": "n"}), "stop_reason": "tool_use"}
+    )
+
+    await client.complete_text("x", model="m", system=SYSTEM, messages=MESSAGES)
+    await client.complete_json("x", model="m", system=SYSTEM, messages=MESSAGES, schema=Verdict)
+
+    for call in route.calls:
+        assert "temperature" not in json.loads(call.request.read())
+
+
+@respx.mock
+async def test_json_answer_does_not_force_the_tool_because_newer_models_refuse_that(
+    client: LLMClient,
+):
+    route = respx.post(API_URL).respond(json=tool_reply({"ok": True, "note": "n"}))
+
+    await client.complete_json("x", model="m", system=SYSTEM, messages=MESSAGES, schema=Verdict)
+
+    body = json.loads(route.calls.last.request.read())
+    assert body["tool_choice"] == {"type": "auto"}
+    assert "`answer`" in body["system"][-1]["text"]
 
 
 @respx.mock
@@ -170,6 +253,22 @@ async def test_missing_tool_call_is_repaired_with_a_plain_nudge(client: LLMClien
     )
     assert verdict.ok
     assert route.call_count == 2
+
+
+@respx.mock
+async def test_an_empty_reply_is_repaired_without_an_empty_assistant_turn(client: LLMClient):
+    route = respx.post(API_URL).mock(
+        side_effect=[
+            httpx.Response(200, json={"content": []}),
+            httpx.Response(200, json=tool_reply({"ok": True, "note": "n"})),
+        ]
+    )
+
+    await client.complete_json("coach", model="m", system=SYSTEM, messages=MESSAGES, schema=Verdict)
+
+    sent = json.loads(route.calls.last.request.read())["messages"]
+    assert all(m["content"] for m in sent), "the API rejects a turn with no content"
+    assert sent[-1]["role"] == "user"
 
 
 def test_cost_uses_tier_and_cache_discounts():
