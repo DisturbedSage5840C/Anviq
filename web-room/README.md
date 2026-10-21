@@ -26,7 +26,7 @@ Nothing about the visit is stored beyond what the turn itself needs: no transcri
 ## Point it at an API
 
 `config.js` sets `window.ANVIQ_API_BASE`. Leave it empty for "same area as the page"; set
-it to the public API URL of the demo stack (`https://…/duckdns`-style) otherwise. A `?api=`
+it to the public API URL of the demo stack (for example `https://35-200-176-62.sslip.io`) otherwise. A `?api=`
 query parameter overrides both for a single visit, which is how UI work is tried against a
 local API (`?api=http://localhost:8080`).
 

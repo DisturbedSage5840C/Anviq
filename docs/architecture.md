@@ -51,11 +51,11 @@ Meta's retry window even when a vendor is slow.
 | Ask Anviq: grounded answers with citations, refusal when nothing supports one | Built | `app/core/ask/` |
 | Rehearse: three AI children, silent coach, week-B self-rating, summary | Built | `app/core/rehearsal*.py`, `self_rating.py`, `coach.py`, `children/` |
 | First practice offered at the end of onboarding | Built | `app/core/router.py` (`ONB_FIRST_REHEARSAL`) |
-| Model client with per-tier models and guardrail checks | Built (never run against a live model in CI) | `app/llm/`, `app/guardrails/` |
+| Model client with per-tier models and guardrail checks | Built (CI mocks the model; run against the live models by hand, which found and fixed parameters they reject and a plan length they overran) | `app/llm/`, `app/guardrails/` |
 | Nightly aggregates job | **Not yet** | planned in `worker.py` |
 | Dashboard data API: `GET /dashboard/trends`, bearer token, `dashboard_ro` connection, `public_trends` only | Built (off until `DASHBOARD_API_TOKEN` and `DASHBOARD_DATABASE_URL` are set) | `app/api/dashboard.py`, `app/dashboard/` |
-| Mentor dashboard page | Built (static Next.js export; not yet hosted, and shows synthetic demo rows until the API feed is configured) | `dashboard/` |
-| Web room front end | Built (plain HTML and JS, hold to talk; not yet hosted, and needs the API origin in `WEB_ALLOWED_ORIGINS`) | `web-room/` |
+| Mentor dashboard page | Built (Next.js; runs locally on port 3001 against the API, CORS allows its origin through `WEB_ALLOWED_ORIGINS`; not yet hosted; shows synthetic demo rows until the API feed is configured) | `dashboard/` |
+| Web room front end | Built (plain HTML and JS, hold to talk; served locally on port 3000 with `?api=`; not yet hosted, and its origin must be in `WEB_ALLOWED_ORIGINS`) | `web-room/` |
 | Browser E2E smoke tests | Built | `e2e/`, `playwright.config.ts` |
 | Evaluation harness | Built; needs a model key to produce real numbers | `app/evaluation/`, see `eval/README.md` |
 | Rubrics for coaching moves 1-6, personas, topic map | Built and reviewed (`status = "reviewed"`, Moves 1-6 each have 6+ positive and 6+ negative bilingual examples; topics mapped to NIPUN LOs and NISHTHA Course 9) | `app/content/rubrics/`, `app/content/topics.toml`, `app/core/children/`, `content/` |

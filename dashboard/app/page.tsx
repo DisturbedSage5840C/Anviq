@@ -140,7 +140,7 @@ export default function Home() {
             <input
               value={apiBase}
               onChange={(event) => setApiBase(event.target.value)}
-              placeholder="https://anviq-demo.duckdns.org"
+              placeholder="https://35-200-176-62.sslip.io"
               autoComplete="url"
             />
           </label>
