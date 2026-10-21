@@ -5,7 +5,37 @@ Plan, rehearse with three AI children, teach, reflect. Institutions see only ano
 trends for groups of 20+ teachers.
 
 Built for the hack2skill x ShikshaNext x Anthropic "AI for Foundational Learning" hackathon
-(Challenge 3, Teacher Support), by Team BBC(Big Black Claude), Plaksha University.
+(Challenge 3, Teacher Support), by Team BBC (Big Black Claude), Plaksha University.
+
+## What it does
+
+A teacher sends a voice note in Hindi or English and gets a spoken reply back, with no app to
+install. Each day has four steps:
+
+1. **Plan** tomorrow's lesson on a topic from the Grade 1-3 FLN curriculum.
+2. **Rehearse** it with three AI children who each hold a real misconception, while a silent coach
+   scores the teacher's questions against a six-move rubric.
+3. **Teach** the class.
+4. **Reflect** on how it went, in a minute.
+
+Two more things sit beside the loop. **Ask Anviq** answers a pedagogy question only from the
+NISHTHA / NIPUN source documents and cites where; if nothing supports an answer it says so instead
+of guessing. The **Day-1 / Day-14 mirror** sets a teacher's first practice question beside their
+latest and shows growth as a plant (🌱 🌿 🌳), never a score and never compared with anyone.
+
+Privacy is the design, not an add-on. Audio is never stored, phone numbers are hashed, transcripts
+are scrubbed of personal details and deleted on a schedule, and a teacher can export or erase
+everything by saying so. Mentors, CRPs and DIET see only anonymous trends for groups of 20 or more
+teachers; no view of a single teacher exists anywhere in the code.
+
+## Team
+
+| Who | GitHub | Built |
+|---|---|---|
+| Marutey Mani | [@DisturbedSage5840C](https://github.com/DisturbedSage5840C) | Platform and privacy: WhatsApp channel, speech, router, Plan / Reflect / Mirror, jobs, web room API, CI, deployment |
+| Aadi Batra | [@aadibatra2106](https://github.com/aadibatra2106) | Coaching core: Ask Anviq, the AI children, the rubric-driven coach, the evaluation harness |
+| Vansh Awasthi | [@Vansh170806](https://github.com/Vansh170806) | Content and pedagogy: reviewed rubrics, topic map, Hindi and English copy, gold-labelled evaluation sets, corpus manifest |
+| Joepaul Thomas | [@jomemer50](https://github.com/jomemer50) | Front ends and QA: the browser web room, the mentor dashboard, device QA checklist, Playwright E2E tests |
 
 ## How it fits together
 
@@ -46,11 +76,12 @@ See the [runbook](docs/runbook.md#web-room).
 | Path | What lives there |
 |---|---|
 | `backend/` | FastAPI service: WhatsApp webhook, router, speech, privacy, jobs |
-| `infra/` | Local docker-compose and the free always-on demo stack (Caddy, API, worker, Postgres, Redis) |
-| `content/` | Rubrics, topic map, personas, Hindi/English copy |
-| `eval/` | Evaluation harness and datasets |
-| `dashboard/` | Aggregate-only mentor dashboard (k >= 20) |
-| `web-room/` | Browser fallback for the rehearsal room |
+| `infra/` | Local docker-compose and the demo stack for a single cloud VM (Caddy, API, worker, Postgres, Redis) |
+| `content/` | Reviewed rubrics, topic map, personas, Hindi/English copy and the Ask corpus manifest |
+| `eval/` | Gold-labelled datasets; the harness itself is `backend/app/evaluation/` (see [eval/README.md](eval/README.md)) |
+| `dashboard/` | Aggregate-only mentor dashboard (Next.js, static export; k >= 20) |
+| `web-room/` | Browser rehearsal room for judges and teachers off the WhatsApp list: plain HTML and JS, hold to talk |
+| `e2e/` | Playwright smoke tests for the dashboard and the web room |
 | `docs/` | Architecture, privacy, runbook and incident response (see below) |
 
 ## Documentation
@@ -87,6 +118,15 @@ uv run ruff check . && uv run ruff format --check . && uv run mypy app
 The database tests skip without `DATABASE_URL`; point it at the compose Postgres
 (`postgresql+asyncpg://anviq:anviq@localhost:5432/anviq`, after `alembic upgrade head`) to run them.
 If port 5432 is taken, start compose with `ANVIQ_PG_PORT=5433` and use that port.
+
+The browser front ends have their own checks from the repository root:
+
+```bash
+npm install && npx playwright install chromium
+npm run test:e2e                                       # dashboard and web room smoke tests
+```
+
+The evaluation runs that need a model key are listed in [eval/README.md](eval/README.md).
 
 ## Licence
 
