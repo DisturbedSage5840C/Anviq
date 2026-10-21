@@ -216,6 +216,46 @@ def test_the_demo_page_origin_may_call_the_api_and_others_may_not(client):
     assert "access-control-allow-origin" not in other.headers
 
 
+def test_the_dashboard_origin_may_read_trends_with_its_bearer_token(client):
+    preflight = {
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "authorization,cache-control",
+    }
+
+    allowed = client.options("/dashboard/trends", headers={"Origin": ORIGIN, **preflight})
+    other = client.options(
+        "/dashboard/trends", headers={"Origin": "https://evil.example", **preflight}
+    )
+
+    assert allowed.status_code == 200
+    assert allowed.headers["access-control-allow-origin"] == ORIGIN
+    assert "authorization" in allowed.headers["access-control-allow-headers"].lower()
+    assert "GET" in allowed.headers["access-control-allow-methods"]
+    assert "access-control-allow-origin" not in other.headers
+
+
+def test_cors_stays_narrow_even_for_the_allowed_origin(client):
+    def preflight(method: str, headers: str):
+        sent = {
+            "Origin": ORIGIN,
+            "Access-Control-Request-Method": method,
+            "Access-Control-Request-Headers": headers,
+        }
+        return client.options("/dashboard/trends", headers=sent)
+
+    assert preflight("GET", "authorization").status_code == 200
+    assert preflight("GET", "x-surprise").status_code == 400
+    assert preflight("DELETE", "authorization").status_code == 400
+    assert preflight("PUT", "authorization").status_code == 400
+    assert "access-control-allow-credentials" not in preflight("GET", "authorization").headers
+
+
+def test_a_real_request_from_another_origin_gets_no_cors_grant(client):
+    response = client.get("/healthz", headers={"Origin": "https://evil.example"})
+
+    assert "access-control-allow-origin" not in response.headers
+
+
 def test_a_code_of_the_wrong_shape_never_reaches_the_database(client, codes):
     _post(client, code="short")
     _post(client, code="x" * 500)

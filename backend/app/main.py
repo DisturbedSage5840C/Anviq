@@ -74,8 +74,8 @@ def create_app(
         app.add_middleware(
             CORSMiddleware,
             allow_origins=origins,
-            allow_methods=["POST"],
-            allow_headers=["Content-Type", "X-Demo-Code"],
+            allow_methods=["GET", "POST"],
+            allow_headers=["Authorization", "Cache-Control", "Content-Type", "X-Demo-Code"],
             max_age=WEB_PREFLIGHT_MAX_AGE_S,
         )
     return app
