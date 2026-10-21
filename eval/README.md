@@ -14,7 +14,7 @@ uv run python -m app.evaluation.report                  # writes eval/report.md
 
 Each run writes `eval/results/<name>.json`. If a result is missing, the report says "not run" and never counts it as a pass. Add `--offline` to `character` or `coach_kappa` to run without a key, using a scripted model. That only checks the harness, and the report labels it as such.
 
-All runs except `--offline` need `ANTHROPIC_API_KEY` in `backend/.env`. `citations` also needs the corpus ingested (`uv sync --group ingest`, then `uv run python -m app.core.ask.ingest ../content/corpus/manifest.csv`).
+All runs except `--offline` need `ANTHROPIC_API_KEY` in `backend/.env`. `citations` also needs the corpus ingested (`uv sync --group ingest`, then `uv run python -m app.core.ask.ingest ../content/corpus/manifest.csv`). The two PDFs are not in git. Download the English and Hindi "Course Book" links from the NISHTHA FLN section of <https://ciet.ncert.gov.in/nishtha> into `content/corpus/`, under the file names in `manifest.csv`.
 
 **Cost.** A full `character` run is 3,600 Haiku calls, plus one regeneration per failure. `--problems 5` gives a 720-turn run for prompt iteration. The runs use ordinary concurrent calls, not the Message Batches API. Batches would roughly halve eval cost, so they're worth adding before the five full runs budgeted in plan section 7.5.
 
