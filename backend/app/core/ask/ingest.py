@@ -1,8 +1,9 @@
 """Load NISHTHA / NIPUN PDFs into `doc_chunks` (plan section 4.8, ingestion).
 
-The manifest is a CSV with columns: path, source, course_no, course_title, lang. Paths are
-relative to the manifest. Text is extracted with PyMuPDF, an optional dependency because only
-ingestion needs it:
+The manifest is a CSV with columns: path, source, course_no, course_title, lang, and optionally
+first_page and last_page (inclusive PDF pages, for a book that holds several courses; blank means
+the whole file). Paths are relative to the manifest. Text is extracted with PyMuPDF, an optional
+dependency because only ingestion needs it:
 
     uv sync --group ingest
     uv run python -m app.core.ask.ingest ../content/corpus/manifest.csv
@@ -30,6 +31,10 @@ _DEVANAGARI = re.compile(r"[ऀ-ॿ]")
 MIN_DEVANAGARI_SHARE = 0.3
 
 
+def _optional_int(value: str | None) -> int | None:
+    return int(value) if value else None
+
+
 def read_manifest(path: Path) -> list[tuple[Path, SourceDoc]]:
     with path.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
@@ -38,9 +43,11 @@ def read_manifest(path: Path) -> list[tuple[Path, SourceDoc]]:
             path.parent / row["path"],
             SourceDoc(
                 row["source"],
-                int(row["course_no"]) if row.get("course_no") else None,
+                _optional_int(row.get("course_no")),
                 row.get("course_title", ""),
                 row["lang"],
+                _optional_int(row.get("first_page")),
+                _optional_int(row.get("last_page")),
             ),
         )
         for row in rows
@@ -55,6 +62,13 @@ def pdf_pages(path: Path) -> Iterator[tuple[int, str]]:
             yield number, page.get_text()
 
 
+def pages_in_range(pages: list[tuple[int, str]], doc: SourceDoc) -> list[tuple[int, str]]:
+    """The pages of one course inside a combined book; every page when the doc names no range."""
+    first = doc.first_page if doc.first_page is not None else 0
+    last = doc.last_page if doc.last_page is not None else float("inf")
+    return [(number, text) for number, text in pages if first <= number <= last]
+
+
 def looks_broken(text: str, lang: str) -> bool:
     """A Hindi page whose letters are mostly not Devanagari was probably scanned or mis-encoded."""
     letters = [c for c in text if c.isalpha()]
@@ -64,7 +78,7 @@ def looks_broken(text: str, lang: str) -> bool:
 
 
 def chunks_for(path: Path, doc: SourceDoc) -> list[Chunk]:
-    pages = list(pdf_pages(path))
+    pages = pages_in_range(list(pdf_pages(path)), doc)
     broken = [n for n, t in pages if looks_broken(t, doc.lang)]
     if broken:
         logger.warning("%s: %d pages look scanned or mis-encoded; OCR them", path.name, len(broken))

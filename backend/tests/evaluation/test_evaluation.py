@@ -4,10 +4,11 @@ from pathlib import Path
 import pytest
 
 from app.core.ask.answer import AskReply
-from app.core.ask.ingest import looks_broken, read_manifest
+from app.core.ask.chunking import SourceDoc
+from app.core.ask.ingest import looks_broken, pages_in_range, read_manifest
 from app.core.children.registry import ALL_RULES
 from app.evaluation import character, coach_kappa
-from app.evaluation.citations import label_matches, score
+from app.evaluation.citations import course_of, label_matches, score
 from app.evaluation.metrics import cohen_kappa, percentile, rate
 from app.evaluation.report import render
 
@@ -129,6 +130,56 @@ def test_manifest_rows_become_source_documents(tmp_path: Path):
     assert (doc1.course_no, doc1.lang) == (9, "hi") and doc2.course_no is None
 
 
+def test_manifest_rows_can_name_the_pages_of_one_course_inside_a_combined_book(tmp_path: Path):
+    manifest = tmp_path / "manifest.csv"
+    manifest.write_text(
+        "path,source,course_no,course_title,lang,first_page,last_page\n"
+        "book.pdf,NISHTHA FLN,9,Numeracy,en,418,465\n"
+        "book.pdf,NISHTHA FLN,10,Leadership,en,,\n",
+        encoding="utf-8",
+    )
+    (_, nine), (_, ten) = read_manifest(manifest)
+    assert (nine.first_page, nine.last_page) == (418, 465)
+    assert (ten.first_page, ten.last_page) == (None, None)
+
+
+def test_only_the_pages_in_a_courses_range_are_kept():
+    pages = [(n, f"page {n}") for n in range(1, 11)]
+    doc = SourceDoc("NISHTHA FLN", 9, "Numeracy", "en", first_page=4, last_page=6)
+    assert [n for n, _ in pages_in_range(pages, doc)] == [4, 5, 6]
+    whole = SourceDoc("NIPUN Bharat", None, "", "en")
+    assert len(pages_in_range(pages, whole)) == 10
+
+
+def test_a_citation_is_reduced_to_its_course_whatever_commas_the_title_has():
+    ict = "NISHTHA FLN Course 11: Integration of ICT in Teaching, Learning and Assessment"
+    assert course_of(f"{ict}, Module 2, §2.1") == ict
+    assert course_of("NISHTHA FLN Course 9: Foundational Numeracy, Module 3") == (
+        "NISHTHA FLN Course 9: Foundational Numeracy"
+    )
+    assert course_of("NIPUN Bharat, §17.6") == "NIPUN Bharat"
+    assert course_of("NIPUN Bharat") == "NIPUN Bharat"
+
+
+def test_course_level_accuracy_is_reported_next_to_the_strict_section_level_rate():
+    inscope = [
+        ({"gold": ["A Course 1: X, Module 3, §3.2"]}, _reply(("A Course 1: X, Module 1, §1.1",), False)),
+        ({"gold": ["A Course 2: Y, Module 1, §1.1"]}, _reply(("A Course 3: Z, Module 1",), False)),
+    ]  # fmt: skip
+    report = score(inscope, [])
+    assert report["course_citation_correct_rate"] == 0.5
+    assert report["citation_correct_rate"] == 0.0
+
+
+def test_report_shows_the_course_level_citation_rate_only_when_it_was_recorded(tmp_path: Path):
+    old = {"citation_correct_rate": 0.0, "oos_refusal_rate": 1.0, "false_refusal_rate": 0.4}
+    (tmp_path / "citations.json").write_text(json.dumps(old), encoding="utf-8")
+    assert "| 0.0% |" in render(tmp_path)
+    new = {**old, "citation_correct_rate": 0.1, "course_citation_correct_rate": 0.75}
+    (tmp_path / "citations.json").write_text(json.dumps(new), encoding="utf-8")
+    assert "10.0% section-level, 75.0% course-level" in render(tmp_path)
+
+
 def test_a_hindi_page_without_devanagari_is_flagged_for_ocr():
     assert looks_broken("abcdefghij " * 10, "hi")
     assert not looks_broken("बच्चों को बंडल से गिनती सिखाएँ " * 5, "hi")
@@ -156,11 +207,13 @@ def test_shipped_eval_datasets_and_manifests_are_well_formed():
     assert all(q.get("question") and q.get("lang") in {"hi", "en"} for q in oos)
 
     corpus_docs = read_manifest(repo_root / "content" / "corpus" / "manifest.csv")
-    assert sorted((doc.source, doc.lang) for _, doc in corpus_docs) == [
-        ("NIPUN Bharat", "en"),
-        ("NISHTHA FLN", "en"),
-        ("NISHTHA FLN", "hi"),
-    ]
+    assert sorted((doc.source, doc.lang) for _, doc in corpus_docs) == (
+        [("NIPUN Bharat", "en")] + [("NISHTHA FLN", "en")] * 12 + [("NISHTHA FLN", "hi")] * 12
+    )
+    for lang in ("en", "hi"):
+        courses = [d for _, d in corpus_docs if d.source == "NISHTHA FLN" and d.lang == lang]
+        assert sorted(d.course_no or 0 for d in courses) == list(range(1, 13))
+        assert all(d.first_page and d.last_page and d.first_page <= d.last_page for d in courses)
     assert all(path.suffix == ".pdf" for path, _ in corpus_docs)
 
     stt_clips = load_stt_manifest(repo_root / "eval" / "datasets" / "stt_clips" / "manifest.csv")

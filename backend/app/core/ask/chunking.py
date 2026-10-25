@@ -28,6 +28,10 @@ class SourceDoc:
     course_no: int | None
     course_title: str
     lang: str
+    # Inclusive PDF page range, for a combined book that holds several courses; None means the
+    # whole file.
+    first_page: int | None = None
+    last_page: int | None = None
 
 
 @dataclass(frozen=True)

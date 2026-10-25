@@ -23,16 +23,18 @@
 
 150 turns from `datasets/gold_turns.jsonl`. This set is owned by Vansh. Do not describe it as double-rater, human-adjudicated gold unless that is confirmed, and do not quote this figure to judges until it is.
 
-## Citations: 0% correct, below target. Out-of-scope refusal 100%, false refusals 41%
+## Citations: right course on 73% of answers, exact section 0%, both below target. Out-of-scope refusal 100%, false refusals 37%
 
 - Out-of-scope questions (salary, transfers and so on) are refused every time (40 of 40).
 - First run: 851 chunks (447 English, 404 Hindi), all from the combined NISHTHA FLN course books, no NIPUN Bharat text. False refusals were 72%.
 - Second run, after loading the NIPUN Bharat guidelines (289 chunks, corpus now 1,140): false refusals fell to 62%. Questions the NIPUN text covers are now answered with citations (checked by hand on the VM).
 - Third run (commit 1ff3675): false refusals fell to 41% and answered in-scope questions rose from 37 to 65 of 100. Two causes were fixed. The cited-answer call let hidden thinking use the whole token cap, so some replies had no text (it now runs with thinking off; Sonnet 5.5 wants `between_tools`, Haiku takes `disabled`). The search also let filler words ("how", "the", Hindi "के", "में") outrank content words, so `or_query` now drops them. Out-of-scope refusal stayed at 40 of 40.
-- Citation accuracy stays at 0% because the in-scope gold labels cannot match what is loaded. The set was labelled against per-course books ("NISHTHA FLN Course 9: Foundational Numeracy, Module 3, section 3.2"), but we hold only the single combined course book, with no course number, and NIPUN Bharat, which has no modules. A label like that can never equal our citation line, so this number mostly measures the label mismatch, not answer quality.
+- Fourth run (this change): the official NISHTHA FLN English and Hindi books are single files holding all twelve courses, so the manifest now gives each course its page range (`first_page`, `last_page`) and every chunk is cited with its course ("NISHTHA FLN Course 9: Foundational Numeracy"). The NISHTHA rows were reloaded (817 chunks, NIPUN's 289 kept; 1,106 in all). Results on the same 100 + 40 questions: right course cited on 73.0% of answered in-scope questions (new `course_citation_correct_rate`), exact "Module N, §N.M" match still 0.0%, false refusals 37% (was 41%), out-of-scope refused 40 of 40.
+- Why the exact-section number stays at 0%: the gold labels name a Module and § (for example "Course 9 ..., Module 3, §3.2"), but the combined book's own headings do not follow that numbering (Course 9 has five numbered sections, for example), so a label like that cannot equal our citation line however good the answer is. The course-level rate is the fair measure of "did it cite the right place" until the gold is relabelled. It is still below the 95% target.
+- Some Hindi pages (one to five per course) extract as scanned or garbled text and need OCR; they are in the corpus but will not match well.
 - Chunker bug found and fixed on the way (commit 326a0d1): a numbered heading such as 6.5 was being read as a module, so NIPUN chunks were cited as "Module 6". A module now comes only from an explicit Module/Unit/Section heading.
-- Gold labels come from people. Do not regenerate them from the system's own retrieval. Either relabel against the labels actually in `doc_chunks` (Vansh owns the set), or add the per-course NISHTHA books, which needs an explicit download.
-- What is verified: out-of-scope questions are refused, and in-scope questions the corpus covers are answered with citations. What is not: the 95% citation-accuracy target.
+- Gold labels come from people. Do not regenerate them from the system's own retrieval. Relabel against the labels actually in `doc_chunks` (Vansh owns the set), at course level or with the book's own section numbers.
+- What is verified: out-of-scope questions are refused, and in-scope questions the corpus covers are answered with citations from the right course about three times in four. What is not: the 95% citation target, and the 5% false-refusal limit (now 37%). Do not claim either to judges.
 
 ## Cost per teacher-day: not a valid measurement yet
 

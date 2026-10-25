@@ -1,4 +1,26 @@
-path,source,course_no,course_title,lang,url,download_date
-NISHTHA_FLN_ENGLISH.pdf,NISHTHA FLN,,Course Book,en,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf,2026-10-21
-NISHTHA_FLN_HINDI.pdf,NISHTHA FLN,,Course Book,hi,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf,2026-10-21
-NIPUN-BHARAT-GUIDELINES-EN.pdf,NIPUN Bharat,,,en,https://diksha.gov.in/assets/docs/NIPUN-BHARAT-GUIDELINES-EN.pdf,2026-10-25
+path,source,course_no,course_title,lang,first_page,last_page,url,download_date
+NISHTHA_FLN_ENGLISH.pdf,NISHTHA FLN,1,Introduction to FLN Mission,en,13,51,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf,2026-10-21
+NISHTHA_FLN_ENGLISH.pdf,NISHTHA FLN,2,Shifting Towards Competency Based Education,en,52,93,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf,2026-10-21
+NISHTHA_FLN_ENGLISH.pdf,NISHTHA FLN,3,Understanding Learners: How Children Learn,en,94,135,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf,2026-10-21
+NISHTHA_FLN_ENGLISH.pdf,NISHTHA FLN,4,Involvement of Parents and Communities for FLN,en,136,184,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf,2026-10-21
+NISHTHA_FLN_ENGLISH.pdf,NISHTHA FLN,5,Understanding Vidya Pravesh and Balvatika,en,185,241,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf,2026-10-21
+NISHTHA_FLN_ENGLISH.pdf,NISHTHA FLN,6,Foundational Language and Literacy,en,242,309,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf,2026-10-21
+NISHTHA_FLN_ENGLISH.pdf,NISHTHA FLN,7,Multilingual Education in Primary Grades,en,310,363,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf,2026-10-21
+NISHTHA_FLN_ENGLISH.pdf,NISHTHA FLN,8,Learning Assessment,en,364,417,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf,2026-10-21
+NISHTHA_FLN_ENGLISH.pdf,NISHTHA FLN,9,Foundational Numeracy,en,418,465,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf,2026-10-21
+NISHTHA_FLN_ENGLISH.pdf,NISHTHA FLN,10,School Leadership for Foundational Literacy and Numeracy,en,466,509,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf,2026-10-21
+NISHTHA_FLN_ENGLISH.pdf,NISHTHA FLN,11,"Integration of ICT in Teaching, Learning and Assessment",en,510,565,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf,2026-10-21
+NISHTHA_FLN_ENGLISH.pdf,NISHTHA FLN,12,Toy Based Pedagogy for Foundational Stage,en,566,618,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf,2026-10-21
+NISHTHA_FLN_HINDI.pdf,NISHTHA FLN,1,Introduction to FLN Mission,hi,13,53,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf,2026-10-21
+NISHTHA_FLN_HINDI.pdf,NISHTHA FLN,2,Shifting Towards Competency Based Education,hi,54,97,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf,2026-10-21
+NISHTHA_FLN_HINDI.pdf,NISHTHA FLN,3,Understanding Learners: How Children Learn,hi,98,143,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf,2026-10-21
+NISHTHA_FLN_HINDI.pdf,NISHTHA FLN,4,Involvement of Parents and Communities for FLN,hi,144,194,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf,2026-10-21
+NISHTHA_FLN_HINDI.pdf,NISHTHA FLN,5,Understanding Vidya Pravesh and Balvatika,hi,195,255,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf,2026-10-21
+NISHTHA_FLN_HINDI.pdf,NISHTHA FLN,6,Foundational Language and Literacy,hi,256,324,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf,2026-10-21
+NISHTHA_FLN_HINDI.pdf,NISHTHA FLN,7,Multilingual Education in Primary Grades,hi,325,378,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf,2026-10-21
+NISHTHA_FLN_HINDI.pdf,NISHTHA FLN,8,Learning Assessment,hi,379,434,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf,2026-10-21
+NISHTHA_FLN_HINDI.pdf,NISHTHA FLN,9,Foundational Numeracy,hi,435,480,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf,2026-10-21
+NISHTHA_FLN_HINDI.pdf,NISHTHA FLN,10,School Leadership for Foundational Literacy and Numeracy,hi,481,529,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf,2026-10-21
+NISHTHA_FLN_HINDI.pdf,NISHTHA FLN,11,"Integration of ICT in Teaching, Learning and Assessment",hi,530,585,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf,2026-10-21
+NISHTHA_FLN_HINDI.pdf,NISHTHA FLN,12,Toy Based Pedagogy for Foundational Stage,hi,586,640,https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf,2026-10-21
+NIPUN-BHARAT-GUIDELINES-EN.pdf,NIPUN Bharat,,,en,,,https://diksha.gov.in/assets/docs/NIPUN-BHARAT-GUIDELINES-EN.pdf,2026-10-25

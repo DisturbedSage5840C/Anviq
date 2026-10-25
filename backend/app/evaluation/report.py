@@ -30,6 +30,15 @@ def _pct(value: float | None) -> str:
     return "n/a" if value is None else f"{value * 100:.1f}%"
 
 
+def _citation_cell(cites: Mapping[str, Any] | None) -> str:
+    """The strict section-level rate, with the looser course-level rate beside it when recorded."""
+    if cites is None:
+        return "n/a"
+    strict = _pct(cites["citation_correct_rate"])
+    course = cites.get("course_citation_correct_rate")
+    return strict if course is None else f"{strict} section-level, {_pct(course)} course-level"
+
+
 def render(results: Path) -> str:
     character = _load(results, "character")
     coach = _load(results, "coach_kappa")
@@ -53,10 +62,7 @@ def render(results: Path) -> str:
         f"{coach['mean_kappa'] if coach else 'n/a'} ({coach['source'] if coach else ''}) | "
         f"{_verdict(coach)} |"
     )
-    lines.append(
-        f"| Citations correct | >=95% | {_pct(cites['citation_correct_rate']) if cites else 'n/a'} "
-        f"| {_verdict(cites)} |"
-    )
+    lines.append(f"| Citations correct | >=95% | {_citation_cell(cites)} | {_verdict(cites)} |")
     lines.append(
         f"| Out-of-scope refused | >=95%, <=5% false refusals | "
         f"{_pct(cites['oos_refusal_rate']) if cites else 'n/a'} / "

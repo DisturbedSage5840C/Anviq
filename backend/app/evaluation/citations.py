@@ -7,7 +7,8 @@ refused; <=5% of in-scope questions wrongly refused. Needs the corpus ingested a
     ask_oos.jsonl:      {"question": "...", "lang": "en"}
 
 A cited label counts as correct when it equals a gold label or is a subsection of one (gold
-"...§3" accepts "...§3.2").
+"...§3" accepts "...§3.2"). The report also gives a looser course-level rate, which ignores the
+module and section, because the gold's Module/§ numbering need not match the book's own headings.
 
     python -m app.evaluation.citations --datasets ../eval/datasets
 """
@@ -15,6 +16,8 @@ A cited label counts as correct when it equals a gold label or is a subsection o
 import argparse
 import asyncio
 import json
+import re
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -33,8 +36,21 @@ REFUSAL_TARGET = 0.95
 FALSE_REFUSAL_LIMIT = 0.05
 
 
+_SECTION_TAIL = re.compile(r",\s*§[^,]*$")
+_MODULE_TAIL = re.compile(r",\s*Module\s[^,]*$")
+
+
 def label_matches(cited: str, gold: str) -> bool:
     return cited == gold or cited.startswith(f"{gold}.")
+
+
+def course_of(label: str) -> str:
+    """A citation without its module and section: "NISHTHA FLN Course 9: Foundational Numeracy".
+
+    Only a trailing ", §…" and then a trailing ", Module …" are removed, so commas inside a course
+    title (Course 11) survive.
+    """
+    return _MODULE_TAIL.sub("", _SECTION_TAIL.sub("", label))
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
@@ -44,11 +60,14 @@ def _jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def score(
-    inscope: list[tuple[dict[str, Any], AskReply | None]], oos: list[AskReply | None]
+    inscope: Sequence[tuple[dict[str, Any], AskReply | None]], oos: Sequence[AskReply | None]
 ) -> dict[str, object]:
     answered = [(q, r) for q, r in inscope if r is not None and not r.refused]
     correct = sum(
         any(label_matches(s, g) for s in r.sources for g in q["gold"]) for q, r in answered
+    )
+    right_course = sum(
+        any(course_of(s) == course_of(g) for s in r.sources for g in q["gold"]) for q, r in answered
     )
     false_refusals = sum(1 for _, r in inscope if r is not None and r.refused)
     refused = sum(1 for r in oos if r is not None and r.refused)
@@ -60,6 +79,7 @@ def score(
         "out_of_scope": len(oos),
         "unavailable": sum(1 for _, r in inscope if r is None) + sum(1 for r in oos if r is None),
         "citation_correct_rate": citation_rate,
+        "course_citation_correct_rate": rate(right_course, len(answered)),
         "oos_refusal_rate": refusal_rate,
         "false_refusal_rate": false_rate,
         "pass": citation_rate >= CITATION_TARGET
