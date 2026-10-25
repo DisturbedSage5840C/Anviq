@@ -124,6 +124,17 @@ async def test_llm_voice_sends_persona_rules_and_wrapped_teacher_words():
 
 
 @respx.mock
+async def test_llm_voice_asks_for_digits_and_two_sentences_even_when_pushed_to_explain():
+    route = respx.post(API_URL).respond(json={"content": [{"type": "text", "text": "जवाब 45 है।"}]})
+    async with httpx.AsyncClient() as http:
+        await LLMChildVoice(LLMClient(http, "k"), "claude-haiku-5-5").speak(brief())
+    system = json.loads(route.calls.last.request.read())["system"][0]["text"]
+    assert "as digits" in system and "never 3" in system
+    assert "even if the teacher asks for the whole method" in system
+    assert "never as words" in system and "never use the words AI" in system
+
+
+@respx.mock
 async def test_llm_voice_turns_thinking_off_so_the_budget_goes_to_the_reply():
     route = respx.post(API_URL).respond(json={"content": [{"type": "text", "text": "जवाब 45 है।"}]})
     async with httpx.AsyncClient() as http:
