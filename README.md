@@ -71,6 +71,33 @@ and expires after 7 days:
 `docker compose --env-file infra/demo.env -f infra/docker-compose.demo.yml run --rm api uv run --no-sync python -m app.web.issue_code --turns 20`.
 See the [runbook](docs/runbook.md#web-room).
 
+## Measured results and known limits
+
+Numbers from the last evaluation runs; the full tables and method are in [eval/report.md](eval/report.md).
+
+| What | Result | Against the target |
+|---|---|---|
+| Out-of-scope questions refused by Ask Anviq | 40 of 40 | Met |
+| Coach agreement with the gold labels (Cohen's kappa) | 0.967, on a gold set written by our content lead, not independently adjudicated | Met (target 0.6) |
+| AI child stays in character | 98.3% raw, 99.4% after one regeneration, for the Riya persona only (720 turns) | Met for Riya; Aman and Meena not yet run |
+| Citations that name the right source | Right course 58.3%; exact module and section 0% (our gold labels number sections differently from the books) | **Not met** (target 95%) |
+| In-scope questions wrongly refused | 28% in the last run (22% in an earlier one) | **Not met** (target 5% or less) |
+| Cost per teacher-day | About US$0.15, re-priced from 2 teacher-days of test traffic (the stored report figure is US$0.22; see [eval/NOTES.md](eval/NOTES.md)) | **Not met** (the code's target is US$0.12; the pitch deck says US$0.05) |
+
+Known limits:
+
+- Ask Anviq answers only from the ingested NIPUN Bharat and NISHTHA FLN text. Some natural
+  questions (for example "ELPS approach" or "place value with bundles") are refused because that
+  text has no passage on them.
+- The Hindi NISHTHA PDF was extracted with doubled vowel signs; search collapses them, but some
+  passages stay garbled.
+- The Day-1 / Day-14 mirror needs both practices recorded; the opt-in encrypted mirror clips are not built.
+- The WhatsApp demo number runs on an unofficial gateway (Evolution API) for the demo only. It
+  can send no template messages, so daily reminders do not work there, and it carries a ban risk
+  under WhatsApp's terms. The Meta Cloud API route is wired but waits on business verification.
+- The anonymous-trends dashboard enforces k >= 20 in code, but no pilot has run, so there is no
+  real cohort data yet.
+
 ## Layout
 
 | Path | What lives there |
@@ -93,6 +120,9 @@ See the [runbook](docs/runbook.md#web-room).
 | [DPIA](docs/DPIA.md) | The privacy risks, what reduces them, and what is left |
 | [Runbook](docs/runbook.md) | Something is broken and you are on call |
 | [Incident response](docs/incident-response.md) | Teacher data may have been exposed |
+| Privacy notices: [English](docs/privacy-notice-en.md), [Hindi](docs/privacy-notice-hi.md) | What a teacher is told before they consent |
+| [Evaluation report](eval/report.md) | Measured quality, cost and the targets we missed |
+| [Submission pack](docs/submission.md) | Demo video script, deck corrections and the release checklist |
 
 ## Run locally
 
