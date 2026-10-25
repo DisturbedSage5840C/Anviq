@@ -6,6 +6,7 @@ import pytest
 from app.config import Settings
 from app.speech.factory import build_speech
 from app.speech.google import GoogleSTT, GoogleTTS
+from app.speech.metering import MeteredSTT, MeteredTTS, SpeechUsage
 from app.speech.sarvam import SarvamSTT, SarvamTTS
 
 BASE = {"app_env": "local", "wa_verify_token": "v", "wa_app_secret": "s", "_env_file": None}
@@ -24,6 +25,19 @@ def test_no_keys_means_no_speech_providers(http) -> None:
 def test_sarvam_is_the_default_provider(http) -> None:
     stt, tts = build_speech(Settings(**BASE, sarvam_api_key="k"), http)
     assert isinstance(stt, SarvamSTT) and isinstance(tts, SarvamTTS)
+
+
+def test_a_usage_sink_wraps_the_providers_so_their_spend_is_recorded(http) -> None:
+    class Sink:
+        async def record(self, usage: SpeechUsage) -> None: ...
+
+    stt, tts = build_speech(Settings(**BASE, sarvam_api_key="k"), http, Sink())
+    assert isinstance(stt, MeteredSTT) and isinstance(tts, MeteredTTS)
+
+
+def test_no_sink_means_the_bare_providers(http) -> None:
+    stt, tts = build_speech(Settings(**BASE, sarvam_api_key="k"), http, None)
+    assert not isinstance(stt, MeteredSTT) and not isinstance(tts, MeteredTTS)
 
 
 def test_providers_can_be_chosen_independently(http) -> None:

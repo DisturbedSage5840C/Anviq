@@ -14,6 +14,7 @@ from app.core.daily_loop import Position
 from app.core.mirror import CYCLE_LENGTH, MirrorTurn, cycle_is_due
 from app.db.mirror_store import cycle_started_at, finish_mirror, mirror_pair
 from app.llm.client import Usage
+from app.speech.metering import SpeechUsage
 
 Clock = Callable[[], datetime]
 
@@ -61,6 +62,28 @@ class PostgresUsageSink:
                     "cache_write": usage.cache_write,
                     "latency_ms": usage.latency_ms,
                     "cost": usage.est_cost_usd,
+                },
+            )
+
+
+class PostgresSpeechUsageSink:
+    """Seconds or characters billed, and the estimated rupees: never the audio or the text."""
+
+    def __init__(self, engine: AsyncEngine) -> None:
+        self._engine = engine
+
+    async def record(self, usage: SpeechUsage) -> None:
+        async with self._engine.begin() as conn:
+            await conn.execute(
+                text(
+                    "insert into speech_usage (provider, kind, seconds_or_chars, est_cost_inr) "
+                    "values (:provider, :kind, :amount, :cost)"
+                ),
+                {
+                    "provider": usage.provider,
+                    "kind": usage.kind,
+                    "amount": usage.amount,
+                    "cost": usage.est_cost_inr,
                 },
             )
 

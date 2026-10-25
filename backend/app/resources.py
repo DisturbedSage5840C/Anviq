@@ -17,6 +17,7 @@ from app.channel.twilio_client import TwilioWhatsAppClient
 from app.channel.whatsapp_client import WhatsAppClient
 from app.config import Settings
 from app.core.teacher_store import TeacherStore
+from app.db.loop_store import PostgresSpeechUsageSink
 from app.db.teacher_store import PostgresTeacherStore
 from app.privacy.keyring import Keyring, load_keyring
 from app.speech.base import STTProvider, TTSProvider
@@ -61,9 +62,9 @@ async def open_resources(
     arq_pool = await create_pool(redis_settings)
     redis = Redis.from_url(settings.redis_url, decode_responses=True)
     http = httpx.AsyncClient(timeout=HTTP_TIMEOUT_S)
-    stt, tts = build_speech(settings, http)
-    keyring = load_keyring(settings)
     engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+    stt, tts = build_speech(settings, http, PostgresSpeechUsageSink(engine))
+    keyring = load_keyring(settings)
     try:
         yield Resources(
             redis=redis,

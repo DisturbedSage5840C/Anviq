@@ -5,13 +5,21 @@ import httpx
 from app.config import Settings
 from app.speech.base import STTProvider, TTSProvider
 from app.speech.google import GoogleSTT, GoogleTTS
+from app.speech.metering import MeteredSTT, MeteredTTS, SpeechUsageSink
 from app.speech.sarvam import SarvamSTT, SarvamTTS
 
 
 def build_speech(
-    settings: Settings, http: httpx.AsyncClient
+    settings: Settings, http: httpx.AsyncClient, sink: SpeechUsageSink | None = None
 ) -> tuple[STTProvider | None, TTSProvider | None]:
-    return _build_stt(settings, http), _build_tts(settings, http)
+    """The configured providers; with a sink, each call's billed amount is recorded."""
+    stt, tts = _build_stt(settings, http), _build_tts(settings, http)
+    if sink is not None:
+        if stt is not None:
+            stt = MeteredSTT(stt, sink, provider=settings.stt_provider)
+        if tts is not None:
+            tts = MeteredTTS(tts, sink, provider=settings.tts_provider)
+    return stt, tts
 
 
 def _build_stt(settings: Settings, http: httpx.AsyncClient) -> STTProvider | None:
