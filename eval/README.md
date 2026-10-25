@@ -12,7 +12,7 @@ uv run python -m app.evaluation.latency_cost --days 7   # model latency and $/te
 uv run python -m app.evaluation.report                  # writes eval/report.md
 ```
 
-Each run writes `eval/results/<name>.json`. If a result is missing, the report says "not run" and never counts it as a pass. Add `--offline` to `character` or `coach_kappa` to run without a key, using a scripted model. That only checks the harness, and the report labels it as such.
+Each run writes `eval/results/<name>.json`. If a result is missing, the report says "not run" and never counts it as a pass. [`NOTES.md`](NOTES.md) explains what the latest numbers mean and which are not yet valid measurements. Add `--offline` to `character` or `coach_kappa` to run without a key, using a scripted model. That only checks the harness, and the report labels it as such.
 
 All runs except `--offline` need `ANTHROPIC_API_KEY` in `backend/.env`. `citations` also needs the corpus ingested (`uv sync --group ingest`, then `uv run python -m app.core.ask.ingest ../content/corpus/manifest.csv`). The two PDFs are not in git. Download the English and Hindi "Course Book" links from the NISHTHA FLN section of <https://ciet.ncert.gov.in/nishtha> into `content/corpus/`, under the file names in `manifest.csv`.
 
