@@ -41,7 +41,7 @@ teachers; no view of a single teacher exists anywhere in the code.
 
 ```mermaid
 flowchart LR
-    T[Teacher on WhatsApp] -->|voice note or text| M[Meta Cloud API]
+    T[Teacher on WhatsApp] -->|voice note or text| M[Meta Cloud API or Evolution gateway]
     V[Visitor in a browser] -->|audio or text + demo code| API
     M -->|signed webhook| API[api: FastAPI]
     API -->|verify, dedupe, rate limit| Q[(Redis queue)]
@@ -49,16 +49,19 @@ flowchart LR
     W -->|speech to text and back| S[Sarvam / Google]
     W -->|route, reply| C[core: router, privacy]
     W -->|send voice and text| M
-    C --> DB[(Postgres + pgvector)]
+    C -->|Ask Anviq: BM25 over NISHTHA / NIPUN| DB[(Postgres)]
     DB -->|public_trends view, k >= 20| D[Mentor dashboard]
 ```
 
-Two processes ship from one image: `api` answers Meta fast by queuing the work, `worker` does the
-slow part. Details, and what is built versus still to come: [Architecture](docs/architecture.md).
+Two processes ship from one image: `api` answers the WhatsApp provider fast by queuing the work,
+`worker` does the slow part. The channel is chosen by `WHATSAPP_PROVIDER` (`meta`, `twilio` or
+`evolution`); the demo uses a spare SIM through the unofficial Evolution gateway. Details, and
+what is built versus still to come: [Architecture](docs/architecture.md).
 
 ## Try it (judge access)
 
-Fill these in at release; nothing below is live until then.
+The demo runs on one Google Cloud VM. The WhatsApp number and dashboard link are filled in at
+release; the web room below is live now.
 
 | Way in | What you need |
 |---|---|
@@ -127,7 +130,7 @@ Known limits:
 ## Run locally
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d      # Postgres + pgvector, Redis
+docker compose -f infra/docker-compose.yml up -d      # Postgres, Redis
 cd backend
 cp ../.env.example .env                                # then fill in your own values
 uv sync
