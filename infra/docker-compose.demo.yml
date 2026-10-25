@@ -179,6 +179,7 @@ services:
       - SITE_ADDRESS
     volumes:
       - ./demo/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../web-room:/srv/room:ro
       - caddydata:/data
     depends_on:
       api:
