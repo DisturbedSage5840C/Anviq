@@ -25,6 +25,7 @@ from app.llm.ports import RawClient, StructuredClient
 MAX_SPOKEN_SENTENCES = 3
 ANSWER_MAX_TOKENS = 600
 REWRITE_MAX_TOKENS = 400  # room for a sentence of preamble before the structured answer
+_SENTENCE_END = "।.?!"
 _SENTENCE = re.compile(r"[^।.?!]+[।.?!]*")
 
 _REWRITE = """You prepare a primary-school teacher's question for searching the NISHTHA FLN \
@@ -105,7 +106,28 @@ def cited_text(
             continue  # an uncited or badly cited claim is dropped, never spoken
         kept.append(str(block.get("text", "")))
         used.update((p.chunk_id, p) for p in cited)
-    return "".join(kept).strip(), tuple(used.values())
+    return _join_sentences(kept), tuple(used.values())
+
+
+def _join_sentences(parts: Sequence[str]) -> str:
+    """Join the kept blocks as sentences, restoring the stops and spaces uncited blocks carried."""
+    sentences: list[str] = []
+    for part in parts:
+        sentence = part.strip()
+        if not sentence:
+            continue
+        if sentence[-1] not in _SENTENCE_END:
+            sentence += "."
+        sentences.append(sentence[0].upper() + sentence[1:])
+    return " ".join(sentences)
+
+
+def _most_specific(labels: Sequence[str]) -> tuple[str, ...]:
+    """Drop a label that only repeats the start of another, e.g. a bare "NISHTHA FLN"."""
+    unique = tuple(dict.fromkeys(labels))
+    return tuple(
+        a for a in unique if not any(b != a and b.startswith((f"{a},", f"{a} ")) for b in unique)
+    )
 
 
 def _first_sentences(text: str, limit: int) -> str:
@@ -132,7 +154,7 @@ class AskAnviq:
         text, used = await self._cited_answer(asked, lang, found.passages)
         if not text or not used:
             return refusal(lang, found.nearest)
-        sources = tuple(dict.fromkeys(p.label for p in used))
+        sources = _most_specific([p.label for p in used])
         label = render("ask_source", lang)
         source_lines = "\n".join(f"{label}: {s}" for s in sources)
         spoken = _first_sentences(text, MAX_SPOKEN_SENTENCES)

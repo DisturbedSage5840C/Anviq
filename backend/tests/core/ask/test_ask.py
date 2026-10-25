@@ -215,6 +215,33 @@ def test_cited_text_reports_only_the_passages_it_used():
     assert text == "A." and used == (P2,)
 
 
+def test_cited_blocks_whose_separator_was_left_uncited_are_still_split_into_sentences():
+    uncited = {"type": "text", "text": ". ", "citations": []}
+    blocks = [cite("build early language skills", 0), uncited, cite("include home languages", 1)]
+    text, _ = cited_text(blocks, [P1, P2])
+    assert text == "Build early language skills. Include home languages."
+
+
+def test_cited_blocks_keep_their_own_punctuation_and_hindi_danda():
+    text, _ = cited_text([cite("बच्चों से पूछें।", 0), cite("Ask why?", 1)], [P1, P2])
+    assert text == "बच्चों से पूछें। Ask why?"
+
+
+async def test_a_bare_source_is_dropped_when_a_more_specific_one_covers_it():
+    bare = Passage("c3", "NISHTHA FLN", "Front matter.", 0.3)
+    model = Model(IN_SCOPE, [cite("Use bundles of ten.", 0), cite(" Ask why.", 1)])
+    reply = await ask(model, Retrieval([bare, P1], bare)).answer("How to teach?", "en")
+    assert reply.sources == (P1.label,)
+    assert "Source: NISHTHA FLN\n" not in reply.text
+
+
+async def test_a_bare_source_is_kept_when_it_is_the_only_one():
+    bare = Passage("c3", "NISHTHA FLN", "Front matter.", 0.3)
+    model = Model(IN_SCOPE, [cite("Use bundles of ten.", 0)])
+    reply = await ask(model, Retrieval([bare], bare)).answer("How to teach?", "en")
+    assert reply.sources == ("NISHTHA FLN",)
+
+
 def test_chunk_is_frozen():
     chunk = Chunk("s", None, "", None, None, None, 1, "en", "t")
     with pytest.raises(AttributeError):
