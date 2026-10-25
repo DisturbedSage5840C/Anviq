@@ -13,7 +13,14 @@
 	redir /room /room/ permanent
 	handle_path /room/* {
 		root * /srv/room
-		header Cache-Control "no-cache"
+		header {
+			Cache-Control "no-cache"
+			# The page only talks to its own origin and plays replies from blob: URLs, so anything
+			# else (another API, a third-party script) is refused by the browser itself.
+			Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+			X-Content-Type-Options "nosniff"
+			Referrer-Policy "no-referrer"
+		}
 		file_server
 	}
 

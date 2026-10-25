@@ -6,9 +6,13 @@
 "use strict";
 
 (() => {
-  // The API base can be set per deployment: config.js holds a default, a ?api= query overrides it.
+  // The API base is set per deployment in config.js. A ?api= query may override it only when the
+  // page itself runs on this machine: on a deployed host a crafted link must not be able to send
+  // the demo code (a bearer token) and the teacher's words to some other server.
+  const LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
   const params = new URLSearchParams(location.search);
-  const apiBase = (params.get("api") || window.ANVIQ_API_BASE || "").replace(/\/+$/, "");
+  const apiOverride = LOCAL_HOSTS.includes(location.hostname) ? params.get("api") : null;
+  const apiBase = (apiOverride || window.ANVIQ_API_BASE || "").replace(/\/+$/, "");
 
   // The same audio shapes the API allows, most-preferred first (Chrome picks webm/opus, Safari mp4).
   const ALLOWED_MIMES = [

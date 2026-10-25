@@ -27,8 +27,10 @@ Nothing about the visit is stored beyond what the turn itself needs: no transcri
 
 `config.js` sets `window.ANVIQ_API_BASE`. Leave it empty for "same area as the page"; set
 it to the public API URL of the demo stack (for example `https://35-200-176-62.sslip.io`) otherwise. A `?api=`
-query parameter overrides both for a single visit, which is how UI work is tried against a
-local API (`?api=http://localhost:8080`).
+query parameter overrides both for a single visit, but only when the page itself is opened from
+`localhost`, `127.0.0.1` or `[::1]`; that is how UI work is tried against a local API
+(`?api=http://localhost:8080`). On a deployed host the parameter is ignored, so a crafted link
+cannot send the demo code to another server.
 
 The API must list the page's origin in `WEB_ALLOWED_ORIGINS`; with no entry the API
 answers without CORS headers and the browser blocks the call.
