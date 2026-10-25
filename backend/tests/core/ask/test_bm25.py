@@ -19,6 +19,10 @@ def test_tokenize_splits_hindi_words_at_the_danda():
     assert tokenize("बंडल बनाएँ। दहाई समझाएँ॥ क्या है?") == ["बंडल", "बनाएँ", "दहाई", "समझाएँ", "क्या", "है"]
 
 
+def test_tokenize_collapses_the_doubled_marks_of_the_mis_encoded_hindi_pdf():
+    assert tokenize("बच््चोों सेे मेें") == tokenize("बच्चों से में")
+
+
 def test_rare_query_term_outranks_generic_ones():
     hits = _index().rank(["elps", "approach", "stages", "teaching"], limit=3)
 

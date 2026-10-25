@@ -19,13 +19,17 @@ from dataclasses import dataclass
 # Devanagari U+0900-U+097F except the danda and double danda (U+0964, U+0965), which end sentences.
 _WORD = re.compile(r"[0-9A-Za-z\u0900-\u0963\u0966-\u097F]+")
 MIN_WORD_CHARS = 2
+# The NISHTHA Hindi PDFs were extracted with doubled marks ("सेे", "बच््चोों"). Real Hindi never
+# repeats the same sign or vowel sign, so a run of one collapses to a single mark.
+_REPEATED_MARK = re.compile(r"([ँ-ःा-्])\1+")
 K1 = 1.2  # how quickly repeated occurrences of a word stop adding score
 B = 0.75  # how strongly long passages are discounted
 
 
 def tokenize(text: str) -> list[str]:
     """Lower-cased words of two or more characters; works for Hindi and English alike."""
-    return [w.casefold() for w in _WORD.findall(text) if len(w) >= MIN_WORD_CHARS]
+    words = _WORD.findall(_REPEATED_MARK.sub(r"\1", text))
+    return [w.casefold() for w in words if len(w) >= MIN_WORD_CHARS]
 
 
 @dataclass(frozen=True)
