@@ -130,6 +130,15 @@ def _timeout_for(model: str) -> float:
     return FAST_TIMEOUT_S if "haiku" in model else SMART_TIMEOUT_S
 
 
+# Generations that refuse `{"type": "disabled"}` and want `between_tools` to turn thinking off.
+_BETWEEN_TOOLS_MODELS = ("claude-sonnet-5", "claude-opus-5", "claude-fable-5")
+
+
+def _thinking_off(model: str) -> dict[str, str]:
+    kind = "between_tools" if model.startswith(_BETWEEN_TOOLS_MODELS) else "disabled"
+    return {"type": kind}
+
+
 class LLMClient:
     def __init__(
         self,
@@ -170,7 +179,7 @@ class LLMClient:
         }
         if not think:
             # Short replies on a small token cap: adaptive thinking would eat the whole budget.
-            body["thinking"] = {"type": "disabled"}
+            body["thinking"] = _thinking_off(model)
         if tools:
             body["tools"] = list(tools)
         if tool_choice:

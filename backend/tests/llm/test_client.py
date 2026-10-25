@@ -289,6 +289,25 @@ async def test_a_short_reply_can_switch_thinking_off(client: LLMClient):
     assert json.loads(route.calls.last.request.read())["thinking"] == {"type": "disabled"}
 
 
+@pytest.mark.parametrize(
+    ("model", "kind"),
+    [
+        ("claude-sonnet-5-5", "between_tools"),
+        ("claude-opus-5-5", "between_tools"),
+        ("claude-haiku-5-5", "disabled"),
+    ],
+)
+@respx.mock
+async def test_thinking_is_switched_off_in_the_form_each_model_accepts(
+    client: LLMClient, model: str, kind: str
+):
+    route = respx.post(API_URL).respond(json={"content": [{"type": "text", "text": "ok"}]})
+
+    await client.complete_text("x", model=model, system=SYSTEM, messages=MESSAGES, think=False)
+
+    assert json.loads(route.calls.last.request.read())["thinking"] == {"type": kind}
+
+
 @respx.mock
 async def test_a_structured_reply_can_switch_thinking_off(client: LLMClient):
     route = respx.post(API_URL).respond(json=tool_reply({"ok": True, "note": "fine"}))

@@ -18,11 +18,27 @@ from app.core.ask.retrieve import Passage
 _WORD = re.compile(r"[0-9A-Za-zऀ-ॿ]+")
 MIN_WORD_CHARS = 2
 
+# Words that appear in nearly every passage. Left in an OR query they let generic passages
+# outrank the ones about the topic, so they are dropped unless the question is made of nothing else.
+_FILLER_WORDS = frozenset(
+    """
+    a an the of in on at to for from by with and or as is are was were be been do does did can could
+    should would will shall may might must how what when where which who whom why that this these
+    those it its i me my we our you your they their there here not no if so than then also about
+    into
+    के में का की को से है हैं था थे थी और या कि पर ने भी ही तो यह इस ये वह उस वे एक कुछ जब कैसे
+    क्या क्यों कौन किस कहाँ करें करना करने कर सकते सकता सकती वाला वाली वाले लिए द्वारा जैसे अपने
+    """.split()
+)
+
 
 def or_query(question: str) -> str:
-    """A tsquery string matching any word of the question; safe because only word chars survive."""
-    words = dict.fromkeys(w.casefold() for w in _WORD.findall(question) if len(w) >= MIN_WORD_CHARS)
-    return " | ".join(words)
+    """A tsquery string matching any content word of the question; only word characters survive."""
+    words = tuple(
+        dict.fromkeys(w.casefold() for w in _WORD.findall(question) if len(w) >= MIN_WORD_CHARS)
+    )
+    content = tuple(w for w in words if w not in _FILLER_WORDS)
+    return " | ".join(content or words)
 
 
 async def store_chunks(

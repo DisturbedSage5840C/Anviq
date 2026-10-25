@@ -92,11 +92,22 @@ async def test_weak_matches_are_refused_but_the_nearest_is_kept():
 
 
 def test_or_query_keeps_only_word_characters():
-    assert (
-        or_query("How do I teach 'बंडल' & (place) value?!")
-        == "how | do | teach | बंडल | place | value"
-    )
+    assert or_query("Teach 'बंडल' & (place) value?!") == "teach | बंडल | place | value"
     assert or_query("!!") == ""
+
+
+def test_or_query_drops_filler_words_so_content_words_decide_the_ranking():
+    assert (
+        or_query("How to use bundles and sticks to teach subtraction in Grade 2?")
+        == "use | bundles | sticks | teach | subtraction | grade"
+    )
+    assert or_query("हासिल वाला घटाना सिखाते समय बंडल का उपयोग कैसे करें?") == (
+        "हासिल | घटाना | सिखाते | समय | बंडल | उपयोग"
+    )
+
+
+def test_or_query_keeps_filler_words_when_nothing_else_is_left():
+    assert or_query("how to do it") == "how | to | do | it"
 
 
 # --- answering --------------------------------------------------------------------------------
@@ -109,6 +120,7 @@ class Model:
         self.answer_calls: list[Sequence[Mapping[str, Any]]] = []
         self.rewrite_calls = 0
         self.rewrite_think: list[bool] = []
+        self.answer_think: list[bool] = []
 
     async def complete_json(
         self, purpose: str, *, schema: type[BaseModel], think: bool = True, **_: Any
@@ -120,9 +132,15 @@ class Model:
         return self.rewrite
 
     async def complete(
-        self, purpose: str, *, messages: Sequence[Mapping[str, Any]], **_: Any
+        self,
+        purpose: str,
+        *,
+        messages: Sequence[Mapping[str, Any]],
+        think: bool = True,
+        **_: Any,
     ) -> Reply:
         self.answer_calls.append(messages)
+        self.answer_think.append(think)
         if isinstance(self.answer, Exception):
             raise self.answer
         return Reply(tuple(self.answer), USAGE)
@@ -166,6 +184,14 @@ async def test_the_query_rewrite_runs_without_thinking_so_a_small_budget_is_enou
     await ask(model, Retrieval([P1], P1)).answer("q", "en")
 
     assert model.rewrite_think == [False]
+
+
+async def test_the_cited_answer_runs_without_thinking_so_it_cannot_use_up_the_token_cap():
+    model = Model(IN_SCOPE, [cite("Use bundles.", 0)])
+
+    await ask(model, Retrieval([P1], P1)).answer("q", "en")
+
+    assert model.answer_think == [False]
 
 
 async def test_uncited_sentences_are_dropped():

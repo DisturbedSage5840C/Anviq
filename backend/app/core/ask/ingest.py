@@ -48,7 +48,7 @@ def read_manifest(path: Path) -> list[tuple[Path, SourceDoc]]:
 
 
 def pdf_pages(path: Path) -> Iterator[tuple[int, str]]:
-    import fitz  # type: ignore[import-not-found]  # PyMuPDF, in the "ingest" dependency group
+    import fitz  # type: ignore[import-not-found,import-untyped,unused-ignore]  # PyMuPDF
 
     with fitz.open(path) as document:
         for number, page in enumerate(document, start=1):

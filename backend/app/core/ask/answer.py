@@ -186,6 +186,7 @@ class AskAnviq:
                 system=[SystemBlock(system, cache=True)],
                 messages=[{"role": "user", "content": content}],
                 max_tokens=ANSWER_MAX_TOKENS,
+                think=False,  # hidden thinking can use the whole cap and leave no cited text
             )
         except LLMError as exc:
             raise AskUnavailableError("answer failed") from exc
