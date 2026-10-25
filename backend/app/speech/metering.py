@@ -6,6 +6,7 @@ and the text never reach the sink. A failed call costs nothing and a sink failur
 swallowed, because bookkeeping must never cost a teacher their reply.
 """
 
+import asyncio
 import logging
 from dataclasses import dataclass
 from decimal import Decimal
@@ -24,6 +25,7 @@ SpeechKind = Literal["stt", "tts"]
 _INR_PER_STT_SECOND = {"sarvam": Decimal(30) / 3600, "google": Decimal("0.0224")}
 _INR_PER_TTS_CHAR = {"sarvam": Decimal(30) / 10_000, "google": Decimal("0.001344")}
 _INR_PLACES = Decimal("0.0001")  # speech_usage.est_cost_inr is numeric(10, 4)
+SINK_TIMEOUT_S = 2.0  # a slow database must not hold up a teacher's reply
 
 
 @dataclass(frozen=True)
@@ -49,7 +51,7 @@ def tts_cost_inr(provider: str, characters: int) -> Decimal:
 
 async def _record_quietly(sink: SpeechUsageSink, usage: SpeechUsage) -> None:
     try:
-        await sink.record(usage)
+        await asyncio.wait_for(sink.record(usage), timeout=SINK_TIMEOUT_S)
     except Exception:  # noqa: BLE001 - bookkeeping must not break a reply
         logger.warning("could not record speech usage", exc_info=True)
 

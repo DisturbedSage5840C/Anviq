@@ -1,3 +1,4 @@
+import asyncio
 from decimal import Decimal
 
 import pytest
@@ -93,7 +94,9 @@ async def test_a_failed_call_costs_nothing_and_still_raises(kind: str) -> None:
     assert sink.rows == []
 
 
-async def test_a_broken_sink_never_costs_the_teacher_their_reply() -> None:
+async def test_a_broken_sink_never_costs_the_teacher_their_reply(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     sink = Sink(RuntimeError("db down"))
 
     transcript = await MeteredSTT(FakeSTT(), sink, provider="sarvam").transcribe(
@@ -102,3 +105,26 @@ async def test_a_broken_sink_never_costs_the_teacher_their_reply() -> None:
     audio = await MeteredTTS(FakeTTS(), sink, provider="sarvam").synthesize("hi", "en", VOICE)
 
     assert transcript.text == "namaste" and audio == b"wav"
+    assert caplog.text.count("could not record speech usage") == 2
+
+
+async def test_a_sink_that_hangs_is_cut_off_and_the_reply_still_arrives(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("app.speech.metering.SINK_TIMEOUT_S", 0.01)
+
+    class HangingSink:
+        async def record(self, usage: SpeechUsage) -> None:
+            await asyncio.sleep(10)
+
+    audio = await MeteredTTS(FakeTTS(), HangingSink(), provider="sarvam").synthesize(
+        "hi", "en", VOICE
+    )
+
+    assert audio == b"wav"
+
+
+def test_google_costs_use_their_own_rates_and_round_to_four_places() -> None:
+    assert stt_cost_inr("google", Decimal(60)) == Decimal("1.3440")
+    assert tts_cost_inr("google", 1000) == Decimal("1.3440")
+    assert stt_cost_inr("sarvam", Decimal("0.3")) == Decimal("0.0025")

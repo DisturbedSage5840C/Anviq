@@ -63,9 +63,9 @@ async def open_resources(
     redis = Redis.from_url(settings.redis_url, decode_responses=True)
     http = httpx.AsyncClient(timeout=HTTP_TIMEOUT_S)
     engine = create_async_engine(settings.database_url, pool_pre_ping=True)
-    stt, tts = build_speech(settings, http, PostgresSpeechUsageSink(engine))
-    keyring = load_keyring(settings)
     try:
+        stt, tts = build_speech(settings, http, PostgresSpeechUsageSink(engine))
+        keyring = load_keyring(settings)
         yield Resources(
             redis=redis,
             arq_pool=arq_pool,
