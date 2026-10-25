@@ -3,6 +3,17 @@
 {$SITE_ADDRESS::80} {
 	encode zstd gzip
 
+	# Sent on every response. HSTS makes browsers stay on HTTPS for a day (browsers ignore it over
+	# plain HTTP, so a laptop on ":80" is unaffected). It is short on purpose: this demo hostname is
+	# tied to a VM's IP, and a longer value would lock browsers out if the address ever changed.
+	# Only the web room needs the microphone.
+	header {
+		Strict-Transport-Security "max-age=86400"
+		Permissions-Policy "microphone=(self), camera=(), geolocation=()"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+	}
+
 	# Evolution posts to api:8080 over the compose network, so this route never needs the internet.
 	@evolution_webhook path /webhook/evolution /webhook/evolution/*
 	handle @evolution_webhook {

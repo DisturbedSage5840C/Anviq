@@ -92,6 +92,7 @@ services:
 
   api:
     <<: *backend
+    networks: [default, evolution]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8080/healthz', timeout=3)"]
       interval: 15s
@@ -101,12 +102,15 @@ services:
 
   worker:
     <<: *backend
+    networks: [default, evolution]
     command: ["uv", "run", "--no-sync", "arq", "app.worker.WorkerSettings"]
 
   # --- optional WhatsApp channel: Evolution API on a spare SIM (demo only, breaks WhatsApp's terms) ---
   # Start it with:  docker compose --profile evolution ... up -d
   # Its database is separate from the teacher data, and its port is reachable from this machine
   # only (for pairing); the backend reaches it inside the stack, and it posts webhooks back to api.
+  # It sits on its own `evolution` network (shared only with api and worker), so this third-party
+  # image cannot reach the teacher Postgres or Redis.
   # `${VAR:?}` would also stop the stack for anyone not using Evolution (Compose checks every
   # service, profile or not), so this one-shot check fails the profile instead when a secret is empty.
   evolution-guard:
@@ -123,6 +127,7 @@ services:
     profiles: ["evolution"]
     image: postgres:16-alpine
     restart: unless-stopped
+    networks: [evolution]
     environment:
       POSTGRES_USER: evolution
       POSTGRES_PASSWORD: ${EVOLUTION_DB_PASSWORD:-}
@@ -142,6 +147,7 @@ services:
     profiles: ["evolution"]
     image: evoapicloud/evolution-api:v2.3.7
     restart: unless-stopped
+    networks: [evolution]
     ports:
       - "127.0.0.1:8081:8080"
     environment:
@@ -184,6 +190,9 @@ services:
     depends_on:
       api:
         condition: service_healthy
+
+networks:
+  evolution:
 
 volumes:
   pgdata:

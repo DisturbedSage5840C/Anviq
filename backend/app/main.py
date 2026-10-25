@@ -66,6 +66,7 @@ def create_app(
         title="Anviq",
         docs_url=None,
         redoc_url=None,
+        openapi_url=None,
         lifespan=lifespan if manage_resources else None,
     )
     app.include_router(health.router)
