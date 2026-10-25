@@ -565,6 +565,47 @@ async def test_reminders_are_skipped_without_claiming_on_the_twilio_sandbox(
     assert "sandbox" in " ".join(record.getMessage() for record in caplog.records)
 
 
+EVOLUTION_SETTINGS = {
+    "whatsapp_provider": "evolution",
+    "evolution_base_url": "http://evolution:8080",
+    "evolution_api_key": "evolution-global-api-key-value",
+    "evolution_instance": "anviq-demo",
+    "evolution_webhook_secret": "evolution-webhook-secret-0123456789",
+}
+
+
+def _evolution_settings() -> Settings:
+    return Settings(
+        app_env="local",
+        wa_verify_token="v",
+        wa_app_secret="s",
+        _env_file=None,
+        **EVOLUTION_SETTINGS,
+    )
+
+
+async def test_reminders_are_skipped_without_claiming_on_evolution(
+    monkeypatch: pytest.MonkeyPatch, claimed: list[ReminderWindow], caplog: pytest.LogCaptureFixture
+):
+    log: list[str] = []
+    ctx, due = _reminder_ctx(log, _RecordingWhatsApp(log))
+    ctx["settings"] = _evolution_settings()
+    _stub_claim(monkeypatch, log, due, claimed)
+
+    with caplog.at_level(logging.INFO):
+        await worker.send_daily_reminders(ctx)
+
+    assert log == []  # nothing claimed, so nobody loses today's reminder
+    assert "templates" in " ".join(record.getMessage() for record in caplog.records)
+
+
+async def test_the_inbound_job_error_names_the_evolution_settings_on_an_evolution_deploy():
+    ctx: dict[str, Any] = {"pipeline": None, "settings": _evolution_settings()}
+
+    with pytest.raises(RuntimeError, match="EVOLUTION_BASE_URL"):
+        await worker.handle_inbound(ctx, {})
+
+
 async def test_the_inbound_job_error_names_the_twilio_settings_on_a_twilio_deploy():
     ctx: dict[str, Any] = {
         "pipeline": None,

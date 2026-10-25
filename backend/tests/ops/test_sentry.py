@@ -180,3 +180,23 @@ def test_the_twilio_signature_header_is_redacted_like_meta_s():
     headers = scrub_event(event, {})["request"]["headers"]
 
     assert headers == {"X-Twilio-Signature": REDACTED, "Accept": "*/*"}
+
+
+def test_the_evolution_webhook_secret_and_api_key_headers_are_redacted():
+    event = {
+        "request": {
+            "headers": {
+                "X-Anviq-Webhook-Secret": "shared-secret",
+                "apikey": "global-key",
+                "Accept": "*/*",
+            }
+        }
+    }
+
+    headers = scrub_event(event, {})["request"]["headers"]
+
+    assert headers == {
+        "X-Anviq-Webhook-Secret": REDACTED,
+        "apikey": REDACTED,
+        "Accept": "*/*",
+    }

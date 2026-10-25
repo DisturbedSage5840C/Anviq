@@ -1,7 +1,8 @@
 # Always-on demo stack: Caddy (free HTTPS) -> API, plus worker, Postgres+pgvector and Redis.
 # Run from the repo root:
 #   docker compose --env-file infra/demo.env -f infra/docker-compose.demo.yml up -d --build
-# Only Caddy publishes ports; the database and Redis are reachable inside the stack alone.
+# Only Caddy publishes ports to the world; the database and Redis are reachable inside the stack
+# alone. (The optional evolution profile also binds 127.0.0.1:8081 on this machine, for pairing.)
 
 x-backend: &backend
   build:
@@ -27,6 +28,10 @@ x-backend: &backend
     - TWILIO_AUTH_TOKEN
     - TWILIO_WHATSAPP_FROM
     - TWILIO_WEBHOOK_URL
+    - EVOLUTION_BASE_URL
+    - EVOLUTION_API_KEY
+    - EVOLUTION_INSTANCE
+    - EVOLUTION_WEBHOOK_SECRET
   depends_on:
     db-roles:
       condition: service_completed_successfully
@@ -98,6 +103,72 @@ services:
     <<: *backend
     command: ["uv", "run", "--no-sync", "arq", "app.worker.WorkerSettings"]
 
+  # --- optional WhatsApp channel: Evolution API on a spare SIM (demo only, breaks WhatsApp's terms) ---
+  # Start it with:  docker compose --profile evolution ... up -d
+  # Its database is separate from the teacher data, and its port is reachable from this machine
+  # only (for pairing); the backend reaches it inside the stack, and it posts webhooks back to api.
+  # `${VAR:?}` would also stop the stack for anyone not using Evolution (Compose checks every
+  # service, profile or not), so this one-shot check fails the profile instead when a secret is empty.
+  evolution-guard:
+    profiles: ["evolution"]
+    image: postgres:16-alpine
+    restart: "no"
+    entrypoint: ["sh", "-c"]
+    command: ['test -n "$$EVOLUTION_API_KEY" && test -n "$$EVOLUTION_DB_PASSWORD" || { echo "Set EVOLUTION_API_KEY and EVOLUTION_DB_PASSWORD in infra/demo.env" >&2; exit 1; }']
+    environment:
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
+      EVOLUTION_DB_PASSWORD: ${EVOLUTION_DB_PASSWORD:-}
+
+  evolution-db:
+    profiles: ["evolution"]
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: ${EVOLUTION_DB_PASSWORD:-}
+      POSTGRES_DB: evolution
+    depends_on:
+      evolution-guard:
+        condition: service_completed_successfully
+    volumes:
+      - evolutiondbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  evolution:
+    profiles: ["evolution"]
+    image: evoapicloud/evolution-api:v2.3.7
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:8080"
+    environment:
+      SERVER_URL: http://evolution:8080
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:-}
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:${EVOLUTION_DB_PASSWORD:-}@evolution-db:5432/evolution?schema=public
+      DATABASE_CONNECTION_CLIENT_NAME: anviq
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      # Voice notes are fetched by message id, so Evolution has to keep the message.
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
+      DATABASE_SAVE_MESSAGE_UPDATE: "false"
+      DATABASE_SAVE_DATA_CONTACTS: "false"
+      DATABASE_SAVE_DATA_CHATS: "false"
+      CACHE_REDIS_ENABLED: "false"
+      CACHE_LOCAL_ENABLED: "true"
+      WEBHOOK_GLOBAL_ENABLED: "false"
+      # Keep message text out of the container logs.
+      LOG_LEVEL: ERROR,WARN
+    volumes:
+      - evolutioninstances:/evolution/instances
+    depends_on:
+      evolution-guard:
+        condition: service_completed_successfully
+      evolution-db:
+        condition: service_healthy
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -117,3 +188,5 @@ volumes:
   pgdata:
   redisdata:
   caddydata:
+  evolutiondbdata:
+  evolutioninstances:

@@ -75,6 +75,10 @@ def build_pipeline(resources: Resources, settings: Settings, *, brain: Brain) ->
 def _missing_credentials(settings: Settings) -> str:
     if settings.whatsapp_provider == "twilio":
         return "TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM"
+    if settings.whatsapp_provider == "evolution":
+        return (
+            "EVOLUTION_BASE_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE and EVOLUTION_WEBHOOK_SECRET"
+        )
     return META_CREDENTIALS
 
 
@@ -147,6 +151,10 @@ async def send_daily_reminders(ctx: dict[str, Any]) -> None:
         # Reminders are template messages and the sandbox only allows free-form replies inside
         # 24 hours. Skip before claiming, so no teacher is stamped as reminded without a send.
         logger.info("daily reminders skipped: the Twilio sandbox cannot send templates")
+        return
+    if settings is not None and settings.whatsapp_provider == "evolution":
+        # Evolution drives a plain WhatsApp account, which has no approved templates to send.
+        logger.info("daily reminders skipped: the Evolution channel cannot send templates")
         return
     whatsapp = resources.whatsapp
     if whatsapp is None:

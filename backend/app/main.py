@@ -5,7 +5,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.api import dashboard, health, twilio_webhook, web_room, whatsapp_webhook
+from app.api import (
+    dashboard,
+    evolution_webhook,
+    health,
+    twilio_webhook,
+    web_room,
+    whatsapp_webhook,
+)
 from app.config import Settings, WebRoomSettings, get_settings
 from app.dashboard.trends import PostgresTrendsReader
 from app.ops.sentry import init_sentry
@@ -64,6 +71,7 @@ def create_app(
     app.include_router(health.router)
     app.include_router(whatsapp_webhook.router)
     app.include_router(twilio_webhook.router)
+    app.include_router(evolution_webhook.router)
     app.include_router(web_room.router)
     app.include_router(dashboard.router)
     origins = (

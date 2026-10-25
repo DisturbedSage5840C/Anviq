@@ -23,8 +23,10 @@ _REQUEST_CONTENT_KEYS = ("data", "cookies", "query_string")
 _BREADCRUMB_CONTENT_KEYS = ("body",)
 _CREDENTIAL_HEADERS = frozenset(
     {
+        "apikey",
         "authorization",
         "cookie",
+        "x-anviq-webhook-secret",
         "x-demo-code",
         "x-hub-signature",
         "x-hub-signature-256",

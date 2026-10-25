@@ -14,6 +14,11 @@ MIN_DASHBOARD_TOKEN_CHARS = 24
 TWILIO_SID_PATTERN = r"^AC[0-9a-fA-F]{32}$"
 TWILIO_FROM_PATTERN = r"^\+\d{8,15}$"
 HTTPS_URL_PATTERN = r"^https://[^\s/]+\S*$"
+# Evolution sits beside the API on the compose network, so plain http is expected.
+HTTP_URL_PATTERN = r"^https?://[^\s/]+\S*$"
+# The instance name goes into URL paths, so it is kept to a safe, short alphabet.
+EVOLUTION_INSTANCE_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"
+MIN_EVOLUTION_SECRET_CHARS = 24
 
 
 class Settings(BaseSettings):
@@ -30,7 +35,7 @@ class Settings(BaseSettings):
 
     # Which WhatsApp channel carries the teachers' messages. Twilio's sandbox is the pilot channel
     # while Meta's business verification is pending; both feed the same pipeline.
-    whatsapp_provider: Literal["meta", "twilio"] = "meta"
+    whatsapp_provider: Literal["meta", "twilio", "evolution"] = "meta"
     twilio_account_sid: str | None = Field(default=None, pattern=TWILIO_SID_PATTERN)
     twilio_auth_token: SecretStr | None = None
     # The number replies come from, e.g. the sandbox's +14155238886.
@@ -38,6 +43,15 @@ class Settings(BaseSettings):
     # The exact public URL configured in Twilio. Its signature covers this string, and a proxy
     # rewrites the scheme and host, so it cannot be rebuilt from the request.
     twilio_webhook_url: str | None = Field(default=None, pattern=HTTPS_URL_PATTERN)
+
+    # Evolution API: an unofficial, self-hosted WhatsApp Web bridge on a spare SIM. Demo use only.
+    evolution_base_url: str | None = Field(default=None, pattern=HTTP_URL_PATTERN)
+    evolution_api_key: SecretStr | None = None
+    evolution_instance: str | None = Field(default=None, pattern=EVOLUTION_INSTANCE_PATTERN)
+    # Sent by Evolution in a header on every webhook call; it is the webhook's only credential.
+    evolution_webhook_secret: SecretStr | None = Field(
+        default=None, min_length=MIN_EVOLUTION_SECRET_CHARS
+    )
 
     database_url: str = "postgresql+asyncpg://anviq:anviq@localhost:5432/anviq"
     redis_url: str = "redis://localhost:6379/0"
@@ -103,6 +117,17 @@ class Settings(BaseSettings):
         # Compose passes every listed variable, empty when the host has not set it.
         return None if isinstance(raw, str) and not raw.strip() else raw
 
+    @field_validator(
+        "evolution_base_url",
+        "evolution_api_key",
+        "evolution_instance",
+        "evolution_webhook_secret",
+        mode="before",
+    )
+    @classmethod
+    def _blank_evolution_value_is_unset(cls, raw: object) -> object:
+        return None if isinstance(raw, str) and not raw.strip() else raw
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def wa_graph_base_url(self) -> str:
@@ -124,6 +149,24 @@ class Settings(BaseSettings):
         ]
         if missing:
             raise ValueError(f"{', '.join(missing)} required when WHATSAPP_PROVIDER=twilio")
+        return self
+
+    @model_validator(mode="after")
+    def require_evolution_settings(self) -> Self:
+        if self.whatsapp_provider != "evolution":
+            return self
+        missing = [
+            name
+            for name, value in (
+                ("EVOLUTION_BASE_URL", self.evolution_base_url),
+                ("EVOLUTION_API_KEY", self.evolution_api_key),
+                ("EVOLUTION_INSTANCE", self.evolution_instance),
+                ("EVOLUTION_WEBHOOK_SECRET", self.evolution_webhook_secret),
+            )
+            if value is None
+        ]
+        if missing:
+            raise ValueError(f"{', '.join(missing)} required when WHATSAPP_PROVIDER=evolution")
         return self
 
     @model_validator(mode="after")

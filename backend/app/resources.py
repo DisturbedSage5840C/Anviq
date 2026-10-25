@@ -10,6 +10,7 @@ from arq.connections import ArqRedis, RedisSettings
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
+from app.channel.evolution_client import EvolutionWhatsAppClient
 from app.channel.inbound_guard import InboundGuard
 from app.channel.job_queue import ArqJobQueue, JobQueue
 from app.channel.twilio_client import TwilioWhatsAppClient
@@ -24,8 +25,9 @@ from app.speech.factory import build_speech
 HTTP_TIMEOUT_S = 20.0
 DEFAULT_CONN_RETRIES = 3
 
-# Meta's Cloud API client or Twilio's sandbox client; both satisfy the pipeline's WhatsAppPort.
-WhatsAppChannel = WhatsAppClient | TwilioWhatsAppClient
+# Meta's Cloud API client, Twilio's sandbox client or the Evolution demo bridge; all three satisfy
+# the pipeline's WhatsAppPort.
+WhatsAppChannel = WhatsAppClient | TwilioWhatsAppClient | EvolutionWhatsAppClient
 
 
 @dataclass(frozen=True)
@@ -87,6 +89,8 @@ def build_whatsapp(settings: Settings, http: httpx.AsyncClient) -> WhatsAppChann
     """The outbound client for the configured provider, or None when it has no credentials."""
     if settings.whatsapp_provider == "twilio":
         return _build_twilio(settings, http)
+    if settings.whatsapp_provider == "evolution":
+        return _build_evolution(settings, http)
     if settings.wa_phone_number_id is None or settings.wa_access_token is None:
         return None
     return WhatsAppClient(
@@ -94,6 +98,22 @@ def build_whatsapp(settings: Settings, http: httpx.AsyncClient) -> WhatsAppChann
         phone_number_id=settings.wa_phone_number_id,
         access_token=settings.wa_access_token.get_secret_value(),
         base_url=settings.wa_graph_base_url,
+    )
+
+
+def _build_evolution(settings: Settings, http: httpx.AsyncClient) -> EvolutionWhatsAppClient | None:
+    # Settings validation already requires all of these when the provider is evolution.
+    if (
+        settings.evolution_base_url is None
+        or settings.evolution_api_key is None
+        or settings.evolution_instance is None
+    ):
+        return None
+    return EvolutionWhatsAppClient(
+        http,
+        base_url=settings.evolution_base_url,
+        api_key=settings.evolution_api_key.get_secret_value(),
+        instance=settings.evolution_instance,
     )
 
 

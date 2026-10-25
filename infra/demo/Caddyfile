@@ -2,5 +2,8 @@
 # ":80" for plain HTTP on a laptop.
 {$SITE_ADDRESS::80} {
 	encode zstd gzip
+	# Evolution posts to api:8080 over the compose network, so this route never needs the internet.
+	@evolution_webhook path /webhook/evolution /webhook/evolution/*
+	respond @evolution_webhook 404
 	reverse_proxy api:8080
 }

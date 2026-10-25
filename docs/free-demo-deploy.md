@@ -101,6 +101,39 @@ submission form, not in the repo.
 `DEMO_CYCLE_MINUTES=5` (default in the template) makes the 14-day mirror cycle last 5 minutes so a
 judge can see Day 1 to Day 14 in one sitting.
 
+## 6. Optional: WhatsApp on a spare SIM (Evolution)
+
+Use this only when the official WhatsApp route is blocked. It links a real WhatsApp account to the
+server, which WhatsApp's terms do not allow, so the number can be banned. Use a throwaway SIM, keep
+the volume low, and never use it for real teachers. Reminders are off on this channel because it
+cannot send templates.
+
+1. Put the six lines from the Evolution block of `infra/demo.env.example` into `infra/demo.env`, with
+   `WHATSAPP_PROVIDER=evolution`. Generate each secret with `openssl rand -hex 24`.
+2. Start the stack with the extra profile (the same command as step 4, plus `--profile evolution`):
+
+   ```
+   docker compose --env-file infra/demo.env -f infra/docker-compose.demo.yml \
+     --profile evolution up -d --build
+   ```
+
+3. Create the instance and register the webhook, then ask for a pairing code for the SIM's number
+   (country code first, no plus sign):
+
+   ```
+   set -a; . infra/demo.env; set +a
+   python3 infra/demo/evolution_setup.py setup
+   python3 infra/demo/evolution_setup.py pair 91XXXXXXXXXX
+   ```
+
+4. On the phone that holds the SIM: WhatsApp > Settings > Linked devices > Link a device > Link with
+   phone number instead, then type the code. Check it with `python3 infra/demo/evolution_setup.py
+   status`; `open` means paired.
+
+The pairing can drop (the phone offline for days, WhatsApp logging the device out). Run `status` the
+day before the demo and on demo day, and run `pair` again if it says anything but `open`. Keep a
+screen recording of a full conversation and the browser web room as fallbacks.
+
 ## Day to day
 
 - Logs: `docker compose --env-file infra/demo.env -f infra/docker-compose.demo.yml logs -f api worker`
