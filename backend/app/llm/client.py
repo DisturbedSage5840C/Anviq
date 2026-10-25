@@ -35,6 +35,11 @@ RETRY_DELAY_S = 0.5
 # first day with a key (plan section 7.5). A model we do not recognise is priced as Sonnet, the
 # middle tier, so an unknown id never makes spend look lower than it is.
 PRICES_PER_MTOK: Mapping[str, tuple[Decimal, Decimal]] = {
+    # Matched by substring, in order, so the specific generations come before the generic tiers.
+    "haiku-5": (Decimal("0.10"), Decimal("0.50")),
+    "sonnet-5": (Decimal("2"), Decimal("10")),
+    "opus-5": (Decimal("4"), Decimal("20")),
+    "haiku-4": (Decimal("1"), Decimal("5")),
     "haiku": (Decimal("1"), Decimal("5")),
     "sonnet": (Decimal("3"), Decimal("15")),
     "opus": (Decimal("5"), Decimal("25")),
@@ -85,6 +90,7 @@ class Reply:
 
     blocks: tuple[Mapping[str, Any], ...]
     usage: Usage
+    stop_reason: str = ""
 
     @property
     def text(self) -> str:
@@ -154,6 +160,7 @@ class LLMClient:
         max_tokens: int = 1024,
         tools: Sequence[Mapping[str, Any]] | None = None,
         tool_choice: Mapping[str, Any] | None = None,
+        think: bool = True,
     ) -> Reply:
         body: dict[str, Any] = {
             "model": model,
@@ -161,6 +168,9 @@ class LLMClient:
             "system": [block.as_api() for block in system],
             "messages": list(messages),
         }
+        if not think:
+            # Short replies on a small token cap: adaptive thinking would eat the whole budget.
+            body["thinking"] = {"type": "disabled"}
         if tools:
             body["tools"] = list(tools)
         if tool_choice:
@@ -171,7 +181,7 @@ class LLMClient:
         usage = self._usage(purpose, model, data, latency_ms)
         if self._sink is not None:
             await self._sink.record(usage)
-        return Reply(tuple(data.get("content", ())), usage)
+        return Reply(tuple(data.get("content", ())), usage, str(data.get("stop_reason") or ""))
 
     async def complete_text(
         self,
@@ -181,6 +191,7 @@ class LLMClient:
         system: Sequence[SystemBlock],
         messages: Sequence[Mapping[str, Any]],
         max_tokens: int = 512,
+        think: bool = True,
     ) -> str:
         reply = await self.complete(
             purpose,
@@ -188,8 +199,13 @@ class LLMClient:
             system=system,
             messages=messages,
             max_tokens=max_tokens,
+            think=think,
         )
-        return reply.text.strip()
+        text = reply.text.strip()
+        if not text and reply.stop_reason == "max_tokens":
+            logger.error("llm_cut_off purpose=%s max_tokens=%d", purpose, max_tokens)
+            raise LLMError(f"{purpose}: reply cut off before any text")
+        return text
 
     async def complete_json(
         self,
@@ -200,6 +216,7 @@ class LLMClient:
         messages: Sequence[Mapping[str, Any]],
         schema: type[T],
         max_tokens: int = 1024,
+        think: bool = True,
     ) -> T:
         tool = {
             "name": "answer",
@@ -220,6 +237,7 @@ class LLMClient:
                 max_tokens=max_tokens,
                 tools=[tool],
                 tool_choice={"type": "auto"},
+                think=think,
             )
             call = next((b for b in reply.blocks if b.get("type") == "tool_use"), None)
             if call is None:

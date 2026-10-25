@@ -271,11 +271,91 @@ async def test_an_empty_reply_is_repaired_without_an_empty_assistant_turn(client
     assert sent[-1]["role"] == "user"
 
 
+@respx.mock
+async def test_thinking_is_left_to_the_model_unless_switched_off(client: LLMClient):
+    route = respx.post(API_URL).respond(json={"content": [{"type": "text", "text": "ok"}]})
+
+    await client.complete_text("x", model="m", system=SYSTEM, messages=MESSAGES)
+
+    assert "thinking" not in json.loads(route.calls.last.request.read())
+
+
+@respx.mock
+async def test_a_short_reply_can_switch_thinking_off(client: LLMClient):
+    route = respx.post(API_URL).respond(json={"content": [{"type": "text", "text": "ok"}]})
+
+    await client.complete_text("x", model="m", system=SYSTEM, messages=MESSAGES, think=False)
+
+    assert json.loads(route.calls.last.request.read())["thinking"] == {"type": "disabled"}
+
+
+@respx.mock
+async def test_a_structured_reply_can_switch_thinking_off(client: LLMClient):
+    route = respx.post(API_URL).respond(json=tool_reply({"ok": True, "note": "fine"}))
+
+    await client.complete_json(
+        "x", model="m", system=SYSTEM, messages=MESSAGES, schema=Verdict, think=False
+    )
+
+    assert json.loads(route.calls.last.request.read())["thinking"] == {"type": "disabled"}
+
+
+@respx.mock
+async def test_a_reply_cut_off_before_any_text_is_an_error_not_silence(client: LLMClient):
+    # A model that spends the whole budget thinking returns no text block at all.
+    respx.post(API_URL).respond(
+        json={
+            "stop_reason": "max_tokens",
+            "content": [{"type": "thinking", "thinking": "hmm"}],
+            "usage": USAGE,
+        }
+    )
+
+    with pytest.raises(LLMError, match="cut off"):
+        await client.complete_text("child", model="m", system=SYSTEM, messages=MESSAGES)
+
+
+@respx.mock
+async def test_a_short_but_complete_reply_is_not_an_error(client: LLMClient):
+    respx.post(API_URL).respond(
+        json={
+            "stop_reason": "max_tokens",
+            "content": [{"type": "text", "text": "Half a sentence"}],
+            "usage": USAGE,
+        }
+    )
+
+    text = await client.complete_text("child", model="m", system=SYSTEM, messages=MESSAGES)
+
+    assert text == "Half a sentence"
+
+
 def test_cost_uses_tier_and_cache_discounts():
     haiku = estimate_cost("claude-haiku-5-5", 1_000_000, 0, 0, 0)
-    assert haiku == Decimal("1.000000")
-    assert estimate_cost("claude-haiku-5-5", 0, 0, 1_000_000, 0) == Decimal("0.100000")
-    assert estimate_cost("claude-haiku-5-5", 0, 0, 0, 1_000_000) == Decimal("1.250000")
+    assert haiku == Decimal("0.100000")
+    assert estimate_cost("claude-haiku-5-5", 0, 1_000_000, 0, 0) == Decimal("0.500000")
+    assert estimate_cost("claude-haiku-5-5", 0, 0, 1_000_000, 0) == Decimal("0.010000")
+    assert estimate_cost("claude-haiku-5-5", 0, 0, 0, 1_000_000) == Decimal("0.125000")
+
+
+@pytest.mark.parametrize(
+    ("model", "per_million_in", "per_million_out"),
+    [
+        ("claude-haiku-5-5", "0.10", "0.50"),
+        ("claude-sonnet-5-5", "2", "10"),
+        ("claude-opus-5-5", "4", "20"),
+        ("claude-haiku-4-5", "1", "5"),
+    ],
+)
+def test_each_model_generation_is_priced_at_its_own_rate(
+    model: str, per_million_in: str, per_million_out: str
+):
+    assert estimate_cost(model, 1_000_000, 0, 0, 0) == Decimal(per_million_in).quantize(
+        Decimal("0.000001")
+    )
+    assert estimate_cost(model, 0, 1_000_000, 0, 0) == Decimal(per_million_out).quantize(
+        Decimal("0.000001")
+    )
 
 
 def test_unknown_model_is_priced_as_sonnet():

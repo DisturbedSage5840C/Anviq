@@ -1,3 +1,4 @@
+import json
 import random
 
 import httpx
@@ -120,6 +121,25 @@ async def test_llm_voice_sends_persona_rules_and_wrapped_teacher_words():
     body = route.calls.last.request.read().decode()
     assert "Riya" in body and "Never reveal that you are an AI" in body
     assert body.count("</teacher_utterance>") == 1  # the teacher's fake closing tag was removed
+
+
+@respx.mock
+async def test_llm_voice_turns_thinking_off_so_the_budget_goes_to_the_reply():
+    route = respx.post(API_URL).respond(json={"content": [{"type": "text", "text": "जवाब 45 है।"}]})
+    async with httpx.AsyncClient() as http:
+        await LLMChildVoice(LLMClient(http, "k"), "claude-haiku-5-5").speak(brief())
+    assert json.loads(route.calls.last.request.read())["thinking"] == {"type": "disabled"}
+
+
+@respx.mock
+async def test_a_reply_that_never_reached_the_text_becomes_a_child_voice_error():
+    respx.post(API_URL).respond(
+        json={"stop_reason": "max_tokens", "content": [{"type": "thinking", "thinking": "hm"}]}
+    )
+    async with httpx.AsyncClient() as http:
+        voice = LLMChildVoice(LLMClient(http, "k"), "claude-haiku-5-5")
+        with pytest.raises(ChildVoiceError):
+            await voice.speak(brief())
 
 
 @respx.mock

@@ -20,6 +20,7 @@ class StructuredClient(Protocol):
         messages: Sequence[Mapping[str, Any]],
         schema: type[T],
         max_tokens: int = 1024,
+        think: bool = True,
     ) -> T: ...
 
 
@@ -32,6 +33,7 @@ class TextClient(Protocol):
         system: Sequence[SystemBlock],
         messages: Sequence[Mapping[str, Any]],
         max_tokens: int = 512,
+        think: bool = True,
     ) -> str: ...
 
 
@@ -46,4 +48,5 @@ class RawClient(Protocol):
         max_tokens: int = 1024,
         tools: Sequence[Mapping[str, Any]] | None = None,
         tool_choice: Mapping[str, Any] | None = None,
+        think: bool = True,
     ) -> Reply: ...

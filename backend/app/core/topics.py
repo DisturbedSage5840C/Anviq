@@ -129,6 +129,7 @@ class TopicResolverWithModel:
                 ],
                 schema=_Choice,
                 max_tokens=TOPIC_MAX_TOKENS,
+                think=False,
             )
         except LLMError:
             return quick

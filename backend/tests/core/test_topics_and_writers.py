@@ -45,8 +45,11 @@ class Scripted:
         messages: Sequence[Mapping[str, Any]],
         schema: type[BaseModel],
         max_tokens: int = 1024,
+        think: bool = True,
     ) -> Any:
-        self.calls.append({"purpose": purpose, "system": system, "messages": messages})
+        self.calls.append(
+            {"purpose": purpose, "system": system, "messages": messages, "think": think}
+        )
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):
             raise reply
@@ -95,6 +98,15 @@ async def test_the_model_breaks_a_tie_but_only_among_known_topics():
     resolver = TopicResolverWithModel(scripted, "m")
     assert await resolver.resolve("हासिल", "hi") == Resolved("NUM.G2.ADD.REGROUP")
     assert "<teacher_utterance>हासिल</teacher_utterance>" in str(scripted.calls[0]["messages"])
+
+
+async def test_the_topic_pick_runs_without_thinking_so_a_small_budget_is_enough():
+    scripted = Scripted(_choice("NUM.G2.ADD.REGROUP"))
+    resolver = TopicResolverWithModel(scripted, "m")
+
+    await resolver.resolve("हासिल", "hi")
+
+    assert scripted.calls[0]["think"] is False
 
 
 async def test_an_invented_topic_id_is_ignored():

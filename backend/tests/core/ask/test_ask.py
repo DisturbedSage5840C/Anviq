@@ -100,9 +100,13 @@ class Model:
         self.answer = answer
         self.answer_calls: list[Sequence[Mapping[str, Any]]] = []
         self.rewrite_calls = 0
+        self.rewrite_think: list[bool] = []
 
-    async def complete_json(self, purpose: str, *, schema: type[BaseModel], **_: Any) -> Any:
+    async def complete_json(
+        self, purpose: str, *, schema: type[BaseModel], think: bool = True, **_: Any
+    ) -> Any:
         self.rewrite_calls += 1
+        self.rewrite_think.append(think)
         if isinstance(self.rewrite, Exception):
             raise self.rewrite
         return self.rewrite
@@ -146,6 +150,14 @@ async def test_a_cited_answer_ends_with_the_metadata_source_line():
     assert reply.text.endswith(f"Source: {P1.label}\nSource: {P2.label}")
     docs = model.answer_calls[0][0]["content"]
     assert docs[0]["citations"] == {"enabled": True} and docs[0]["title"] == P1.label
+
+
+async def test_the_query_rewrite_runs_without_thinking_so_a_small_budget_is_enough():
+    model = Model(IN_SCOPE, [cite("Use bundles.", 0)])
+
+    await ask(model, Retrieval([P1], P1)).answer("q", "en")
+
+    assert model.rewrite_think == [False]
 
 
 async def test_uncited_sentences_are_dropped():

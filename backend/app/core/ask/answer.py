@@ -169,6 +169,7 @@ class AskAnviq:
                 messages=[{"role": "user", "content": f"{dumps_compact({'lang': lang})}\n{asked}"}],
                 schema=_Rewrite,
                 max_tokens=REWRITE_MAX_TOKENS,
+                think=False,
             )
         except LLMError as exc:
             raise AskUnavailableError("query rewrite failed") from exc
