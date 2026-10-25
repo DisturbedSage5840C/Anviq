@@ -55,7 +55,7 @@ Meta's retry window even when a vendor is slow.
 | Nightly aggregates job | **Not yet** | planned in `worker.py` |
 | Dashboard data API: `GET /dashboard/trends`, bearer token, `dashboard_ro` connection, `public_trends` only | Built (off until `DASHBOARD_API_TOKEN` and `DASHBOARD_DATABASE_URL` are set) | `app/api/dashboard.py`, `app/dashboard/` |
 | Mentor dashboard page | Built (Next.js; runs locally on port 3001 against the API, CORS allows its origin through `WEB_ALLOWED_ORIGINS`; not yet hosted; shows synthetic demo rows until the API feed is configured) | `dashboard/` |
-| Web room front end | Built (plain HTML and JS, hold to talk; served locally on port 3000 with `?api=`; not yet hosted, and its origin must be in `WEB_ALLOWED_ORIGINS`) | `web-room/` |
+| Web room front end | Built and hosted (plain HTML and JS, hold to talk; Caddy serves it at `/room/` on the same origin as the API, so no CORS entry is needed; a CSP limits it to its own origin, and `?api=` works only from localhost) | `web-room/`, `infra/demo/Caddyfile` |
 | Browser E2E smoke tests | Built | `e2e/`, `playwright.config.ts` |
 | Evaluation harness | Built; needs a model key to produce real numbers | `app/evaluation/`, see `eval/README.md` |
 | Rubrics for coaching moves 1-6, personas, topic map | Built and reviewed (`status = "reviewed"`, Moves 1-6 each have 6+ positive and 6+ negative bilingual examples; topics mapped to NIPUN LOs and NISHTHA Course 9) | `app/content/rubrics/`, `app/content/topics.toml`, `app/core/children/`, `content/` |
@@ -149,7 +149,7 @@ What is stored and for how long: [data-inventory.md](data-inventory.md). Risk as
 | Env | Backend | Database | WhatsApp |
 |---|---|---|---|
 | local | `uvicorn` and `arq` against docker-compose Postgres (pgvector) and Redis | local | test number through a tunnel |
-| demo | One Google Cloud VM (Mumbai, trial credit) running `infra/docker-compose.demo.yml`: Caddy for HTTPS, `api`, `worker`, Postgres, Redis | Postgres container with a named volume | Meta test number (at most 5 whitelisted phones), plus the web room for everyone else |
+| demo | One Google Cloud VM (Mumbai, trial credit) running `infra/docker-compose.demo.yml`: Caddy for HTTPS, `api`, `worker`, Postgres, Redis | Postgres container with a named volume | A spare SIM through Evolution API (demo only; unofficial, so a ban risk, and no template messages, hence no reminders), or the Meta test number (at most 5 whitelisted phones; inbound only until the business is verified), plus the web room at `/room/` for everyone else |
 
 There is one deployed environment and it is the demo. The `migrate` container runs
 `alembic upgrade head` before the API and worker start, so a failed migration leaves the old

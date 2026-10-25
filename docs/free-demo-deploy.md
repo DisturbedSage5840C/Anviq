@@ -64,7 +64,7 @@ Fill in `infra/demo.env`:
 - `SITE_ADDRESS`: the `sslip.io` name from step 2.
 - `ANTHROPIC_API_KEY`, `SARVAM_API_KEY`: your keys.
 - `WA_VERIFY_TOKEN`: any string you invent. `WA_APP_SECRET`: the Meta app secret, or any placeholder until the Meta app exists.
-- `WEB_ALLOWED_ORIGINS`: the web room's URL once it is hosted.
+- `WEB_ALLOWED_ORIGINS`: leave empty. Caddy serves the web room at `/room/` on the same origin as the API, so no CORS entry is needed; set it only if you host the room somewhere else.
 
 `infra/demo.env` is gitignored. Never commit it or paste it into chat. To reuse a file you already
 filled in on your laptop, copy it with `gcloud compute scp` and `chmod 600` it on the VM.

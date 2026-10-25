@@ -63,7 +63,7 @@ Fill these in at release; nothing below is live until then.
 | Way in | What you need |
 |---|---|
 | WhatsApp | Scan the QR or message the number, then say "Namaste". Number: _to be added at release_ |
-| Browser (no WhatsApp) | Open the web room and enter a demo code. URL: _to be added at release_ |
+| Browser (no WhatsApp) | Open the [web room](https://35-200-176-62.sslip.io/room/) and enter a demo code (the team issues one) |
 | Mentor dashboard | Token-gated; shows only groups of 20+ teachers. URL and token: _to be added at release_ |
 
 The team issues web demo codes (never put one in the repo). A code allows a fixed number of turns
