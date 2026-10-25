@@ -89,8 +89,9 @@ def _sections(pages: Iterable[tuple[int, str]]) -> Iterator[_Section]:
                     module, None, heading.group("mtitle").strip() or None, page_no, ()
                 )
             else:
+                # A module is only known from an explicit "Module N" heading; a section number
+                # such as 5.2 is a chapter in some documents (NIPUN Bharat), not a module.
                 number = heading.group("num")
-                module = module or number.split(".")[0]
                 current = _Section(module, number, heading.group("title").strip(), page_no, ())
     if current.lines:
         yield current

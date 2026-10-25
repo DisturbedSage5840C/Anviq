@@ -35,6 +35,14 @@ def test_chunks_follow_headings_and_carry_metadata_labels():
     assert chunks[2].label() == "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.2"
 
 
+def test_a_document_with_numbered_sections_but_no_module_heading_gets_no_module_label():
+    nipun = SourceDoc("NIPUN Bharat", None, "", "en")
+    pages = [(50, "5.2 Assessment\nCheck each child often."), (51, "5.3 Feedback\nGive it kindly.")]
+    chunks = chunk_document(nipun, pages)
+    assert [c.module for c in chunks] == [None, None]
+    assert chunks[0].label() == "NIPUN Bharat, §5.2"
+
+
 def test_long_sections_split_within_the_token_limit_and_never_cross_a_heading():
     paragraph = "word " * 100
     pages = [(1, "2.1 Long\n" + "\n".join([paragraph] * 12) + "\n2.2 Next\nshort")]

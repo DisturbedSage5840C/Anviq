@@ -156,7 +156,11 @@ def test_shipped_eval_datasets_and_manifests_are_well_formed():
     assert all(q.get("question") and q.get("lang") in {"hi", "en"} for q in oos)
 
     corpus_docs = read_manifest(repo_root / "content" / "corpus" / "manifest.csv")
-    assert sorted(doc.lang for _, doc in corpus_docs) == ["en", "hi"]
+    assert sorted((doc.source, doc.lang) for _, doc in corpus_docs) == [
+        ("NIPUN Bharat", "en"),
+        ("NISHTHA FLN", "en"),
+        ("NISHTHA FLN", "hi"),
+    ]
     assert all(path.suffix == ".pdf" for path, _ in corpus_docs)
 
     stt_clips = load_stt_manifest(repo_root / "eval" / "datasets" / "stt_clips" / "manifest.csv")
