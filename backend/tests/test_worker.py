@@ -285,6 +285,73 @@ def test_http_client_request_logs_are_silenced_so_the_webhook_url_is_not_logged(
     assert not logging.getLogger("httpx").isEnabledFor(logging.INFO)
 
 
+def _arq_job_start_record(ref: str, rendered_args: str) -> logging.LogRecord:
+    """The record arq's worker emits when a job starts (see `arq.worker.Worker.run_job`)."""
+    return logging.LogRecord(
+        name="arq.worker",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=0,
+        msg="%6.2fs → %s(%s)%s",
+        args=(0.08, ref, rendered_args, ""),
+        exc_info=None,
+    )
+
+
+def test_inbound_job_arguments_are_hidden_from_the_worker_log_so_phone_numbers_stay_out():
+    log_filter = worker.JobArgumentRedactor()
+    record = _arq_job_start_record(
+        "wamid.1:handle_inbound", "{'sender_wa_id': '919999999999', 'text': 'hello'}"
+    )
+
+    log_filter.filter(record)
+
+    line = record.getMessage()
+    assert "919999999999" not in line
+    assert "hello" not in line
+    assert "wamid.1:handle_inbound" in line
+
+
+def test_job_start_lines_keep_their_timing_and_try_suffix_after_redaction():
+    record = _arq_job_start_record("wamid.1:handle_inbound", "{'sender_wa_id': '9199'}")
+    record.args = (0.08, "wamid.1:handle_inbound", "{'sender_wa_id': '9199'}", " try=2")
+
+    worker.JobArgumentRedactor().filter(record)
+
+    assert record.getMessage().endswith(" try=2")
+    assert record.getMessage().startswith("  0.08s")
+
+
+def test_other_worker_log_lines_pass_through_unchanged():
+    log_filter = worker.JobArgumentRedactor()
+    result_line = logging.LogRecord(
+        "arq.worker", logging.INFO, __file__, 0, "%6.2fs ← %s ● %s", (0.1, "ref", "ok"), None
+    )
+
+    kept = log_filter.filter(result_line)
+
+    assert kept is True
+    assert result_line.getMessage() == "  0.10s ← ref ● ok"
+
+
+def test_redactor_matches_the_job_start_format_of_the_installed_arq():
+    import inspect
+
+    import arq.worker
+
+    assert worker.ARQ_JOB_START_FORMAT in inspect.getsource(arq.worker)
+
+
+def test_redaction_is_installed_once_on_the_arq_worker_logger():
+    arq_logger = logging.getLogger("arq.worker")
+
+    worker.redact_job_arguments_in_logs()
+    worker.redact_job_arguments_in_logs()
+
+    installed = [f for f in arq_logger.filters if isinstance(f, worker.JobArgumentRedactor)]
+    assert len(installed) == 1
+
+
 def test_cost_report_runs_daily_at_0800_ist():
     job = _cron_job(worker.daily_cost_report)
 

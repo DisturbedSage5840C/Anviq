@@ -206,8 +206,30 @@ def quiet_http_logs() -> None:
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
+ARQ_JOB_START_FORMAT = "%6.2fs → %s(%s)%s"  # arq.worker's "job started" line
+REDACTED_JOB_ARGUMENTS = "…"
+
+
+class JobArgumentRedactor(logging.Filter):
+    """arq prints a job's arguments when it starts; for an inbound message that is a phone no."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.msg == ARQ_JOB_START_FORMAT and isinstance(record.args, tuple):
+            elapsed, job_ref, _arguments, suffix = record.args
+            record.args = (elapsed, job_ref, REDACTED_JOB_ARGUMENTS, suffix)
+        return True
+
+
+def redact_job_arguments_in_logs() -> None:
+    """Install the redactor on arq's worker logger once, however often this is called."""
+    arq_logger = logging.getLogger("arq.worker")
+    if not any(isinstance(f, JobArgumentRedactor) for f in arq_logger.filters):
+        arq_logger.addFilter(JobArgumentRedactor())
+
+
 async def on_startup(ctx: dict[str, Any]) -> None:
     quiet_http_logs()
+    redact_job_arguments_in_logs()
     settings = get_settings()
     init_sentry(settings.sentry_dsn, environment=settings.app_env)
     stack = AsyncExitStack()
