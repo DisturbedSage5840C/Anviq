@@ -20,7 +20,7 @@ from app.core.rehearsal_flow import RehearsalFlow
 from app.core.router_brain import RouterBrain
 from app.core.topics import TopicResolverWithModel
 from app.core.writers import LLMPlanWriter, LLMReflectionWriter
-from app.db.corpus import PostgresFullTextSearch
+from app.db.corpus import postgres_bm25_search
 from app.db.loop_store import PostgresMirrors, PostgresPositions, PostgresUsageSink
 from app.llm.client import LLMClient
 from app.resources import Resources
@@ -74,7 +74,7 @@ def _rehearsals(llm: LLMClient, resources: Resources, settings: Settings) -> Reh
 
 
 def _ask_anviq(llm: LLMClient, resources: Resources, settings: Settings) -> AskAnviq:
-    retriever = HybridRetriever([PostgresFullTextSearch(resources.engine)], settings.ask_min_score)
+    retriever = HybridRetriever([postgres_bm25_search(resources.engine)], settings.ask_min_score)
     return AskAnviq(
         llm, retriever, fast_model=settings.model_fast, smart_model=settings.model_smart
     )

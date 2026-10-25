@@ -27,7 +27,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from app.config import get_settings
 from app.core.ask.answer import AskAnviq, AskReply, AskUnavailableError
 from app.core.ask.retrieve import HybridRetriever
-from app.db.corpus import PostgresFullTextSearch
+from app.db.corpus import postgres_bm25_search
 from app.evaluation.metrics import rate
 from app.llm.client import LLMClient
 
@@ -107,7 +107,7 @@ async def _main(args: argparse.Namespace) -> None:
     try:
         async with httpx.AsyncClient() as http:
             client = LLMClient(http, settings.anthropic_api_key.get_secret_value())
-            retriever = HybridRetriever([PostgresFullTextSearch(engine)], settings.ask_min_score)
+            retriever = HybridRetriever([postgres_bm25_search(engine)], settings.ask_min_score)
             ask = AskAnviq(
                 client, retriever, fast_model=settings.model_fast, smart_model=settings.model_smart
             )

@@ -1,22 +1,21 @@
-"""Postgres side of Ask Anviq: store corpus chunks and search them by full text.
+"""Postgres side of Ask Anviq: store corpus chunks and search them.
 
-`doc_chunks` is public reference material (NISHTHA / NIPUN), not teacher data. The `tsv` column
-is generated with the 'simple' configuration, which works for Hindi and English alike because it
-does no stemming. Questions are searched as an OR of their words, ranked with ts_rank_cd and
-squashed to 0..1 so a single threshold can gate scope.
+`doc_chunks` is public reference material (NISHTHA / NIPUN), not teacher data. Production search
+is `Bm25Search`, which ranks the whole corpus in memory (`postgres_bm25_search` loads it). The
+older `search_chunks` / `PostgresFullTextSearch` path (an OR of the question's words ranked with
+ts_rank_cd over the generated 'simple' `tsv` column) is kept for the tests that still use it.
 """
 
-import re
-from collections.abc import Sequence
+import asyncio
+from collections.abc import Awaitable, Callable, Sequence
+from dataclasses import dataclass
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
+from app.core.ask.bm25 import Bm25Index, tokenize
 from app.core.ask.chunking import Chunk
 from app.core.ask.retrieve import Passage
-
-_WORD = re.compile(r"[0-9A-Za-zऀ-ॿ]+")
-MIN_WORD_CHARS = 2
 
 # Words that appear in nearly every passage. Left in an OR query they let generic passages
 # outrank the ones about the topic, so they are dropped unless the question is made of nothing else.
@@ -32,13 +31,16 @@ _FILLER_WORDS = frozenset(
 )
 
 
+def content_words(question: str) -> tuple[str, ...]:
+    """The question's distinct words minus filler; filler stays if that is all there is."""
+    words = tuple(dict.fromkeys(tokenize(question)))
+    content = tuple(w for w in words if w not in _FILLER_WORDS)
+    return content or words
+
+
 def or_query(question: str) -> str:
     """A tsquery string matching any content word of the question; only word characters survive."""
-    words = tuple(
-        dict.fromkeys(w.casefold() for w in _WORD.findall(question) if len(w) >= MIN_WORD_CHARS)
-    )
-    content = tuple(w for w in words if w not in _FILLER_WORDS)
-    return " | ".join(content or words)
+    return " | ".join(content_words(question))
 
 
 async def store_chunks(
@@ -95,3 +97,64 @@ class PostgresFullTextSearch:
     async def search(self, query: str, lang: str, limit: int) -> list[Passage]:
         async with self._engine.connect() as conn:
             return await search_chunks(conn, query, lang, limit)
+
+
+@dataclass(frozen=True)
+class ChunkRow:
+    id: str
+    label: str
+    text: str
+    context_line: str | None
+
+
+ChunkLoader = Callable[[str], Awaitable[Sequence[ChunkRow]]]
+
+
+class Bm25Search:
+    """BM25 over the whole corpus, which is small enough to hold in memory.
+
+    Each language is loaded on first use and kept, so after re-ingesting the corpus the API has
+    to be restarted. The label and context line are indexed too, but only the chunk text is shown.
+    """
+
+    def __init__(self, load: ChunkLoader) -> None:
+        self._load = load
+        self._loaded: dict[str, tuple[Bm25Index, dict[str, ChunkRow]]] = {}
+        self._lock = asyncio.Lock()
+
+    async def search(self, query: str, lang: str, limit: int) -> list[Passage]:
+        terms = content_words(query)
+        if not terms:
+            return []
+        index, rows = await self._index_for(lang)
+        return [
+            Passage(hit.doc_id, rows[hit.doc_id].label, rows[hit.doc_id].text, hit.score)
+            for hit in index.rank(terms, limit)
+        ]
+
+    async def _index_for(self, lang: str) -> tuple[Bm25Index, dict[str, ChunkRow]]:
+        if lang in self._loaded:
+            return self._loaded[lang]
+        async with self._lock:
+            if lang in self._loaded:
+                return self._loaded[lang]
+            rows = await self._load(lang)
+            index = Bm25Index(
+                [(r.id, " ".join(filter(None, (r.text, r.context_line, r.label)))) for r in rows]
+            )
+            loaded = (index, {r.id: r for r in rows})
+            if rows:  # an empty corpus is not kept, so rows ingested later are picked up
+                self._loaded[lang] = loaded
+            return loaded
+
+
+def postgres_bm25_search(engine: AsyncEngine) -> Bm25Search:
+    async def load(lang: str) -> list[ChunkRow]:
+        async with engine.connect() as conn:
+            rows = await conn.execute(
+                text("select id, label, text, context_line from doc_chunks where lang = :lang"),
+                {"lang": lang},
+            )
+            return [ChunkRow(str(r.id), r.label, r.text, r.context_line) for r in rows]
+
+    return Bm25Search(load)
