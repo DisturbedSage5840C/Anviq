@@ -11,6 +11,8 @@ import argparse
 import asyncio
 import json
 from collections import defaultdict
+from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -20,24 +22,62 @@ from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
 
 from app.config import get_settings
 from app.evaluation.metrics import percentile
+from app.llm.client import estimate_cost
 
 COST_TARGET_USD = 0.12
+
+
+@dataclass(frozen=True)
+class CallRow:
+    purpose: str
+    model: str
+    in_tok: int
+    out_tok: int
+    cache_read: int
+    cache_write: int
+    latency_ms: int
+
+
+def summarize(
+    calls: Sequence[CallRow], speech_inr: Decimal, teacher_days: int, inr_per_usd: Decimal
+) -> dict[str, object]:
+    """Spend is recomputed from token counts at today's price table, not read from the stored
+    est_cost_usd, so rows written under an older (wrong) table cannot distort the figure."""
+    latencies: dict[str, list[float]] = defaultdict(list)
+    for call in calls:
+        latencies[call.purpose].append(float(call.latency_ms))
+    llm_usd = sum(
+        (estimate_cost(c.model, c.in_tok, c.out_tok, c.cache_read, c.cache_write) for c in calls),
+        Decimal(0),
+    )
+    speech_usd = speech_inr / inr_per_usd
+    per_day = float((llm_usd + speech_usd) / teacher_days) if teacher_days else None
+    return {
+        "model_latency_ms": {
+            p: {"calls": len(v), "p50": percentile(v, 50), "p95": percentile(v, 95)}
+            for p, v in sorted(latencies.items())
+        },
+        "llm_usd": float(llm_usd),
+        "speech_usd": float(speech_usd),
+        "teacher_days": teacher_days,
+        "usd_per_teacher_day": per_day,
+        "cost_pass": per_day is not None and per_day <= COST_TARGET_USD,
+    }
 
 
 async def measure(
     conn: AsyncConnection, since: datetime, inr_per_usd: Decimal
 ) -> dict[str, object]:
-    latencies: dict[str, list[float]] = defaultdict(list)
-    for purpose, latency in await conn.execute(
-        text("select purpose, latency_ms from llm_usage where created_at >= :s"), {"s": since}
-    ):
-        latencies[purpose].append(float(latency))
-    llm_usd = (
-        await conn.execute(
-            text("select coalesce(sum(est_cost_usd), 0) from llm_usage where created_at >= :s"),
+    calls = [
+        CallRow(*row)
+        for row in await conn.execute(
+            text(
+                "select purpose, model, in_tok, out_tok, cache_read, cache_write, latency_ms "
+                "from llm_usage where created_at >= :s"
+            ),
             {"s": since},
         )
-    ).scalar_one()
+    ]
     speech_inr = (
         await conn.execute(
             text("select coalesce(sum(est_cost_inr), 0) from speech_usage where created_at >= :s"),
@@ -53,19 +93,9 @@ async def measure(
             {"s": since},
         )
     ).scalar_one()
-    total_usd = Decimal(llm_usd) + Decimal(speech_inr) / inr_per_usd
-    per_day = float(total_usd / teacher_days) if teacher_days else None
     return {
         "since": since.isoformat(),
-        "model_latency_ms": {
-            p: {"calls": len(v), "p50": percentile(v, 50), "p95": percentile(v, 95)}
-            for p, v in sorted(latencies.items())
-        },
-        "llm_usd": float(llm_usd),
-        "speech_usd": float(Decimal(speech_inr) / inr_per_usd),
-        "teacher_days": teacher_days,
-        "usd_per_teacher_day": per_day,
-        "cost_pass": per_day is not None and per_day <= COST_TARGET_USD,
+        **summarize(calls, Decimal(speech_inr), teacher_days, inr_per_usd),
     }
 
 

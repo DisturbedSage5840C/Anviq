@@ -31,21 +31,23 @@ FAST_TIMEOUT_S = 10.0
 SMART_TIMEOUT_S = 20.0
 RETRY_DELAY_S = 0.5
 
-# US$ per million tokens (input, output). Assumptions, to be checked against the console on the
-# first day with a key (plan section 7.5). A model we do not recognise is priced as Sonnet, the
-# middle tier, so an unknown id never makes spend look lower than it is.
-PRICES_PER_MTOK: Mapping[str, tuple[Decimal, Decimal]] = {
+# US$ per million tokens (input, output, cache-hit as a share of input), from Anthropic's pricing
+# page as of 2026-10-25. Haiku 5.5 is quoted for prompts up to 100,000 tokens; ours are far
+# shorter. A model we do not recognise is priced as Sonnet, the middle tier, so an unknown id
+# never makes spend look lower than it is.
+PRICES_PER_MTOK: Mapping[str, tuple[Decimal, Decimal, Decimal]] = {
     # Matched by substring, in order, so the specific generations come before the generic tiers.
-    "haiku-5": (Decimal("0.10"), Decimal("0.50")),
-    "sonnet-5": (Decimal("2"), Decimal("10")),
-    "opus-5": (Decimal("4"), Decimal("20")),
-    "haiku-4": (Decimal("1"), Decimal("5")),
-    "haiku": (Decimal("1"), Decimal("5")),
-    "sonnet": (Decimal("3"), Decimal("15")),
-    "opus": (Decimal("5"), Decimal("25")),
+    "haiku-5": (Decimal("0.10"), Decimal("0.50"), Decimal("0.1")),
+    "sonnet-5-5": (Decimal("2"), Decimal("10"), Decimal("0.05")),
+    "sonnet-5": (Decimal("2"), Decimal("10"), Decimal("0.1")),
+    "opus-5-5": (Decimal("4"), Decimal("20"), Decimal("0.05")),
+    "opus-5": (Decimal("5"), Decimal("25"), Decimal("0.1")),
+    "haiku-4": (Decimal("1"), Decimal("5"), Decimal("0.1")),
+    "haiku": (Decimal("1"), Decimal("5"), Decimal("0.1")),
+    "sonnet": (Decimal("3"), Decimal("15"), Decimal("0.1")),
+    "opus": (Decimal("5"), Decimal("25"), Decimal("0.1")),
 }
 DEFAULT_TIER = "sonnet"
-CACHE_READ_FACTOR = Decimal("0.1")
 CACHE_WRITE_FACTOR = Decimal("1.25")
 _PER_MTOK = Decimal(1_000_000)
 
@@ -105,10 +107,10 @@ def estimate_cost(
     model: str, in_tok: int, out_tok: int, cache_read: int, cache_write: int
 ) -> Decimal:
     tier = next((name for name in PRICES_PER_MTOK if name in model), DEFAULT_TIER)
-    price_in, price_out = PRICES_PER_MTOK[tier]
+    price_in, price_out, cache_read_factor = PRICES_PER_MTOK[tier]
     cost = (
         in_tok * price_in
-        + cache_read * price_in * CACHE_READ_FACTOR
+        + cache_read * price_in * cache_read_factor
         + cache_write * price_in * CACHE_WRITE_FACTOR
         + out_tok * price_out
     ) / _PER_MTOK

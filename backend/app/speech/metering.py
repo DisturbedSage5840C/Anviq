@@ -20,8 +20,9 @@ logger = logging.getLogger(__name__)
 SpeechKind = Literal["stt", "tts"]
 
 # Estimated rupees per second of audio transcribed / per character spoken. These are list prices
-# at the time of writing (Sarvam: Rs 30 per hour of audio and Rs 30 per 10,000 characters; Google
-# at 84 INR/USD), so check them against the vendors' pricing pages before quoting the cost.
+# (Sarvam pay-as-you-go: Rs 29.40 per hour of audio, rounded up to 30, and Rs 30 per 10,000
+# characters for Bulbul V3, checked on sarvam.ai/api-pricing on 2026-10-25; Google at 84 INR/USD,
+# not re-checked). Volume plans and Bulbul V4 Flash (Rs 10 per 10,000) would be cheaper.
 _INR_PER_STT_SECOND = {"sarvam": Decimal(30) / 3600, "google": Decimal("0.0224")}
 _INR_PER_TTS_CHAR = {"sarvam": Decimal(30) / 10_000, "google": Decimal("0.001344")}
 _INR_PLACES = Decimal("0.0001")  # speech_usage.est_cost_inr is numeric(10, 4)

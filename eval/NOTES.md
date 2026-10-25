@@ -39,8 +39,9 @@
 ## Cost per teacher-day: not a valid measurement yet
 
 - The stored figure ($0.220) comes from the last 7 days of mostly test traffic: 2 teacher-days, 37 model calls.
-- It is inflated. Rows written before the 2026-10-25 fix used old Haiku pricing, and the eval re-reads stored costs instead of recomputing them.
-- Re-pricing the same token counts at the current price table (Haiku 5.5 US$0.10/0.50, Sonnet 5.5 US$2/10 per million tokens) plus the recorded speech cost gives roughly US$0.15 per teacher-day, about a third of it speech. These prices are assumptions in `app/llm/client.py` and have not been checked against the console.
+- It is inflated. Rows written before the 2026-10-25 fix used old Haiku pricing. The eval (`app/evaluation/latency_cost.py`) now recomputes model spend from the stored token counts at the current price table instead of reading the stored estimate, so old rows cannot distort the figure.
+- Prices were checked on 2026-10-25 against Anthropic's pricing page (Haiku 5.5 US$0.10/0.50, Sonnet 5.5 US$2/10, Opus 5.5 US$4/20 per million tokens) and Sarvam's price list (speech-to-text Rs 29.40 per hour, Bulbul V3 text-to-speech Rs 30 per 10,000 characters). The same check found one wrong number: a cache hit costs 0.05 of the input price on Sonnet 5.5 and Opus 5.5, not 0.1, and the table now says so. The Google speech rates were not re-checked.
+- Re-pricing the stored token counts plus the recorded speech cost gives roughly US$0.15 per teacher-day, about a third of it speech. Sarvam's cheaper Bulbul V4 Flash voice or a volume plan would lower the speech share.
 - The deck's target of about US$0.05 per teacher-day is not supported by any measurement yet. It needs a real pilot day, or a replay of full sessions, with prices confirmed.
 
 ## Latency

@@ -377,5 +377,22 @@ def test_each_model_generation_is_priced_at_its_own_rate(
     )
 
 
+@pytest.mark.parametrize(
+    ("model", "cache_read_per_million"),
+    [
+        ("claude-haiku-5-5", "0.01"),
+        ("claude-sonnet-5-5", "0.10"),
+        ("claude-opus-5-5", "0.20"),
+        ("claude-sonnet-4-6", "0.30"),
+    ],
+)
+def test_a_cache_hit_costs_what_the_pricing_page_lists_for_that_model(
+    model: str, cache_read_per_million: str
+):
+    assert estimate_cost(model, 0, 0, 1_000_000, 0) == Decimal(cache_read_per_million).quantize(
+        Decimal("0.000001")
+    )
+
+
 def test_unknown_model_is_priced_as_sonnet():
     assert estimate_cost("mystery", 1_000_000, 0, 0, 0) == Decimal("3.000000")
