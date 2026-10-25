@@ -1,9 +1,9 @@
 {
   "inscope": 100,
   "out_of_scope": 40,
-  "unavailable": 1,
+  "unavailable": 0,
   "citation_correct_rate": 0.0,
   "oos_refusal_rate": 1.0,
-  "false_refusal_rate": 0.72,
+  "false_refusal_rate": 0.62,
   "pass": false
 }
