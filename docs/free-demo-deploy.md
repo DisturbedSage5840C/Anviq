@@ -13,8 +13,8 @@ What you get: Caddy (HTTPS) → API, plus the worker, Postgres+pgvector and Redi
 | Item | Cost | Notes |
 |---|---|---|
 | Anthropic API key | pay-as-you-go | Already have it. Demo codes cap spend (below) |
-| Sarvam API key | starter credits | Hindi speech. Required: the app refuses to start in this mode without it |
-| Google Cloud free trial | free credit | 90 days and a fixed credit (₹28,797 on our account). Needs a card for sign-up. A trial account is never charged unless you click Upgrade |
+| Google Cloud free trial | free credit | 90 days and a fixed credit (₹28,797 on our account). Needs a card for sign-up. A trial account is never charged unless you click Upgrade. It also pays for speech (below) |
+| Google speech API key | from the trial credit | Hindi and English speech (Speech-to-Text and Text-to-Speech). Required: the app refuses to start without it. Create it in the console under APIs & Services, Credentials, restricted to those two APIs |
 | `sslip.io` name | free | A hostname that resolves to the VM's IP, e.g. `35-200-176-62.sslip.io`. No sign-up |
 | Meta developer app | free | Optional now. The test number reaches at most 5 whitelisted phones, so judges use the web room |
 
@@ -62,10 +62,11 @@ Fill in `infra/demo.env`:
 - `FIELD_KEY`, `PHONE_PEPPER`: `openssl rand -base64 32` each. **Back these up.** Losing `FIELD_KEY`
   makes stored data unreadable; changing `PHONE_PEPPER` makes every teacher look new.
 - `SITE_ADDRESS`: the `sslip.io` name from step 2.
-- `ANTHROPIC_API_KEY`, `SARVAM_API_KEY`: your keys.
-- `SARVAM_TTS_MODEL`: `bulbul:v4-flash` (the template's value) costs a third of `bulbul:v3` per spoken
-  character, which is what keeps the cost per teacher-day near the target. If you set `bulbul:v3`
-  instead, speech cost roughly triples. Listen to a sample before a demo.
+- `ANTHROPIC_API_KEY`, `GOOGLE_SPEECH_API_KEY`: your keys.
+- `STT_PROVIDER`, `TTS_PROVIDER`: both `google` in the template. Use one provider everywhere; the
+  voices are the Google Neural2 ones (`hi-IN-Neural2-A/B`, `en-IN-Neural2-A/B`). Listen to a sample
+  before a demo. `sarvam` still works if you set both back and add `SARVAM_API_KEY`, but its starter
+  credits are small.
 - `WA_VERIFY_TOKEN`: any string you invent. `WA_APP_SECRET`: the Meta app secret, or any placeholder until the Meta app exists.
 - `WEB_ALLOWED_ORIGINS`: leave empty. Caddy serves the web room at `/room/` on the same origin as the API, so no CORS entry is needed; set it only if you host the room somewhere else.
 
@@ -145,10 +146,12 @@ screen recording of a full conversation and the browser web room as fallbacks.
 
 ## Credits that can run out before the judges look
 
-- **Sarvam** is pay-as-you-go. About ₹4 of speech covers one realistic teacher-day on
-  `bulbul:v4-flash`, so check the balance in the Sarvam dashboard before each demo and top up if it is
-  under about ₹200. When it hits zero the app does not fail: it sends the text reply without the voice
-  note (covered by `test_a_text_reply_survives_a_text_to_speech_failure`).
+- **Google speech** is billed to the Google Cloud trial credit, so there is nothing separate to top
+  up. As an estimate (check Google's current price list), Neural2 voices cost about US$16 per million
+  spoken characters, so one realistic teacher-day (about 3,000 characters) is a few US cents, and
+  transcription is a small extra. The trial credit and its end date are on the console's billing page.
+  If speech ever fails, the app does not: it sends the text reply without the voice note (covered by
+  `test_a_text_reply_survives_a_text_to_speech_failure`).
 - **Anthropic** hackathon credits (US$500 per team, shared by every teammate using the one key) are
   valid until **20 November 2026**, two days after the Grand Finale, and are not refunded. Keep enough
   for evaluators and the demo, and keep the key on the server only. The organisers are told at 80%
