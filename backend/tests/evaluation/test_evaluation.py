@@ -8,7 +8,7 @@ from app.core.ask.chunking import SourceDoc
 from app.core.ask.ingest import looks_broken, pages_in_range, read_manifest
 from app.core.children.registry import ALL_RULES
 from app.evaluation import character, coach_kappa
-from app.evaluation.citations import course_of, label_matches, score
+from app.evaluation.citations import course_of, label_matches, question_details, score
 from app.evaluation.metrics import cohen_kappa, percentile, rate
 from app.evaluation.report import render
 
@@ -169,6 +169,24 @@ def test_course_level_accuracy_is_reported_next_to_the_strict_section_level_rate
     report = score(inscope, [])
     assert report["course_citation_correct_rate"] == 0.5
     assert report["citation_correct_rate"] == 0.0
+
+
+def test_question_details_name_each_failure_without_the_answer_text():
+    inscope = [
+        ({"question": "q1", "lang": "en", "gold": ["A Course 1: X, §1"]}, _reply(("A Course 1: X, §1.2",), False)),
+        ({"question": "q2", "lang": "hi", "gold": ["A Course 2: Y, §1"]}, _reply((), True)),
+        ({"question": "q3", "gold": ["A Course 3: Z"]}, _reply(("A Course 1: X, §1",), False)),
+        ({"question": "q4", "gold": ["A Course 3: Z"]}, None),
+    ]  # fmt: skip
+    rows = question_details(inscope)
+    assert [(r["outcome"], r["course_correct"]) for r in rows] == [
+        ("answered", True),
+        ("refused", False),
+        ("answered", False),
+        ("unavailable", False),
+    ]
+    assert rows[2]["lang"] == "hi"
+    assert all("text" not in r and "spoken" not in r for r in rows)
 
 
 def test_report_shows_the_course_level_citation_rate_only_when_it_was_recorded(tmp_path: Path):

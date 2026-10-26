@@ -88,6 +88,29 @@ def score(
     }
 
 
+def question_details(
+    inscope: Sequence[tuple[dict[str, Any], AskReply | None]],
+) -> list[dict[str, object]]:
+    """One row per in-scope question: what was asked, what was cited, and how each check went.
+
+    The aggregate report says how many failed; this says which, so a corpus or retrieval change
+    can be aimed at the failures. It holds questions and labels only, never an answer's text.
+    """
+    return [
+        {
+            "question": q["question"],
+            "lang": q.get("lang", "hi"),
+            "gold": q["gold"],
+            "outcome": "unavailable" if r is None else "refused" if r.refused else "answered",
+            "sources": [] if r is None else list(r.sources),
+            "course_correct": r is not None
+            and not r.refused
+            and any(course_of(s) == course_of(g) for s in r.sources for g in q["gold"]),
+        }
+        for q, r in inscope
+    ]
+
+
 async def _ask(ask: AskAnviq, question: dict[str, Any], gate: asyncio.Semaphore) -> AskReply | None:
     async with gate:
         try:
@@ -118,6 +141,10 @@ async def _main(args: argparse.Namespace) -> None:
     report = score(list(zip(inscope, in_replies, strict=True)), list(oos_replies))
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    if args.details is not None:
+        details = question_details(list(zip(inscope, in_replies, strict=True)))
+        args.details.parent.mkdir(parents=True, exist_ok=True)
+        args.details.write_text(json.dumps(details, indent=2, ensure_ascii=False), encoding="utf-8")
     print(json.dumps(report))
 
 
@@ -126,6 +153,7 @@ def main() -> None:
     parser.add_argument("--datasets", type=Path, default=Path("../eval/datasets"))
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--out", type=Path, default=Path("../eval/results/citations.json"))
+    parser.add_argument("--details", type=Path, default=None, help="per-question rows (optional)")
     asyncio.run(_main(parser.parse_args()))
 
 
