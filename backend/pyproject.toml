@@ -49,6 +49,8 @@ select = ["E", "F", "I", "UP", "B", "S"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "S105", "S106", "S311", "E501"]
+"tests/core/test_teacher_store_clips.py" = ["F811"]  # fixtures imported from test_teacher_store
+"tests/core/test_router_brain_clips.py" = ["F811"]  # fixtures imported from test_router_brain_rehearsal
 "tests/db/*" = ["S608"]  # table names come from module constants, never input
 # Seeded generators pick practice problems; nothing here is security-sensitive.
 "app/core/children/registry.py" = ["S311"]

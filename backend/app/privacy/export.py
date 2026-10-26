@@ -15,6 +15,7 @@ def render_export(export: TeacherExport, lang: str | None) -> str:
         return BILINGUAL_SEPARATOR.join(render_export(export, each) for each in LANGS)
     reminders = render("export_on" if export.reminders_opt_in else "export_off", lang)
     in_progress = render("export_yes" if export.practice_in_progress else "export_no", lang)
+    clips = str(export.clip_count) if export.clip_opt_in else render("export_clips_off", lang)
     lines = (
         render("export_header", lang),
         _bullet("export_language", export.lang or NOT_GIVEN, lang),
@@ -27,6 +28,7 @@ def render_export(export: TeacherExport, lang: str | None) -> str:
         _bullet("export_questions", str(export.scored_question_count), lang),
         _bullet("export_plan", export.plan_topic_id or NOT_GIVEN, lang),
         _bullet("export_in_progress", in_progress, lang),
+        _bullet("export_clips", clips, lang),
     )
     return LINE_BREAK.join(lines)
 

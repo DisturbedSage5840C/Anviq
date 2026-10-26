@@ -73,6 +73,10 @@ CONSENT_DIGESTS = {
         "hi": "a07e9c26f8256732c2e208e5d31a88dd3558f44417fcd66641d460c3dcaff102",
         "en": "0ed8fd6c3780d6fe3e04b825de36a1a8da7cbaec83ca2c48db76dba3b831ebee",
     },
+    "v3": {
+        "hi": "9e23a74a2ad8677a71b420ca18f5d1ff27a3d584ce12abda588390a32bf703d7",
+        "en": "8475ab67476e31283896438450a22a5e43cfef088805c48398630eac741ace38",
+    },
 }
 
 

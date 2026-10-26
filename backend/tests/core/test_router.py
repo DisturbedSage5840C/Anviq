@@ -19,6 +19,7 @@ from app.core.router import (
     RecordConsent,
     RehearseTurn,
     Say,
+    SetClipConsent,
     ShowMirror,
     StartRehearsal,
     TeacherState,
@@ -581,3 +582,45 @@ def test_the_offer_never_starts_a_practice_without_consent():
 
     assert not any(isinstance(e, StartRehearsal) for e in t.effects)
     assert t.state.phase is Phase.IDLE
+
+
+@pytest.mark.parametrize("text", ["save my recordings", "रिकॉर्डिंग सेव करो"])
+def test_a_consented_teacher_can_opt_in_to_keeping_their_recordings(text: str):
+    t = handle(ENROLLED, text)
+
+    assert t.state == ENROLLED
+    assert t.effects == (SetClipConsent(enabled=True), Say("clips_on"))
+
+
+@pytest.mark.parametrize("text", ["stop saving my recordings", "रिकॉर्डिंग मिटाओ"])
+def test_opting_out_of_recordings_is_always_acted_on(text: str):
+    t = handle(ENROLLED, text)
+
+    assert t.state == ENROLLED
+    assert t.effects == (SetClipConsent(enabled=False), Say("clips_off"))
+
+
+def test_a_teacher_without_consent_cannot_opt_in_and_is_told_so():
+    start = TeacherState(Phase.ONB_CONSENT, lang="en", grade_band="2")
+
+    t = handle(start, "save my recordings")
+
+    assert t.state == start
+    assert t.effects == (Say("clips_need_consent"),)
+
+
+def test_opting_out_works_even_before_consent_so_nothing_can_linger():
+    start = TeacherState(Phase.ONB_CONSENT, lang="en", grade_band="2")
+
+    t = handle(start, "stop saving my recordings")
+
+    assert SetClipConsent(enabled=False) in t.effects
+
+
+def test_opting_in_mid_practice_does_not_end_the_practice():
+    start = replace(ENROLLED, phase=Phase.REHEARSE)
+
+    t = handle(start, "save my recordings")
+
+    assert t.state == start
+    assert SetClipConsent(enabled=True) in t.effects

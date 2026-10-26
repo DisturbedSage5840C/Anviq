@@ -104,3 +104,33 @@ def test_phone_hash_keeps_letters_so_non_phone_ids_do_not_collapse_to_their_digi
     assert phone_hash(KEY, "web:ab12") != phone_hash(KEY, "web:cd12")
     assert phone_hash(KEY, "web:ab12") != phone_hash(KEY, "919800000001")
     assert phone_hash(KEY, "web:ab12") != phone_hash(KEY, "12")
+
+
+def test_bytes_round_trip_without_the_plaintext_in_the_ciphertext() -> None:
+    cipher = FieldCipher(KEY)
+    clip = b"OggS\x00\x02voice-bytes\xff\xfe"
+
+    sealed = cipher.encrypt_bytes(clip, context=b"mirror_clips:t1")
+
+    assert clip not in sealed
+    assert cipher.decrypt_bytes(sealed, context=b"mirror_clips:t1") == clip
+
+
+def test_bytes_are_bound_to_their_context_and_key() -> None:
+    sealed = FieldCipher(KEY).encrypt_bytes(b"clip", context=b"mirror_clips:t1")
+
+    with pytest.raises(DecryptionError):
+        FieldCipher(KEY).decrypt_bytes(sealed, context=b"mirror_clips:t2")
+    with pytest.raises(DecryptionError):
+        FieldCipher(OTHER_KEY).decrypt_bytes(sealed, context=b"mirror_clips:t1")
+
+
+def test_tampered_or_truncated_bytes_are_rejected() -> None:
+    cipher = FieldCipher(KEY)
+    sealed = bytearray(cipher.encrypt_bytes(b"clip"))
+    sealed[-1] ^= 0x01
+
+    with pytest.raises(DecryptionError):
+        cipher.decrypt_bytes(bytes(sealed))
+    with pytest.raises(DecryptionError):
+        cipher.decrypt_bytes(b"short")

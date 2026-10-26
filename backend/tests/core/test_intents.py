@@ -150,6 +150,47 @@ def test_a_sentence_that_merely_mentions_data_is_not_an_export():
 
 
 @pytest.mark.parametrize(
+    "text",
+    [
+        "save my recordings",
+        "keep my practice recordings",
+        "please keep my recordings",
+        "रिकॉर्डिंग सेव करो",
+        "रिकॉर्डिंग रखो",
+    ],
+)
+def test_clip_opt_in_phrases_are_recognised(text: str):
+    assert classify_global(text) is GlobalIntent.CLIPS_ON
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "stop saving my recordings",
+        "don't keep my recordings",
+        "do not keep my recordings",
+        "delete my recordings",
+        "रिकॉर्डिंग मत रखो",
+        "रिकॉर्डिंग मिटाओ",
+    ],
+)
+def test_clip_opt_out_phrases_are_recognised(text: str):
+    assert classify_global(text) is GlobalIntent.CLIPS_OFF
+
+
+def test_deleting_all_data_outranks_a_clip_request():
+    assert classify_global("delete my data and my recordings") is GlobalIntent.DELETE
+
+
+def test_stopping_the_recordings_is_not_a_stop_of_the_reminders():
+    assert classify_global("stop recordings") is GlobalIntent.CLIPS_OFF
+
+
+def test_a_sentence_that_merely_mentions_recordings_is_not_a_clip_request():
+    assert classify_global("I listened to the recordings") is None
+
+
+@pytest.mark.parametrize(
     ("text", "expected"),
     [
         ("plan", MenuIntent.PLAN),

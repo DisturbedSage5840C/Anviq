@@ -35,6 +35,8 @@ class GlobalIntent(StrEnum):
     DELETE = "delete"
     WITHDRAW_CONSENT = "withdraw_consent"
     EXPORT = "export"
+    CLIPS_ON = "clips_on"
+    CLIPS_OFF = "clips_off"
     STOP = "stop"
     PRIVACY = "privacy"
     HELP = "help"
@@ -63,6 +65,30 @@ _EXPORT = _phrases(
     "export my data",
     "download my data",
 )
+# Opting in is a separate, explicit yes to keeping practice recordings; "don't keep my recordings"
+# contains "keep my recordings", so the opt-out is always checked first.
+_CLIPS_OFF = _phrases(
+    "stop saving my recordings",
+    "stop saving recordings",
+    "stop keeping my recordings",
+    "stop recordings",
+    "don't keep my recordings",
+    "do not keep my recordings",
+    "delete my recordings",
+    "delete my clips",
+    "रिकॉर्डिंग मत रखो",
+    "रिकॉर्डिंग मत सेव करो",
+    "रिकॉर्डिंग मिटाओ",
+    "रिकॉर्डिंग हटाओ",
+)
+_CLIPS_ON = _phrases(
+    "save my recordings",
+    "keep my recordings",
+    "save my practice recordings",
+    "keep my practice recordings",
+    "रिकॉर्डिंग सेव करो",
+    "रिकॉर्डिंग रखो",
+)
 _PRIVACY = _phrases("कौन देखता है", "कौन देखती है", "who sees", "privacy", "प्राइवेसी")
 # "stop" and "help" are everyday words in a classroom, so they only count as commands when the
 # whole utterance is short.
@@ -83,6 +109,10 @@ def classify_global(text: str) -> GlobalIntent | None:
         return GlobalIntent.WITHDRAW_CONSENT
     if _matches_any(tokens, _EXPORT):
         return GlobalIntent.EXPORT
+    if _matches_any(tokens, _CLIPS_OFF):
+        return GlobalIntent.CLIPS_OFF
+    if _matches_any(tokens, _CLIPS_ON):
+        return GlobalIntent.CLIPS_ON
     if _matches_any(tokens, _PRIVACY):
         return GlobalIntent.PRIVACY
     if len(tokens) <= SHORT_UTTERANCE_MAX_TOKENS:

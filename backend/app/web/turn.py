@@ -20,6 +20,7 @@ from app.speech.voices import COACH_PERSONA, voice_for
 logger = logging.getLogger(__name__)
 
 DEFAULT_LANG = "hi"
+DEFAULT_AUDIO_MIME = "audio/webm"  # what a browser recorder produces
 
 
 @dataclass(frozen=True)
@@ -55,13 +56,15 @@ class WebTurn:
             Utterance(sender, text, DEFAULT_LANG, via_voice=False, needs_confirmation=False)
         )
 
-    async def respond_to_audio(self, sender: str, audio: bytes) -> WebReply:
+    async def respond_to_audio(
+        self, sender: str, audio: bytes, mime: str = DEFAULT_AUDIO_MIME
+    ) -> WebReply:
         if self._stt is None:
             return _refusal(replies.VOICE_UNAVAILABLE, free=True)
         transcript = await transcribe_audio(self._stt, self._prepare_audio, audio)
         if isinstance(transcript, str):
             return _refusal(transcript)
-        return await self._answer(spoken_utterance(sender, transcript))
+        return await self._answer(spoken_utterance(sender, transcript, audio, mime))
 
     async def _answer(self, utterance: Utterance) -> WebReply:
         reply = await self._brain.respond(utterance)

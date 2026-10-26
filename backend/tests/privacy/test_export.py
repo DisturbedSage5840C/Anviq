@@ -93,6 +93,29 @@ def test_the_summary_shows_the_reminder_time_and_the_last_reminder_day(lang: str
     assert f"{render('export_last_reminder', lang)}: 2026-10-19" in text
 
 
+@pytest.mark.parametrize("lang", LANGS)
+def test_the_summary_counts_the_practice_recordings_kept_for_an_opted_in_teacher(lang: str):
+    kept = TeacherExport(
+        lang="en",
+        grade_band="2",
+        consents=(),
+        reminders_opt_in=False,
+        clip_opt_in=True,
+        clip_count=2,
+    )
+
+    text = render_export(kept, lang)
+
+    assert f"{render('export_clips', lang)}: 2" in text
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_the_summary_says_recordings_are_not_kept_when_the_teacher_never_asked(lang: str):
+    text = render_export(FULL, lang)
+
+    assert f"{render('export_clips', lang)}: {render('export_clips_off', lang)}" in text
+
+
 def test_a_teacher_with_no_practice_sees_zeros_and_dashes_not_missing_lines():
     sparse = TeacherExport(lang="en", grade_band="2", consents=(), reminders_opt_in=False)
 

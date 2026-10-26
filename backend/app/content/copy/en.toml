@@ -7,7 +7,7 @@ language_retry = "Sorry, I didn't catch that. Please say or type 'Hindi' or 'Eng
 ask_grade = "Which class do you teach? 1, 2, 3, or mixed?"
 grade_retry = "Please tell me 1, 2, 3 or 'mixed'."
 consent_notice = """Before we go on, about your data:
-• We never keep recordings of your voice. We keep only the written text of it, and only for 90 days.
+• We don't keep recordings of your voice unless you ask us to. We keep the written text of it, and only for 90 days. If you say 'save my recordings', we also keep your first and latest practice recordings, encrypted, for 30 days. Say 'stop saving my recordings' and they are deleted.
 • We keep no information about children. Please don't say children's real names.
 • Only you can see your progress. Institutions see only anonymous averages for groups of 20 or more teachers.
 • You can say 'delete my data' at any time and everything is erased.
@@ -23,8 +23,8 @@ deleted = "All your data has been deleted. Type 'Hello' to come back to Anviq."
 delete_cancelled = "Okay, nothing was deleted."
 delete_timed_out = "That delete request timed out, so nothing was deleted. Ask again if you still want it."
 stopped = "Okay, I won't send reminder messages any more. Write to me whenever you like."
-privacy = "Your practice and scores are yours alone. No headmaster, mentor or officer sees your individual work. Institutions see only anonymous averages for 20 or more teachers. Voice recordings are not kept."
-help = "I help you prepare tomorrow's lesson, practise with three AI children, reflect on the day, and answer teaching questions from the NISHTHA/NIPUN modules. Say 'delete my data' to erase everything, 'withdraw consent' to take back your agreement, 'stop' to pause reminders, or 'privacy' to learn who sees what."
+privacy = "Your practice and scores are yours alone. No headmaster, mentor or officer sees your individual work. Institutions see only anonymous averages for 20 or more teachers. Voice recordings are not kept unless you say 'save my recordings'."
+help = "I help you prepare tomorrow's lesson, practise with three AI children, reflect on the day, and answer teaching questions from the NISHTHA/NIPUN modules. Say 'delete my data' to erase everything, 'withdraw consent' to take back your agreement, 'save my recordings' or 'stop saving my recordings' to choose whether your practice recordings are kept, 'stop' to pause reminders, or 'privacy' to learn who sees what."
 
 export_header = "Here is your profile and consent record:"
 export_nothing = "I have nothing stored about you."
@@ -42,8 +42,14 @@ export_practices = "Practice sessions"
 export_questions = "Questions scored"
 export_plan = "Saved plan topic"
 export_in_progress = "Practice in progress"
+export_clips = "Practice recordings kept"
+export_clips_off = "not kept (you have not asked for this)"
 export_yes = "yes"
 export_no = "no"
+
+clips_on = "Okay. From now on I'll keep your first and your latest practice recording, encrypted, for 30 days. Nobody else can hear them, and I cannot play them back to you yet. Say 'stop saving my recordings' at any time and they are deleted."
+clips_off = "Okay. I'm not keeping your recordings, and I've deleted any I had."
+clips_need_consent = "I can only keep recordings after you agree to the privacy notice. Say 'withdraw consent' and read it again, then ask me again."
 
 ask_plan_topic = "What will you teach tomorrow? Tell me the topic and which class, in a sentence or two."
 ask_question_prompt = "What would you like to know? Ask me anything about teaching reading, writing or maths in classes 1 to 3."

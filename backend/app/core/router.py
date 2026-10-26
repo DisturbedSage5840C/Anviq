@@ -20,7 +20,7 @@ from app.core.intents import (
     parse_yes_no,
 )
 
-CONSENT_VERSION = "v2"
+CONSENT_VERSION = "v3"
 MAX_QUESTION_CHARS = 500  # bounds what one question can cost; a teaching question fits easily
 INACTIVITY_TIMEOUT = timedelta(minutes=30)
 FIRST_REHEARSAL_TOPIC = TOPIC_REGROUP  # a new teacher has no plan yet, so Day 1 starts here
@@ -127,6 +127,13 @@ class RehearseTurn:
 
 
 @dataclass(frozen=True)
+class SetClipConsent:
+    """Turn the keeping of practice recordings on or off. Off also deletes what is kept."""
+
+    enabled: bool
+
+
+@dataclass(frozen=True)
 class EndRehearsal:
     """Forget the practice in progress."""
 
@@ -145,6 +152,7 @@ Effect = (
     | StartRehearsal
     | RehearseTurn
     | EndRehearsal
+    | SetClipConsent
 )
 
 
@@ -226,6 +234,13 @@ def _handle_global(state: TeacherState, intent: GlobalIntent) -> Transition:
         return _withdraw_consent(state)
     if intent is GlobalIntent.EXPORT:
         return Transition(state, (ExportData(),))
+    if intent is GlobalIntent.CLIPS_OFF:
+        # always acted on, even before consent, so a "no" can never be left unheard
+        return _say(state, "clips_off", extra=(SetClipConsent(enabled=False),))
+    if intent is GlobalIntent.CLIPS_ON:
+        if not state.consented:
+            return _say(state, "clips_need_consent")
+        return _say(state, "clips_on", extra=(SetClipConsent(enabled=True),))
     if intent is GlobalIntent.STOP:
         return _say(state, "stopped", extra=(OptOutReminders(),))
     return _say(state, "privacy" if intent is GlobalIntent.PRIVACY else "help")

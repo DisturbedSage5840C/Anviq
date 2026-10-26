@@ -3,6 +3,7 @@
 import hashlib
 import logging
 from dataclasses import replace
+from typing import NamedTuple
 
 from app.content.copy import render
 from app.core.daily_loop import DailyLoop, LoopReply
@@ -21,6 +22,7 @@ from app.core.router import (
     RecordConsent,
     RehearseTurn,
     Say,
+    SetClipConsent,
     ShowMirror,
     StartRehearsal,
     Transition,
@@ -51,6 +53,17 @@ UNKNOWN_LANG_TTS = "hi"
 def consent_text_sha256(lang: str | None) -> str:
     """Digest of the exact consent text the teacher was shown, for the consent ledger."""
     return hashlib.sha256(render("consent_notice", lang).encode("utf-8")).hexdigest()
+
+
+class Recording(NamedTuple):
+    audio: bytes
+    mime: str
+
+
+def _recording(utterance: Utterance) -> Recording | None:
+    if not utterance.audio:
+        return None
+    return Recording(utterance.audio, utterance.audio_mime)
 
 
 class RouterBrain:
@@ -92,7 +105,9 @@ class RouterBrain:
         reply = _compose(transition, lang, exports)
         wa_id = utterance.sender_wa_id
         spoken = await self._run_loop_effects(key, wa_id, lang, transition)
-        spoken += await self._run_rehearsal(key, wa_id, lang, transition, slot)
+        spoken += await self._run_rehearsal(
+            key, wa_id, lang, transition, slot, _recording(utterance)
+        )
         if not spoken:
             return reply
         text = PARAGRAPH_BREAK.join(part for part in (reply.text, *spoken) if part)
@@ -152,13 +167,16 @@ class RouterBrain:
         lang: str | None,
         transition: Transition,
         slot: RehearsalSlot,
+        recording: Recording | None,
     ) -> list[str]:
         """The children answer through the model, so this too runs after the commit."""
         effect = next((e for e in transition.effects if isinstance(e, _REHEARSAL_EFFECTS)), None)
         if effect is None:
             return []
         reply = await self._rehearse(key, lang or UNKNOWN_LANG_TTS, effect, slot)
-        if not await self._keep_rehearsal(key, wa_id, slot.rehearsal_json, reply):
+        # Only a practice answer is a recording worth keeping, never the "start" message.
+        clip = recording if isinstance(effect, RehearseTurn) else None
+        if not await self._keep_rehearsal(key, wa_id, slot.rehearsal_json, reply, clip):
             # A newer message was answered while this one was with the model; its answer stands.
             return [render("rehearsal_turn_failed", lang or UNKNOWN_LANG_TTS)]
         return [reply.text]
@@ -196,13 +214,20 @@ class RouterBrain:
         return self._budget is None or await self._budget.spend(key)
 
     async def _keep_rehearsal(
-        self, key: bytes, wa_id: str, expected: str | None, reply: RehearsalReply
+        self,
+        key: bytes,
+        wa_id: str,
+        expected: str | None,
+        reply: RehearsalReply,
+        recording: Recording | None = None,
     ) -> bool:
         """Save the practice, or end it, unless it moved on while the model was thinking.
 
         A teacher who left the practice meanwhile leaves nothing behind. False means another
         turn of this practice was saved first, so this one is dropped rather than rewinding it.
         The scored question is logged here, under the same lock, so only a turn that stands is kept.
+        The teacher's recording of a scored turn goes the same way; `save_clip` drops it unless
+        they asked for recordings to be kept.
         """
         async with self._store.locked(key) as session:
             state = await session.load()
@@ -212,6 +237,8 @@ class RouterBrain:
                 return False
             if reply.scored is not None:
                 await session.log_practice_turn(reply.scored)
+                if recording is not None:
+                    await session.save_clip(recording.audio, recording.mime)
             if reply.finished:
                 await session.close_practice()
                 await session.save(replace(state, phase=Phase.IDLE), wa_id)
@@ -242,6 +269,8 @@ async def _apply_effects(
                 await session.erase()
             case OptOutReminders():
                 await session.opt_out_reminders()
+            case SetClipConsent(enabled):
+                await session.set_clip_opt_in(enabled)
             case StartRehearsal():
                 await session.close_practice()  # whatever was left open is not the new practice
             case EndRehearsal():

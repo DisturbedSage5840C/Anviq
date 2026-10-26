@@ -1,6 +1,6 @@
 """What the conversation brain sees and says, independent of WhatsApp and speech vendors."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 
@@ -11,6 +11,9 @@ class Utterance:
     lang: str
     via_voice: bool
     needs_confirmation: bool
+    # The teacher's own recording, kept off repr and equality so it never reaches a log line.
+    audio: bytes | None = field(default=None, repr=False, compare=False)
+    audio_mime: str = field(default="audio/ogg", repr=False, compare=False)
 
 
 @dataclass(frozen=True)

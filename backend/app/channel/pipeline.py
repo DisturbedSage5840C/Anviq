@@ -59,13 +59,18 @@ async def transcribe_audio(
     return transcript if transcript.text.strip() else replies.CANNOT_HEAR
 
 
-def spoken_utterance(sender: str, transcript: Transcript) -> Utterance:
+def spoken_utterance(
+    sender: str, transcript: Transcript, audio: bytes | None = None, audio_mime: str = OGG_OPUS_MIME
+) -> Utterance:
+    """`audio` is the teacher's recording, carried only so the brain can keep it if they asked."""
     return Utterance(
         sender,
         transcript.text,
         language_of(transcript.language_code),
         via_voice=True,
         needs_confirmation=needs_confirmation(transcript),
+        audio=audio,
+        audio_mime=audio_mime,
     )
 
 
@@ -114,7 +119,7 @@ class InboundPipeline:
         transcript = await transcribe_audio(self._stt, self._prepare_audio, media.data)
         if isinstance(transcript, str):
             return transcript
-        return spoken_utterance(message.sender_wa_id, transcript)
+        return spoken_utterance(message.sender_wa_id, transcript, media.data, media.mime_type)
 
     async def _deliver(self, sender: str, reply: Reply) -> None:
         await self._whatsapp.send_text(sender, reply.text)

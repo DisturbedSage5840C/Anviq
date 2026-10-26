@@ -5,31 +5,40 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import Any
 
-from sqlalchemy import text
+from sqlalchemy import Row, text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from app.core.rehearsal_log import LoggedTurn
 from app.core.router import Phase, TeacherState
 from app.core.teacher_store import (
+    CLIP_RETENTION,
     ConsentRecord,
     RehearsalSlot,
+    StoredClip,
     TeacherExport,
     deletion_log_prefix,
 )
 from app.db.rehearsal_log import close_practices, log_turn
-from app.privacy.crypto import FieldCipher
+from app.privacy.crypto import DecryptionError, FieldCipher
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_LANG = "hi"  # teachers.lang is NOT NULL; the real choice arrives one step after the stub
 LANGUAGE_UNKNOWN_PHASES = frozenset({Phase.NEW, Phase.ONB_LANG})
 WA_ID_CONTEXT = b"teachers.wa_id"
+CLIP_CONTEXT_PREFIX = b"mirror_clips.audio:"
 ADVISORY_KEY_BYTES = 8
 
 
 def _advisory_key(phone_hash: bytes) -> int:
     return int.from_bytes(phone_hash[:ADVISORY_KEY_BYTES], "big", signed=True)
+
+
+def _clip_context(teacher_id: object) -> bytes:
+    """Binds a sealed clip to its teacher, so one moved to another row fails to decrypt."""
+    return CLIP_CONTEXT_PREFIX + str(teacher_id).encode()
 
 
 class PostgresTeacherStore:
@@ -133,13 +142,110 @@ class _PostgresSession:
             ),
             {"h": self.phone_hash},
         )
+        await self._delete_clips()
         await self.conn.execute(
             text(
                 "update teachers set consent_version = null, consent_at = null, "
-                "last_topic_id = null, rehearsal_json = null where phone_hash = :h"
+                "last_topic_id = null, rehearsal_json = null, clip_opt_in = false, "
+                "clip_opt_in_at = null where phone_hash = :h"
             ),
             {"h": self.phone_hash},
         )
+
+    async def _delete_clips(self) -> None:
+        await self.conn.execute(
+            text(
+                "delete from mirror_clips where teacher_id = "
+                "(select id from teachers where phone_hash = :h)"
+            ),
+            {"h": self.phone_hash},
+        )
+
+    async def set_clip_opt_in(self, enabled: bool) -> bool:
+        if enabled:
+            found = await self.conn.execute(
+                text(
+                    "update teachers set clip_opt_in = true, clip_opt_in_at = now() "
+                    "where phone_hash = :h and consent_version is not null returning id"
+                ),
+                {"h": self.phone_hash},
+            )
+            return found.first() is not None
+        found = await self.conn.execute(
+            text(
+                "update teachers set clip_opt_in = false, clip_opt_in_at = null "
+                "where phone_hash = :h returning id"
+            ),
+            {"h": self.phone_hash},
+        )
+        if found.first() is None:
+            return False
+        await self._delete_clips()
+        return True
+
+    async def save_clip(self, audio: bytes, mime: str) -> bool:
+        teacher_id = (
+            await self.conn.execute(
+                text(
+                    "select id from teachers where phone_hash = :h "
+                    "and clip_opt_in and consent_version is not null"
+                ),
+                {"h": self.phone_hash},
+            )
+        ).scalar_one_or_none()
+        if teacher_id is None:
+            return False
+        await self.conn.execute(
+            text(
+                "insert into mirror_clips (teacher_id, audio_enc, mime, created_at, expires_at) "
+                "values (:id, :audio, :mime, now(), now() + cast(:retention as interval))"
+            ),
+            {
+                "id": teacher_id,
+                "audio": self.cipher.encrypt_bytes(audio, context=_clip_context(teacher_id)),
+                "mime": mime,
+                "retention": CLIP_RETENTION,
+            },
+        )
+        # The mirror plays only the first and the latest, so nothing between them is kept.
+        await self.conn.execute(
+            text(
+                "delete from mirror_clips where teacher_id = :id and id not in ("
+                "(select id from mirror_clips where teacher_id = :id "
+                "order by created_at, id limit 1), "
+                "(select id from mirror_clips where teacher_id = :id "
+                "order by created_at desc, id desc limit 1))"
+            ),
+            {"id": teacher_id},
+        )
+        return True
+
+    async def first_and_latest_clips(self) -> tuple[StoredClip, StoredClip] | None:
+        rows = (
+            await self.conn.execute(
+                text(
+                    "select c.teacher_id, c.audio_enc, c.mime, c.created_at, c.expires_at "
+                    "from mirror_clips c join teachers t on t.id = c.teacher_id "
+                    "where t.phone_hash = :h and c.expires_at > now() "
+                    "order by c.created_at, c.id"
+                ),
+                {"h": self.phone_hash},
+            )
+        ).all()
+        if not rows:
+            return None
+        try:
+            clips = [self._open_clip(row) for row in (rows[0], rows[-1])]
+        except DecryptionError:
+            logger.error("a stored mirror clip failed to decrypt and was skipped")
+            return None
+        return clips[0], clips[1]
+
+    def _open_clip(self, row: "Row[Any]") -> StoredClip:
+        audio = self.cipher.decrypt_bytes(
+            bytes(row.audio_enc), context=_clip_context(row.teacher_id)
+        )
+        return StoredClip(audio, row.mime, row.created_at, row.expires_at)
 
     async def erase(self) -> None:
         deleted = await self.conn.execute(
@@ -211,8 +317,8 @@ class _PostgresSession:
             await self.conn.execute(
                 text(
                     "select id, state, lang, grade_band, reminders_opt_in, reminder_time, "
-                    "last_reminded_on, last_topic_id, rehearsal_json is not null as in_progress "
-                    "from teachers where phone_hash = :h"
+                    "last_reminded_on, last_topic_id, rehearsal_json is not null as in_progress, "
+                    "clip_opt_in from teachers where phone_hash = :h"
                 ),
                 {"h": self.phone_hash},
             )
@@ -236,6 +342,15 @@ class _PostgresSession:
                 {"id": row.id},
             )
         ).one()
+        clip_count = (
+            await self.conn.execute(
+                text(
+                    "select count(*) from mirror_clips "
+                    "where teacher_id = :id and expires_at > now()"
+                ),
+                {"id": row.id},
+            )
+        ).scalar_one()
         return TeacherExport(
             lang=None if Phase(row.state) in LANGUAGE_UNKNOWN_PHASES else row.lang,
             grade_band=row.grade_band,
@@ -247,4 +362,6 @@ class _PostgresSession:
             scored_question_count=practices[1],
             plan_topic_id=row.last_topic_id,
             practice_in_progress=bool(row.in_progress),
+            clip_opt_in=row.clip_opt_in,
+            clip_count=int(clip_count),
         )

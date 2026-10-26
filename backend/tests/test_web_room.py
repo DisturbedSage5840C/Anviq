@@ -54,7 +54,7 @@ class _Turn:
         self.calls.append(("text", sender, text))
         return self._answer()
 
-    async def respond_to_audio(self, sender: str, audio: bytes) -> WebReply:
+    async def respond_to_audio(self, sender: str, audio: bytes, mime: str = "") -> WebReply:
         self.calls.append(("audio", sender, audio))
         return self._answer()
 

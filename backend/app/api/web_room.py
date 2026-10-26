@@ -94,7 +94,7 @@ async def web_turn(
     if visitor is None:
         raise _error(HTTP_UNAUTHORIZED, CODE_REFUSED)
     try:
-        reply = await _serve(limiter, turn, visitor, body, text)
+        reply = await _serve(limiter, turn, visitor, body, text, mime)
     except Exception:
         await _give_back(codes, code)
         raise
@@ -104,12 +104,12 @@ async def web_turn(
 
 
 async def _serve(
-    limiter: SenderLimiter, turn: WebTurn, visitor: str, body: bytes, text: str | None
+    limiter: SenderLimiter, turn: WebTurn, visitor: str, body: bytes, text: str | None, mime: str
 ) -> WebReply:
     if not await limiter.allow_sender(visitor):
         raise _error(HTTP_TOO_MANY_REQUESTS, "Too many turns. Try again later.")
     if text is None:
-        return await turn.respond_to_audio(visitor, body)
+        return await turn.respond_to_audio(visitor, body, mime)
     return await turn.respond_to_text(visitor, text)
 
 

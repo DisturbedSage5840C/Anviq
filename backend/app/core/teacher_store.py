@@ -15,6 +15,8 @@ from app.core.rehearsal_log import LoggedTurn
 from app.core.router import TeacherState
 
 DELETION_LOG_PREFIX_BYTES = 8
+# Long enough that a clip from Day 1 is still there for the Day-14 mirror, then it is deleted.
+CLIP_RETENTION = timedelta(days=30)
 
 
 def deletion_log_prefix(phone_hash: bytes) -> str:
@@ -73,6 +75,25 @@ class TeacherSession(Protocol):
         """End whatever practice the teacher has open; the next scored turn starts a fresh one."""
         ...
 
+    async def set_clip_opt_in(self, enabled: bool) -> bool:
+        """Turn recording of the teacher's own practice voice notes on or off.
+
+        Turning it off deletes every clip kept so far. False when the teacher is unknown, or has
+        no active consent and so cannot opt in.
+        """
+        ...
+
+    async def save_clip(self, audio: bytes, mime: str) -> bool:
+        """Keep one voice note for the mirror; False, and nothing stored, unless opted in.
+
+        Only the first and the latest clip are kept, because that is all the mirror plays.
+        """
+        ...
+
+    async def first_and_latest_clips(self) -> "tuple[StoredClip, StoredClip] | None":
+        """The teacher's earliest and newest unexpired clips (the same one if only one)."""
+        ...
+
     async def export(self) -> "TeacherExport | None":
         """Everything stored about the teacher that they may ask to see; None if nothing is."""
         ...
@@ -107,6 +128,18 @@ class TeacherExport:
     scored_question_count: int = 0
     plan_topic_id: str | None = None
     practice_in_progress: bool = False
+    clip_opt_in: bool = False
+    clip_count: int = 0
+
+
+@dataclass(frozen=True)
+class StoredClip:
+    """One kept voice note, decrypted for playback. Never logged: `audio` stays out of the repr."""
+
+    audio: bytes = field(repr=False)
+    mime: str
+    created_at: datetime
+    expires_at: datetime
 
 
 @dataclass(frozen=True)
@@ -137,6 +170,7 @@ class StoredTeacher:
     rehearsal: RehearsalSlot = RehearsalSlot()
     reminder_time: time | None = None
     last_reminded_on: date | None = None
+    clip_opt_in: bool = False
 
 
 @dataclass
@@ -146,6 +180,7 @@ class InMemoryTeacherStore:
     teachers: dict[bytes, StoredTeacher] = field(default_factory=dict)
     deletion_log: list[str] = field(default_factory=list)
     practices: dict[bytes, tuple[PracticeSession, ...]] = field(default_factory=dict)
+    clips: dict[bytes, tuple[StoredClip, ...]] = field(default_factory=dict)
     clock: Callable[[], datetime] = lambda: datetime.now(UTC)
     _locks: dict[bytes, asyncio.Lock] = field(default_factory=dict)
 
@@ -201,11 +236,13 @@ class _InMemorySession:
             return
         revoked = tuple(replace(c, revoked=True) for c in existing.consents)
         self.store.teachers[self.phone_hash] = replace(
-            existing, consents=revoked, rehearsal=RehearsalSlot()
+            existing, consents=revoked, rehearsal=RehearsalSlot(), clip_opt_in=False
         )
+        self.store.clips.pop(self.phone_hash, None)
 
     async def erase(self) -> None:
         self.store.practices.pop(self.phone_hash, None)
+        self.store.clips.pop(self.phone_hash, None)
         if self.store.teachers.pop(self.phone_hash, None) is not None:
             self.store.deletion_log.append(deletion_log_prefix(self.phone_hash))
 
@@ -258,11 +295,37 @@ class _InMemorySession:
         if sessions is not None:
             self.store.practices[self.phone_hash] = tuple(replace(p, ended=True) for p in sessions)
 
+    async def set_clip_opt_in(self, enabled: bool) -> bool:
+        stored = self.store.teachers.get(self.phone_hash)
+        if stored is None or (enabled and all(c.revoked for c in stored.consents)):
+            return False
+        self.store.teachers[self.phone_hash] = replace(stored, clip_opt_in=enabled)
+        if not enabled:
+            self.store.clips.pop(self.phone_hash, None)
+        return True
+
+    async def save_clip(self, audio: bytes, mime: str) -> bool:
+        stored = self.store.teachers.get(self.phone_hash)
+        if stored is None or not stored.clip_opt_in or all(c.revoked for c in stored.consents):
+            return False
+        now = self.store.now()
+        kept = self.store.clips.get(self.phone_hash, ())
+        clip = StoredClip(audio, mime, created_at=now, expires_at=now + CLIP_RETENTION)
+        self.store.clips[self.phone_hash] = (*kept[:1], clip)
+        return True
+
+    async def first_and_latest_clips(self) -> tuple[StoredClip, StoredClip] | None:
+        now = self.store.now()
+        live = [c for c in self.store.clips.get(self.phone_hash, ()) if c.expires_at > now]
+        return (live[0], live[-1]) if live else None
+
     async def export(self) -> TeacherExport | None:
         stored = self.store.teachers.get(self.phone_hash)
         if stored is None:
             return None
         practices = self.store.practices.get(self.phone_hash, ())
+        now = self.store.now()
+        clips = [c for c in self.store.clips.get(self.phone_hash, ()) if c.expires_at > now]
         return TeacherExport(
             lang=stored.state.lang,
             grade_band=stored.state.grade_band,
@@ -274,6 +337,8 @@ class _InMemorySession:
             scored_question_count=sum(len(p.turns) for p in practices),
             plan_topic_id=stored.rehearsal.topic_id,
             practice_in_progress=stored.rehearsal.rehearsal_json is not None,
+            clip_opt_in=stored.clip_opt_in,
+            clip_count=len(clips),
         )
 
 

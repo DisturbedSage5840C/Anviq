@@ -45,19 +45,25 @@ class FieldCipher:
             raise InvalidKeyError(f"Key must be {KEY_BYTES} bytes")
         self._aead = AESGCM(key)
 
-    def encrypt(self, plaintext: str, *, context: bytes = b"") -> bytes:
+    def encrypt_bytes(self, plaintext: bytes, *, context: bytes = b"") -> bytes:
         """Return nonce || ciphertext || tag. `context` is authenticated but not stored."""
         nonce = os.urandom(NONCE_BYTES)
-        return nonce + self._aead.encrypt(nonce, plaintext.encode(), context or None)
+        return nonce + self._aead.encrypt(nonce, plaintext, context or None)
 
-    def decrypt(self, sealed: bytes, *, context: bytes = b"") -> str:
+    def decrypt_bytes(self, sealed: bytes, *, context: bytes = b"") -> bytes:
         if len(sealed) < NONCE_BYTES + TAG_BYTES:
             raise DecryptionError("Ciphertext is too short")
         nonce, body = sealed[:NONCE_BYTES], sealed[NONCE_BYTES:]
         try:
-            return self._aead.decrypt(nonce, body, context or None).decode()
+            return self._aead.decrypt(nonce, body, context or None)
         except InvalidTag:
             raise DecryptionError("Ciphertext failed authentication") from None
+
+    def encrypt(self, plaintext: str, *, context: bytes = b"") -> bytes:
+        return self.encrypt_bytes(plaintext.encode(), context=context)
+
+    def decrypt(self, sealed: bytes, *, context: bytes = b"") -> str:
+        return self.decrypt_bytes(sealed, context=context).decode()
 
 
 def phone_hash(pepper: bytes, phone: str) -> bytes:
