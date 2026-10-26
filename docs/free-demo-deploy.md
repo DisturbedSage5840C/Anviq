@@ -63,6 +63,9 @@ Fill in `infra/demo.env`:
   makes stored data unreadable; changing `PHONE_PEPPER` makes every teacher look new.
 - `SITE_ADDRESS`: the `sslip.io` name from step 2.
 - `ANTHROPIC_API_KEY`, `SARVAM_API_KEY`: your keys.
+- `SARVAM_TTS_MODEL`: `bulbul:v4-flash` (the template's value) costs a third of `bulbul:v3` per spoken
+  character, which is what keeps the cost per teacher-day near the target. If you set `bulbul:v3`
+  instead, speech cost roughly triples. Listen to a sample before a demo.
 - `WA_VERIFY_TOKEN`: any string you invent. `WA_APP_SECRET`: the Meta app secret, or any placeholder until the Meta app exists.
 - `WEB_ALLOWED_ORIGINS`: leave empty. Caddy serves the web room at `/room/` on the same origin as the API, so no CORS entry is needed; set it only if you host the room somewhere else.
 
@@ -139,6 +142,21 @@ screen recording of a full conversation and the browser web room as fallbacks.
 - Logs: `docker compose --env-file infra/demo.env -f infra/docker-compose.demo.yml logs -f api worker`
 - Update: `git pull`, then rerun the `up -d --build` command.
 - Stop: same command with `down` (add `-v` only if you want to delete all data).
+
+## Credits that can run out before the judges look
+
+- **Sarvam** is pay-as-you-go. About ₹4 of speech covers one realistic teacher-day on
+  `bulbul:v4-flash`, so check the balance in the Sarvam dashboard before each demo and top up if it is
+  under about ₹200. When it hits zero the app does not fail: it sends the text reply without the voice
+  note (covered by `test_a_text_reply_survives_a_text_to_speech_failure`).
+- **Anthropic** hackathon credits (US$500 per team, shared by every teammate using the one key) are
+  valid until **20 November 2026**, two days after the Grand Finale, and are not refunded. Keep enough
+  for evaluators and the demo, and keep the key on the server only. The organisers are told at 80%
+  usage.
+- A model can be suspended for the organisation for a while (the API answers 403 `permission_error`,
+  "model suspended until <time>"). Turns that need that model fail until the time passes. If it
+  happens near a demo, ask the organisers, and as a stopgap point `MODEL_SMART` at another model
+  in `infra/demo.env` and rerun `up -d api worker`.
 
 ## When the trial ends
 

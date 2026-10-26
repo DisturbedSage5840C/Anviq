@@ -39,8 +39,8 @@ def out(
                 {"id": cid, "met": evidence is not None, "evidence": evidence or ""}
                 for cid, evidence in met.items()
             ],
-            "better_phrasing": {"hi": "रिया, 5 कहाँ से आया?", "en": phrasing},
-            "one_line_feedback": {"hi": "आपने पहले सुधारा।", "en": feedback},
+            "better_phrasing": phrasing,
+            "one_line_feedback": feedback,
         }
     )
 
@@ -87,8 +87,8 @@ async def test_met_without_evidence_counts_as_not_met():
     reply = _CoachOut.model_validate(
         {
             "criteria": [{"id": c, "met": True, "evidence": " "} for c in ("C1", "C2", "C3", "C4")],
-            "better_phrasing": {"hi": "क", "en": "a"},
-            "one_line_feedback": {"hi": "क", "en": "Nice."},
+            "better_phrasing": "a",
+            "one_line_feedback": "Nice.",
         }
     )
     verdict = await Coach(Scripted(reply), "m").score(REQUEST)
@@ -135,8 +135,26 @@ async def test_model_failure_is_reported_without_detail():
 
 async def test_hindi_request_gets_hindi_text():
     request = CoachRequest(**{**REQUEST.__dict__, "lang": "hi"})
-    verdict = await Coach(Scripted(out(NONE_MET)), "m").score(request)
+    reply = out(NONE_MET, phrasing="रिया, 5 कहाँ से आया?", feedback="आपने पहले सुधारा।")
+    verdict = await Coach(Scripted(reply), "m").score(request)
     assert verdict.better_phrasing == "रिया, 5 कहाँ से आया?"
+    assert verdict.feedback == "आपने पहले सुधारा।"
+
+
+@pytest.mark.parametrize(("lang", "language_name"), [("en", "English"), ("hi", "Hindi")])
+async def test_model_is_asked_for_the_teachers_language_only(lang: str, language_name: str):
+    scripted = Scripted(out(NONE_MET))
+    request = CoachRequest(**{**REQUEST.__dict__, "lang": lang})
+    await Coach(scripted, "m").score(request)
+    call = scripted.calls[0]
+    assert f'"write_in":"{language_name}' in call["messages"][0]["content"]
+    assert "both Hindi" not in call["system"][0].text
+
+
+def test_the_reply_schema_has_one_string_per_spoken_line():
+    properties = _CoachOut.model_json_schema()["properties"]
+    assert properties["better_phrasing"]["type"] == "string"
+    assert properties["one_line_feedback"]["type"] == "string"
 
 
 async def test_prompt_carries_rubric_examples_and_wraps_teacher_words():
