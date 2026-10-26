@@ -59,7 +59,7 @@ Meta's retry window even when a vendor is slow.
 | Browser E2E smoke tests | Built | `e2e/`, `playwright.config.ts` |
 | Evaluation harness | Built; needs a model key to produce real numbers | `app/evaluation/`, see `eval/README.md` |
 | Rubrics for coaching moves 1-6, personas, topic map | Built and reviewed (`status = "reviewed"`, Moves 1-6 each have 6+ positive and 6+ negative bilingual examples; topics mapped to NIPUN LOs and NISHTHA Course 9) | `app/content/rubrics/`, `app/content/topics.toml`, `app/core/children/`, `content/` |
-| Opt-in encrypted mirror clips | **Not yet** | the `mirror_clips` table exists; no flow stores one |
+| Opt-in encrypted mirror clips: consent toggle ('save my recordings'), capture of the first and latest scored practice recording, AES-GCM at rest bound to the teacher, 30-day expiry, deletion on opt-out, withdrawal and erasure, count in the data export | Built. **Playback on Day 14 is not built** (planned) | `app/core/teacher_store.py`, `app/db/teacher_store.py`, migration `0011`, `tests/core/test_teacher_store_clips.py` |
 | Hindi copy | Built and reviewed | `app/content/copy/hi.toml` |
 
 ## Modules (`backend/app/`)
@@ -106,8 +106,8 @@ database effects under a per-teacher lock and runs the model calls after the com
 2. `api` verifies the signature over the raw body, drops a repeated message id, applies the
    per-sender limit (60 an hour) and queues the job. It answers 200 quickly. If Redis is down it
    answers 503, so Meta retries instead of the message being lost.
-3. `worker` downloads the audio into memory. It is **never written to disk or the database**.
-4. Speech to text (Sarvam by default). Audio bytes are dropped.
+3. `worker` downloads the audio into memory. It is **never written to disk or the database**, unless the teacher has opted in to mirror clips: then a scored practice recording is sealed with AES-GCM and stored for 30 days.
+4. Speech to text (Google on the demo; Sarvam is a config switch). Audio bytes are dropped, except an opted-in practice recording.
 5. The transcript passes through `guardrails.pii.scrub`, then the router decides what the teacher
    is doing (onboarding, consent, planning, deleting, asking) from the stored state.
    Each step that calls a paid model is first charged to the teacher's daily allowance (60 a day,

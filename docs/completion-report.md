@@ -19,7 +19,7 @@ Status words: **Done** (built, tested, running), **Changed** (built differently 
 | §1 MVP scope (Moves 1–2, G1–3 numeracy, 3 personas, 12 malrules, Ask, dashboard, privacy) | Done | 12 executable malrules exist (`SUB.*`, `ADD.*`, `PV.*`, `CMP.*`, `WP.*`). Six rubric files `move_01`…`move_06` exist. |
 | §2 Architecture and stack | Changed | Meta Cloud API became three adapters (Meta, Twilio, Evolution). Ask retrieval is in-memory BM25, not pgvector + Voyage. Hosting is one GCP VM with Caddy, not Fly + Supabase + Upstash + Vercel. Models are Haiku 5.5 and Sonnet 5.5 as planned. |
 | §3 Pedagogy (daily loop, Day-14 mirror, self-rating) | Done | Plan and Reflect work live. Mirror uses 🌱/🌿/🌳 with a demo-cycle mode. Self-rating exists (`core/self_rating.py`). |
-| §3 Opt-in encrypted mirror clips | Not built | No consent flag in the schema. Deck must say "planned". |
+| §3 Opt-in encrypted mirror clips | Built, except playback | 'save my recordings' / 'stop saving my recordings' consent toggle (consent notice v3), first and latest scored practice recording kept AES-GCM encrypted for 30 days, deleted on opt-out, withdrawal, erasure and expiry, count shown in 'send me my data'. **Playback on Day 14 is not built**: the deck must say playback is planned. Consent notice v3 needs Vansh's review. |
 | §4 Webhook, signature, dedupe, rate limit | Done | Hardened. Evolution webhook uses a shared-secret header and Caddy blocks it from the internet. |
 | §4 Speech adapters (Google, Sarvam), confirm-back, benchmark | Done | The demo runs on Google for both listening and speaking (Neural2 voices); Sarvam stays as a switch-back option. Plus metering of speech usage. |
 | §4 Router state machine, consent, delete, export, opt-out | Done | Delete confirm flow is in `core/router.py`. |
@@ -29,7 +29,7 @@ Status words: **Done** (built, tested, running), **Changed** (built differently 
 | §4 Guardrails and PII scrubber | Done | `guardrails/` includes `pii.py`. |
 | §4 Cron jobs (retention, cost report, reminders) | Done | Reminders are skipped on Twilio and Evolution (no templates). |
 | §4 Web room and demo codes | Done | Served at `/room/`, with a strict CSP. E2E tests written but the Playwright browser is not installed locally, so they have not been run. |
-| §5/§6 Data model, k≥20 view, crypto, retention, DPDP | Done | Field encryption, hashed phones, 90-day transcripts, no raw audio. Dashboard shows no real cohort data. |
+| §5/§6 Data model, k≥20 view, crypto, retention, DPDP | Done | Field encryption, hashed phones, 90-day transcripts, no raw audio unless the teacher opts in (first and latest practice recording, 30 days, encrypted). Dashboard shows no real cohort data. |
 | §6 Security checklist | Partial | pip-audit and npm audit are clean. gitleaks was not run locally (not installed). HawkScan has never run (no `HAWK_API_KEY`). |
 | §7 Deploy: Fly, Supabase, Vercel, `deploy.yml` | Changed | Removed by design. Replaced by the free demo stack (§7.8). |
 | §7.8 Always-on demo on GCP | Done | `https://35-200-176-62.sslip.io`. Trial ends **30 Jan 2027**. |

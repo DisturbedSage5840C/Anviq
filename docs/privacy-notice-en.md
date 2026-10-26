@@ -1,10 +1,10 @@
 # Privacy Notice (English)
 
-**Version:** `v2`
+**Version:** `v3`
 
 Before we go on, about your data:
 
-- **No raw voice recordings:** We never keep recordings of your voice. We keep only the written text (scrubbed transcript) of scored practice turns, and only for **90 days**.
+- **Voice recordings are not kept unless you ask:** We keep the written text (scrubbed transcript) of scored practice turns, and only for **90 days**. If you say **'save my recordings'**, we also keep your first and latest practice recordings, encrypted, for **30 days**. Say **'stop saving my recordings'** and they are deleted. Recordings are not played back to you yet.
 - **No child data:** We keep no information about children. Please do not say children's real names during practice or reflection.
 - **Mirror, not monitor:** Only you can see your progress and rubric results. No headmaster, mentor, CRP, or official sees your individual work. Institutions see only anonymous averages for groups of **20 or more teachers (k ≥ 20)**.
 - **Right to erasure:** You can say **'delete my data'** at any time and everything about you is immediately erased.
@@ -14,6 +14,6 @@ Before we go on, about your data:
 ## Data Processors & Grievance Contact
 
 - **Channel:** Meta WhatsApp Cloud API (message delivery).
-- **Speech-to-Text & Text-to-Speech:** Sarvam AI (India).
+- **Speech-to-Text & Text-to-Speech:** Google Cloud Speech-to-Text and Text-to-Speech.
 - **Language Model:** Anthropic API (commercial terms; API inputs and outputs are never used to train models).
 - **Grievance Redressal:** For any questions, corrections, or privacy grievances, send `'privacy'` in chat or contact Team Anviq (Plaksha University).

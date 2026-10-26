@@ -38,7 +38,7 @@ if you have rehearsed two sessions on the same demo account beforehand.
 | Coach agreement kappa 0.6 or more | 0.975 on our gold set, which our content lead wrote; say "not independently adjudicated" | `eval/datasets/gold_turns.jsonl` |
 | Children keep their misconception 95% or more | 98.3% raw (99.4% after one regeneration) for the Riya persona, 720 turns; Aman and Meena not yet run | `eval/report.md` |
 | 60% of pilot teachers complete 5+ sessions | Remove or label as a pilot goal; no pilot has run | none yet |
-| Opt-in encrypted Day-14 mirror clips | Label as planned, not built. The text mirror is built | `docs/architecture.md` |
+| Opt-in encrypted Day-14 mirror clips | Say: consent toggle, encrypted capture of the first and latest practice recording, 30-day expiry and deletion are built. Say playback is planned, not built. The text mirror is built | `docs/architecture.md` |
 | Trends sent to DIET at k of 20 or more | Built and enforced in code and the database view; no real cohort data yet | `docs/data-inventory.md` |
 | Works on WhatsApp | Works in the web room today. The WhatsApp demo number uses an unofficial gateway for the demo (ban risk, no reminders). The official route waits on Meta business verification | `docs/free-demo-deploy.md` section 6 |
 

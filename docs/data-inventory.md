@@ -11,11 +11,11 @@ Last reviewed against the schema at migration `0006`.
 | Data | Stored? | Where | Retention | Who can see it |
 |---|---|---|---|---|
 | Phone number | A keyed hash for lookup, plus the WhatsApp id encrypted so we can reply | Postgres (Mumbai) | Until the teacher deletes | Backend only |
-| Raw voice notes | **No.** Decoded in memory and dropped | Nowhere (Meta keeps its own copy under its policy) | n/a | Nobody |
+| Raw voice notes | **No**, except opt-in mirror clips below. Otherwise decoded in memory and dropped | Nowhere (Meta keeps its own copy under its policy) | n/a | Nobody |
 | Transcripts, scrubbed | Only the teacher's scored practice questions, with the coach's judgment | Postgres `turns` | **90 days rolling** | Backend only; the teacher on request |
 | Rubric results | Yes | Postgres `turns`, `move_progress` | Until the teacher deletes | The teacher only |
 | Session summaries | Yes, derived; a practice left open for a day is closed, not deleted | Postgres `sessions` | Removed with the last transcript of the session | Backend only |
-| Mirror voice clips | Opt-in only, encrypted | Postgres `mirror_clips` | Own `expires_at` (cycle end plus 7 days) | The teacher only |
+| Mirror voice clips | Opt-in only, encrypted | Postgres `mirror_clips` | 30 days from capture (`expires_at`); only the first and latest practice recording are kept; deleted at once on 'stop saving my recordings', withdrawal or erasure | The teacher only |
 | Consent records | Yes: version, text hash, grant and revoke time | Postgres `consents` | Until the teacher deletes | Backend only |
 | Reminder preference | Opt-in flag and time of day | Postgres `teachers` | Until the teacher deletes | Backend only |
 | Webhook dedupe ids | Yes | Redis | 7 days (TTL) | Backend only |
@@ -34,7 +34,7 @@ Last reviewed against the schema at migration `0006`.
 |---|---|
 | `teachers.phone_hash` | HMAC-SHA256 keyed with `PHONE_PEPPER`. The raw number is never an index. |
 | `teachers.wa_id_enc` | AES-256-GCM with `FIELD_KEY`, random 96-bit nonce per value. The one reversible field, kept only because a reply needs the id. |
-| `mirror_clips.audio_enc` | Encrypted the same way. Written only after an explicit opt-in. |
+| `mirror_clips.audio_enc` | Encrypted the same way. Written only after an explicit opt-in ('save my recordings'). |
 | `turns.text_scrubbed` | Passed through `guardrails.pii.scrub` before it is written. |
 | `turns.child_name`, `turns.malrule_id`, `turns.criteria_json` | Scrubbed like the words: `record_turn` passes the child name and misconception id through `guardrails.pii.scrub`, and keeps only the rubric ids' true/false values. The writer already passes fixed values; this enforces it. |
 
@@ -55,8 +55,7 @@ differencing harder. It is not differential privacy; see the [DPIA](DPIA.md).
 | Recipient | What they get | Location | Notes |
 |---|---|---|---|
 | Meta (WhatsApp Cloud API) | Messages and voice notes the teacher sends and the replies we send | Per Meta | Meta keeps its own copy under the WhatsApp policy; the consent note says so |
-| Sarvam | Teacher audio for speech-to-text, reply text for text-to-speech | India | Confirm in writing that there is no retention or training on our data |
-| Google Speech | Same, only if `STT_PROVIDER` or `TTS_PROVIDER` is `google` (fallback and benchmark) | Per Google | Off by default |
+| Google Cloud Speech | Teacher audio for speech-to-text, reply text for text-to-speech (`STT_PROVIDER` and `TTS_PROVIDER` are `google` on the demo) | Per Google | Record the data processing terms; confirm no retention or training |
 | Anthropic | Scrubbed transcript text and prompts | US | API data is not used for training under the commercial terms. Production path is an India-region Bedrock profile |
 | Sentry | Scrubbed error events | Per Sentry | Off unless `SENTRY_DSN` is set |
 | Ops webhook | The daily cost digest: counts and rupee totals, no content | Per the chat provider | `OPS_WEBHOOK_URL` is itself a credential |

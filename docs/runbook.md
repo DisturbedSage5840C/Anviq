@@ -264,7 +264,9 @@ one-off maintenance task, run during a quiet window with a database snapshot tak
 
 1. Take a `pg_dump` (see Database is down or full) and note the time.
 2. For `FIELD_KEY`: read each `teachers.wa_id_enc` and `mirror_clips.audio_enc`, decrypt with the
-   old key, encrypt with the new key, write back in one transaction.
+   old key, encrypt with the new key, write back in one transaction. Clip ciphertext is bound to
+   the teacher: decrypt and encrypt with the context `mirror_clips.audio:<teacher_id>` (see
+   `app/db/teacher_store.py`), or the new rows will not open.
 3. For `PHONE_PEPPER`: for each teacher, decrypt `wa_id_enc`, recompute `phone_hash` with the new
    pepper, write back in the same transaction. The WhatsApp id is the phone number, so this is
    possible without asking anyone.

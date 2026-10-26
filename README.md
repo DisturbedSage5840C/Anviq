@@ -102,7 +102,7 @@ Known limits:
 - The Hindi NISHTHA PDF was extracted with doubled vowel signs and garbled module headings; search
   collapses the vowel signs and the chunker now recognises the headings, but some passages stay
   garbled.
-- The Day-1 / Day-14 mirror needs both practices recorded; the opt-in encrypted mirror clips are not built.
+- The Day-1 / Day-14 mirror needs both practices recorded. Opt-in encrypted mirror clips are captured, stored (30 days) and deleted on request, but playing them back on Day 14 is not built.
 - The WhatsApp demo number runs on an unofficial gateway (Evolution API) for the demo only. It
   can send no template messages, so daily reminders do not work there, and it carries a ban risk
   under WhatsApp's terms. The Meta Cloud API route is wired but waits on business verification.

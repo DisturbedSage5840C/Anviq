@@ -39,7 +39,7 @@ Anviq is not run by it. This is the main reason for the "mirror, not monitor" ru
 
 Data is not used for advertising, profiling, selling, or training any model. Anviq does not
 fine-tune on teacher data, and the Anthropic API does not train on API data under the commercial
-terms. Sarvam's terms are still to be confirmed in writing.
+terms. Google Cloud's speech terms are to be recorded (see the actions below).
 
 ## 4. Why each piece of data is needed
 
@@ -48,10 +48,10 @@ terms. Sarvam's terms are still to be confirmed in writing.
 | Phone number (hash and encrypted id) | To recognise the teacher and send a reply on WhatsApp | A hash alone cannot reply, so the reversible id is kept, encrypted |
 | Scrubbed transcripts, 90 days | To give feedback, resume a session, show progress | Shorter retention; 90 days covers a 14 day cycle plus review |
 | Rubric results | To show the teacher her own growth | None; this is the product |
-| Mirror voice clips | Day 14 "hear how you've grown" | Opt-in only, encrypted, deleted a week after the cycle |
+| Mirror voice clips | Day 14 "hear how you've grown" (playback is planned, not built) | Opt-in only ('save my recordings'), encrypted, only the first and latest practice recording kept, deleted after 30 days or when the teacher opts out, withdraws or erases |
 | Consent records | To prove what was agreed and when | None; required |
 | Reminder preference | To send a reminder the teacher asked for | Off by default |
-| Raw audio | Not kept. Decoded in memory and dropped | n/a |
+| Raw audio | Not kept, except the opt-in mirror clips above. Otherwise decoded in memory and dropped | n/a |
 | Child data | Not collected | n/a |
 
 ## 5. Risks and how we reduce them
@@ -65,8 +65,8 @@ Rated before and after our safeguards: Low, Medium or High.
 | 3 | A child is identifiable from something a teacher says | Medium | Teachers are told not to name children. The scrubber replaces common names and phone-like strings before storage. Anviq's own AI children are allow-listed | Medium, see residual risks |
 | 4 | Institutions use Anviq to monitor individual teachers | High | No per-teacher view exists anywhere in the code. Dashboard reads one view only, with k of at least 20 enforced in the database, counts floored to a multiple of 5 and averages rounded | Medium, see residual risks |
 | 5 | A teacher cannot leave or have data removed | Medium | Delete by message with a confirmation step; cascade removes all personal rows; proof kept as an 8 character hash prefix. Withdraw consent any time | Low |
-| 6 | Data sent to processors is misused or retained | Medium | Audio is not stored by us. Anthropic API data is not used for training. Sarvam retention to be confirmed in writing. Google speech is off by default | Medium until confirmations are filed |
-| 7 | Data leaves India | Medium | LLM calls go to the US under the Anthropic API. Production path is an India-region Bedrock profile. Speech stays in India (Sarvam). Database is in Mumbai | Medium until Bedrock is in use |
+| 6 | Data sent to processors is misused or retained | Medium | Audio is not stored by us unless the teacher opts in to mirror clips. Anthropic API data is not used for training. Google Cloud speech terms are to be recorded | Medium until confirmations are filed |
+| 7 | Data leaves India | Medium | LLM calls go to the US under the Anthropic API. Production path is an India-region Bedrock profile. Speech goes to Google Cloud and is not pinned to India. Database is in Mumbai | Medium until Bedrock is in use |
 | 8 | A demo code is guessed or shared | Medium | 128-bit codes, stored only as an HMAC, expiring after 7 days, with an atomic turn budget and a per-code rate limit. One refusal message for every cause | Low |
 | 9 | A recycled or taken-over phone number reaches the previous holder's account | Medium | The account is keyed on the phone number, so whoever holds the number is treated as the teacher. Mitigated only by WhatsApp's own account verification and by the teacher's ability to delete. Anviq has no second factor | Medium, see residual risks |
 | 10 | A breach goes unreported or unhandled | High | [Incident response](incident-response.md) with a named owner, a contain-first checklist and the reporting clock | Low |
@@ -133,9 +133,8 @@ are broader than needed; there is no in-chat command for correcting details.
 | Processor | Role | Contract or terms | Status |
 |---|---|---|---|
 | Meta | WhatsApp delivery | WhatsApp Business terms | Accepted by use; disclosed to teachers |
-| Sarvam | Speech to text and text to speech (India) | Commercial terms | **Confirm in writing: no retention, no training** |
 | Anthropic | Coach, planner and children (US) | Commercial API terms; no training on API data | Recorded; production path is Bedrock India |
-| Google | Speech fallback, off by default | Cloud terms | Only if enabled |
+| Google | Speech to text and text to speech (Cloud Speech-to-Text and Text-to-Speech), used for both on the demo | Cloud terms | **Record the data processing terms; confirm no retention or training** |
 | Google Cloud | One VM in Mumbai (asia-south1, trial credit) running the API, worker, Postgres with pgvector and Redis | Standard terms | **File the DPA** |
 | Vercel | Dashboard hosting | Standard terms | The dashboard reads aggregates only |
 | Sentry | Scrubbed error events | Standard terms | Off unless `SENTRY_DSN` is set |
@@ -153,8 +152,8 @@ The grievance contact is printed in the consent note and on the privacy page.
 
 These are what would change the risk ratings above. Each needs an owner and a date.
 
-1. Obtain Sarvam's written confirmation of no retention and no training.
-2. Record Google Cloud's data processing terms (accepted in the console).
+1. Record Google Cloud's data processing terms (accepted in the console) for the VM and for speech, and confirm speech inputs are not retained or used for training.
+2. Have the changed consent note (v3, opt-in recordings) reviewed by the content owner.
 3. Script the `FIELD_KEY` and `PHONE_PEPPER` re-key and test it on a copy of the database.
 4. Fill in the grievance contact and the Board reporting channel ([incident response](incident-response.md)).
 5. Have counsel read this page, the consent note and the incident process.
