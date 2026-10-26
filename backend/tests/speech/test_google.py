@@ -79,7 +79,7 @@ async def test_transcribe_retries_then_fails_without_leaking_the_key(http) -> No
 
 
 @respx.mock
-async def test_synthesize_maps_voice_to_gender_pace_and_returns_wav(http) -> None:
+async def test_synthesize_maps_voice_to_neural2_name_pace_and_returns_wav(http) -> None:
     route = respx.post(TTS_URL).respond(json={"audioContent": base64.b64encode(b"RIFF-g").decode()})
     tts = GoogleTTS(http, api_key=KEY, url=TTS_URL, retry_delay_s=0)
 
@@ -89,7 +89,7 @@ async def test_synthesize_maps_voice_to_gender_pace_and_returns_wav(http) -> Non
     assert request.headers["x-goog-api-key"] == KEY
     assert json.loads(request.content) == {
         "input": {"text": "नमस्ते"},
-        "voice": {"languageCode": "hi-IN", "ssmlGender": "MALE"},
+        "voice": {"languageCode": "hi-IN", "name": "hi-IN-Neural2-B", "ssmlGender": "MALE"},
         "audioConfig": {
             "audioEncoding": "LINEAR16",
             "speakingRate": 0.9,
@@ -97,6 +97,40 @@ async def test_synthesize_maps_voice_to_gender_pace_and_returns_wav(http) -> Non
         },
     }
     assert audio == b"RIFF-g"
+
+
+@respx.mock
+@pytest.mark.parametrize(
+    ("lang", "speaker", "name"),
+    [
+        ("hi", "female", "hi-IN-Neural2-A"),
+        ("en", "female", "en-IN-Neural2-A"),
+        ("en", "male", "en-IN-Neural2-B"),
+    ],
+)
+async def test_synthesize_picks_the_neural2_voice_for_each_language_and_gender(
+    http, lang: str, speaker: str, name: str
+) -> None:
+    route = respx.post(TTS_URL).respond(json={"audioContent": base64.b64encode(b"RIFF-g").decode()})
+    tts = GoogleTTS(http, api_key=KEY, url=TTS_URL, retry_delay_s=0)
+
+    await tts.synthesize("hello", lang, Voice(speaker=speaker, pace=1.0))
+
+    assert json.loads(route.calls.last.request.content)["voice"]["name"] == name
+
+
+@respx.mock
+async def test_synthesize_falls_back_to_the_female_voice_for_an_unknown_speaker(http) -> None:
+    route = respx.post(TTS_URL).respond(json={"audioContent": base64.b64encode(b"RIFF-g").decode()})
+    tts = GoogleTTS(http, api_key=KEY, url=TTS_URL, retry_delay_s=0)
+
+    await tts.synthesize("नमस्ते", "hi", Voice(speaker="priya", pace=1.0))
+
+    assert json.loads(route.calls.last.request.content)["voice"] == {
+        "languageCode": "hi-IN",
+        "name": "hi-IN-Neural2-A",
+        "ssmlGender": "FEMALE",
+    }
 
 
 @respx.mock

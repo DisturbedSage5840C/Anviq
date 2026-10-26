@@ -1,4 +1,4 @@
-"""Google Cloud Speech adapters, used as the benchmark baseline and the STT/TTS fallback.
+"""Google Cloud Speech adapters: the speech provider for the demo (STT and Neural2 TTS).
 
 Plain REST with an API key header, so no Google client library or service-account file is
 needed. Select with STT_PROVIDER=google / TTS_PROVIDER=google.
@@ -16,6 +16,15 @@ STT_URL = "https://speech.googleapis.com/v1/speech:recognize"
 TTS_URL = "https://texttospeech.googleapis.com/v1/text:synthesize"
 LANGUAGE_CODES = {"hi": "hi-IN", "en": "en-IN"}
 GENDERS = {"female": "FEMALE", "male": "MALE"}
+DEFAULT_SPEAKER = "female"
+# Neural2 voices sound far less robotic than the Standard voice Google picks from a gender alone,
+# and cost the same per character as Wavenet. Genders checked against the voices list API.
+NEURAL2_VOICES = {
+    ("hi", "female"): "hi-IN-Neural2-A",
+    ("hi", "male"): "hi-IN-Neural2-B",
+    ("en", "female"): "en-IN-Neural2-A",
+    ("en", "male"): "en-IN-Neural2-B",
+}
 TTS_SAMPLE_RATE = 24000
 
 
@@ -86,6 +95,19 @@ def _best_alternative(body: dict[str, object]) -> tuple[str, float]:
     return text.strip(), float(confidence) if isinstance(confidence, int | float) else 0.0
 
 
+def _voice_params(lang: str, speaker: str) -> dict[str, str]:
+    """The `voice` block: a named Neural2 voice, with the gender Google expects alongside it.
+
+    A speaker that is not a gender (a Sarvam name left over in config) falls back to female.
+    """
+    gender = speaker if speaker in GENDERS else DEFAULT_SPEAKER
+    return {
+        "languageCode": _language_code(lang),
+        "name": NEURAL2_VOICES[(lang, gender)],
+        "ssmlGender": GENDERS[gender],
+    }
+
+
 class GoogleTTS:
     def __init__(
         self,
@@ -103,10 +125,7 @@ class GoogleTTS:
             self._url,
             json={
                 "input": {"text": text},
-                "voice": {
-                    "languageCode": _language_code(lang),
-                    "ssmlGender": GENDERS.get(voice.speaker, "FEMALE"),
-                },
+                "voice": _voice_params(lang, voice.speaker),
                 "audioConfig": {
                     "audioEncoding": "LINEAR16",
                     "speakingRate": voice.pace,
