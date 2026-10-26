@@ -6,6 +6,7 @@ import pytest
 from app.core.ask.answer import AskReply
 from app.core.ask.chunking import SourceDoc
 from app.core.ask.ingest import looks_broken, pages_in_range, read_manifest
+from app.core.children.personas import AMAN, MEENA, PERSONAS, RIYA
 from app.core.children.registry import ALL_RULES
 from app.evaluation import character, coach_kappa
 from app.evaluation.citations import course_of, label_matches, question_details, score
@@ -42,6 +43,39 @@ def test_full_character_run_is_3600_turns_across_every_rule_and_style():
     assert {c.rule_id for c in cases} == {r.id for r in ALL_RULES}
     assert {c.style for c in cases} == {s[0] for s in character.STYLES}
     assert {c.lang for c in cases} == {"hi", "en"}
+
+
+def test_cases_default_to_riya():
+    assert {c.brief.persona for c in character.cases(ALL_RULES, 1, 1)} == {RIYA}
+
+
+@pytest.mark.parametrize("persona", [AMAN, MEENA])
+def test_cases_put_every_turn_to_the_chosen_child_and_address_it_by_name(persona):
+    cases = character.cases(ALL_RULES, 1, 1, persona)
+
+    assert {c.brief.persona for c in cases} == {persona}
+    assert all(RIYA.name not in c.brief.teacher_text for c in cases)
+    assert all(RIYA.name_hi not in c.brief.teacher_text for c in cases)
+    addressed = [c for c in cases if c.style in {"neutral", "how", "leading"}]
+    assert all(
+        (persona.name_hi if c.lang == "hi" else persona.name) in c.brief.teacher_text
+        for c in addressed
+    )
+
+
+@pytest.mark.parametrize("persona", PERSONAS)
+async def test_the_offline_harness_passes_for_every_persona(persona):
+    report = await character.run(
+        character.ScriptedChild(), character.cases(ALL_RULES, 1, 1, persona), 4
+    )
+
+    assert report["pass"] is True
+
+
+def test_the_persona_option_accepts_the_three_children_and_nothing_else():
+    assert character.persona_arg("meena") is MEENA
+    with pytest.raises(Exception):  # noqa: B017 - argparse raises ArgumentTypeError
+        character.persona_arg("nobody")
 
 
 async def test_character_harness_offline_passes_and_reports_per_rule():
@@ -139,6 +173,25 @@ def test_report_labels_offline_runs_as_harness_checks(tmp_path: Path):
     )  # fmt: skip
     text = render(tmp_path)
     assert "harness check only" in text and "| X | 100.0% |" in text
+
+
+def test_report_gives_each_extra_child_its_own_row_and_says_not_run_when_missing(tmp_path: Path):
+    (tmp_path / "character_aman.json").write_text(
+        json.dumps(
+            {"turns": 720, "raw_rate": 0.97, "pass": True, "persona": "aman",
+             "by_malrule": {"X": 0.97}, "by_style": {"s": 0.97}}
+        ),
+        encoding="utf-8",
+    )  # fmt: skip
+
+    text = render(tmp_path)
+
+    assert "| AI child keeps misconception (Aman) |" in text
+    assert "97.0% raw over 720 turns | PASS |" in text
+    assert (
+        "| AI child keeps misconception (Meena) | >=95% overall, >=90% per malrule | n/a raw over 0 turns | not run |"
+        in text
+    )
 
 
 def test_report_judges_citations_and_refusals_on_their_own_rates(tmp_path: Path):

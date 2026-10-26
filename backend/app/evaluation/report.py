@@ -14,6 +14,9 @@ from typing import Any
 
 from app.evaluation.citations import CITATION_TARGET, FALSE_REFUSAL_LIMIT, REFUSAL_TARGET
 
+# Riya's run is character.json; the other two children each have character_<name>.json.
+EXTRA_CHILDREN = ("Aman", "Meena")
+
 
 def _load(results: Path, name: str) -> dict[str, Any] | None:
     path = results / f"{name}.json"
@@ -119,6 +122,13 @@ def render(results: Path) -> str:
         f"{_pct(character['raw_rate']) if character else 'n/a'} raw over "
         f"{character['turns'] if character else 0} turns | {_verdict(character)} |"
     )
+    for name in EXTRA_CHILDREN:
+        extra = _load(results, f"character_{name.lower()}")
+        lines.append(
+            f"| AI child keeps misconception ({name}) | >=95% overall, >=90% per malrule | "
+            f"{_pct(extra['raw_rate']) if extra else 'n/a'} raw over "
+            f"{extra['turns'] if extra else 0} turns | {_verdict(extra)} |"
+        )
     lines.append(
         f"| Coach agrees with experts | mean kappa >=0.6, none <0.5 | "
         f"{coach['mean_kappa'] if coach else 'n/a'} ({coach['source'] if coach else ''}) | "
