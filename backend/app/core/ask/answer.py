@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 from app.content.copy import render
 from app.core.ask.retrieve import Passage, Queries, Retrieval
+from app.core.ask.text_clean import clean_text
 from app.guardrails.checks import valid_citations, wrap_teacher_text
 from app.guardrails.pii import scrub
 from app.llm.client import LLMError, SystemBlock, dumps_compact
@@ -85,7 +86,7 @@ def _documents(passages: Sequence[Passage]) -> list[dict[str, Any]]:
     return [
         {
             "type": "document",
-            "source": {"type": "text", "media_type": "text/plain", "data": p.text},
+            "source": {"type": "text", "media_type": "text/plain", "data": clean_text(p.text)},
             "title": p.label,
             "citations": {"enabled": True},
         }

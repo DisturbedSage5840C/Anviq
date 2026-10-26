@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.config import get_settings
 from app.core.ask.chunking import Chunk, SourceDoc, chunk_document
+from app.core.ask.text_clean import clean_text
 from app.db.corpus import store_chunks
 
 logger = logging.getLogger(__name__)
@@ -78,7 +79,7 @@ def looks_broken(text: str, lang: str) -> bool:
 
 
 def chunks_for(path: Path, doc: SourceDoc) -> list[Chunk]:
-    pages = pages_in_range(list(pdf_pages(path)), doc)
+    pages = [(n, clean_text(t)) for n, t in pages_in_range(list(pdf_pages(path)), doc)]
     broken = [n for n, t in pages if looks_broken(t, doc.lang)]
     if broken:
         logger.warning("%s: %d pages look scanned or mis-encoded; OCR them", path.name, len(broken))
