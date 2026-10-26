@@ -57,6 +57,8 @@ MAX_TRIES = 2
 JOB_TIMEOUT_S = 60
 REMINDER_JOB_TIMEOUT_S = 300  # a claimed batch of sends, not a single inbound message
 META_CREDENTIALS = "WA_PHONE_NUMBER_ID and WA_ACCESS_TOKEN"
+# Channels with no approved reminder template: the Twilio sandbox and a plain WhatsApp account.
+TEMPLATELESS_PROVIDERS = frozenset({"twilio", "evolution"})
 
 
 def build_pipeline(resources: Resources, settings: Settings, *, brain: Brain) -> InboundPipeline:
@@ -147,14 +149,13 @@ async def send_daily_reminders(ctx: dict[str, Any]) -> None:
     """
     resources: Resources = ctx["resources"]
     settings: Settings | None = ctx.get("settings")
-    if settings is not None and settings.whatsapp_provider == "twilio":
-        # Reminders are template messages and the sandbox only allows free-form replies inside
-        # 24 hours. Skip before claiming, so no teacher is stamped as reminded without a send.
-        logger.info("daily reminders skipped: the Twilio sandbox cannot send templates")
-        return
-    if settings is not None and settings.whatsapp_provider == "evolution":
-        # Evolution drives a plain WhatsApp account, which has no approved templates to send.
-        logger.info("daily reminders skipped: the Evolution channel cannot send templates")
+    if settings is not None and settings.whatsapp_provider in TEMPLATELESS_PROVIDERS:
+        # Reminders are template messages. Skip before claiming, so no teacher is stamped as
+        # reminded without a send.
+        logger.info(
+            "daily reminders skipped: the %s channel (sandbox or plain account) has no templates",
+            settings.whatsapp_provider,
+        )
         return
     whatsapp = resources.whatsapp
     if whatsapp is None:
