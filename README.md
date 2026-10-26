@@ -92,6 +92,9 @@ Known limits:
 - Ask Anviq answers only from the ingested NIPUN Bharat and NISHTHA FLN text. Some natural
   questions (for example "ELPS approach" or "place value with bundles") are refused because that
   text has no passage on them.
+- The demo speaks and listens through Google speech (paid from a trial credit, no cash). The voices
+  are clear but plainer than some other providers, and English transcription was less accurate than
+  Hindi in a small check.
 - The Hindi NISHTHA PDF was extracted with doubled vowel signs; search collapses them, but some
   passages stay garbled.
 - The Day-1 / Day-14 mirror needs both practices recorded; the opt-in encrypted mirror clips are not built.

@@ -64,8 +64,8 @@ Fill in `infra/demo.env`:
 - `SITE_ADDRESS`: the `sslip.io` name from step 2.
 - `ANTHROPIC_API_KEY`, `GOOGLE_SPEECH_API_KEY`: your keys.
 - `STT_PROVIDER`, `TTS_PROVIDER`: both `google` in the template. Use one provider everywhere; the
-  voices are the Google Neural2 ones (`hi-IN-Neural2-A/B`, `en-IN-Neural2-A/B`). Listen to a sample
-  before a demo. `sarvam` still works if you set both back and add `SARVAM_API_KEY`, but its starter
+  voices are the Google Neural2 ones (`hi-IN-Neural2-A/B`, `en-IN-Neural2-A/B`). They were listened
+  to and accepted for the demo; they sound plainer than Sarvam or ElevenLabs. `sarvam` still works if you set both back and add `SARVAM_API_KEY`, but its starter
   credits are small.
 - `WA_VERIFY_TOKEN`: any string you invent. `WA_APP_SECRET`: the Meta app secret, or any placeholder until the Meta app exists.
 - `WEB_ALLOWED_ORIGINS`: leave empty. Caddy serves the web room at `/room/` on the same origin as the API, so no CORS entry is needed; set it only if you host the room somewhere else.
