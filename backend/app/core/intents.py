@@ -11,6 +11,9 @@ from enum import StrEnum
 # Devanagari block minus the danda (U+0964) and double danda (U+0965), which are punctuation.
 _TOKEN = re.compile(r"[\w\u0900-\u0963\u0966-\u097F]+")
 SHORT_UTTERANCE_MAX_TOKENS = 3
+# Saving recordings needs a clear yes, so the opt-in must be a short message, not a phrase buried
+# in a longer sentence.
+CLIPS_OPT_IN_MAX_TOKENS = 8
 QUESTION_MIN_TOKENS = 3
 
 
@@ -89,6 +92,11 @@ _CLIPS_ON = _phrases(
     "रिकॉर्डिंग सेव करो",
     "रिकॉर्डिंग रखो",
 )
+# Any of these next to a mention of recordings means "no", whatever else the sentence says:
+# "don't save my recordings" must never read as an opt-in. "don" and "t" are what the tokeniser
+# leaves of "don't"; "t" only ever comes from a contraction.
+_NEGATIONS = frozenset({"not", "no", "never", "don", "dont", "t", "without", "मत", "नहीं", "नही"})
+_CLIP_SUBJECTS = frozenset({"recording", "recordings", "clip", "clips", "रिकॉर्डिंग"})
 _PRIVACY = _phrases("कौन देखता है", "कौन देखती है", "who sees", "privacy", "प्राइवेसी")
 # "stop" and "help" are everyday words in a classroom, so they only count as commands when the
 # whole utterance is short.
@@ -100,6 +108,11 @@ def _matches_any(tokens: tuple[str, ...], phrases: tuple[tuple[str, ...], ...]) 
     return any(_contains_phrase(tokens, phrase) for phrase in phrases)
 
 
+def _negates_clips(tokens: tuple[str, ...]) -> bool:
+    """A negation word in a sentence about recordings: when unsure, nothing is kept."""
+    return not _NEGATIONS.isdisjoint(tokens) and not _CLIP_SUBJECTS.isdisjoint(tokens)
+
+
 def classify_global(text: str) -> GlobalIntent | None:
     """Intents that apply in any state, checked before anything else. Delete outranks the rest."""
     tokens = _tokens(text)
@@ -109,9 +122,9 @@ def classify_global(text: str) -> GlobalIntent | None:
         return GlobalIntent.WITHDRAW_CONSENT
     if _matches_any(tokens, _EXPORT):
         return GlobalIntent.EXPORT
-    if _matches_any(tokens, _CLIPS_OFF):
+    if _matches_any(tokens, _CLIPS_OFF) or _negates_clips(tokens):
         return GlobalIntent.CLIPS_OFF
-    if _matches_any(tokens, _CLIPS_ON):
+    if len(tokens) <= CLIPS_OPT_IN_MAX_TOKENS and _matches_any(tokens, _CLIPS_ON):
         return GlobalIntent.CLIPS_ON
     if _matches_any(tokens, _PRIVACY):
         return GlobalIntent.PRIVACY

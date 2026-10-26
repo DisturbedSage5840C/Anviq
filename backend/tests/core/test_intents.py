@@ -178,6 +178,38 @@ def test_clip_opt_out_phrases_are_recognised(text: str):
     assert classify_global(text) is GlobalIntent.CLIPS_OFF
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "don't save my recordings",
+        "do not save my recordings",
+        "dont save my recordings",
+        "please don\u2019t save my recordings",
+        "never save my recordings",
+        "no, do not keep my practice recordings",
+        "i do not want you to save my recordings",
+        "रिकॉर्डिंग सेव मत करो",
+        "रिकॉर्डिंग सेव नहीं करो",
+        "रिकॉर्डिंग सेव मत करो रिकॉर्डिंग रखो",
+    ],
+)
+def test_a_negated_clip_request_never_opts_in_and_is_treated_as_opting_out(text: str):
+    assert classify_global(text) is GlobalIntent.CLIPS_OFF
+
+
+def test_a_polite_hindi_particle_is_not_read_as_a_refusal():
+    assert classify_global("रिकॉर्डिंग रखो ना") is GlobalIntent.CLIPS_ON
+
+
+def test_a_long_message_that_happens_to_contain_the_opt_in_phrase_does_not_opt_in():
+    text = (
+        "my principal asked whether you would save my recordings but I am not "
+        "sure the school agrees so we will talk first"
+    )
+
+    assert classify_global(text) is not GlobalIntent.CLIPS_ON
+
+
 def test_deleting_all_data_outranks_a_clip_request():
     assert classify_global("delete my data and my recordings") is GlobalIntent.DELETE
 
