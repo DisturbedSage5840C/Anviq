@@ -67,7 +67,7 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 | Out-of-scope refused | 40 of 40 | **Pass.** |
 | False refusals ≤5% | 0% (latest run; 22% before the fixes) | **Met.** Fixes: NCERT Teachers' Handbook (Classes 1-2) added to the corpus, 10 passages searched instead of 6, a larger answer limit with one retry, and a prompt that answers from the closest passages. Trade-off: the 9 of 100 questions the books do not cover are now answered, not refused. See `eval/NOTES.md`. |
 | Cost ≤US$0.12 per teacher-day | Roughly US$0.13 to 0.15 on Google speech, estimated from list prices: model US$0.068, voice about US$0.048 (Neural2, about US$16 per million characters), transcription about US$0.01 to 0.03, replaying an assumed day (5 rehearsal turns, 1 plan, 1 reflect, 1 in-scope question). The stored figure US$0.22 is inflated by test traffic. A later change makes the coach answer in one language, which should save about US$0.01 but is not measured | **Not shown to be met.** It sits just above the target, is a list-price estimate, and depends on the assumed day. Deck's US$0.05 is unsupported. The Google Neural2 voices work end to end on the VM (Hindi and English, speech-to-text and text-to-speech). The team lead listened to the samples on 26 Oct 2026 and accepted them for the demo, while noting they sound plainer than Sarvam or ElevenLabs. English transcription was weaker than Hindi in a small probe (confidence about 0.55, against 0.92 for Hindi). |
-| Latency p50 ≤10 s, p95 ≤20 s | Model latency only (1.5–3.8 s median). End-to-end not measured. | **Unknown.** |
+| Latency p50 ≤10 s, p95 ≤20 s | Measured end to end on 2026-10-27 through the web room (speech-to-text, brain, text-to-speech, response over HTTPS), 45 turns: p50 5.7 s, p95 10.0 s, max 10.2 s. Text p50 5.1 s, voice p50 7.6 s. Run from the demo VM, not a phone on a mobile network; WhatsApp delivery is not included; small sample (`eval/results/latency_e2e.json`). | **Met on this probe.** Do not claim it for phones on slow networks until a device test is done. |
 | ≥60% of pilot teachers complete 5+ sessions | No pilot | **Unproven.** Remove it or label it a goal. |
 | Trust (≥80% not watched) | No survey | **Unproven.** |
 
@@ -95,7 +95,7 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 
 **You (only you can do these):**
 
-0. **Ask the organisers for the exact Anthropic credit balance, and why Sonnet 5.5 was suspended for the organisation until 26 Oct 2026, 09:41 UTC.**
+0. **Ask the organisers for the exact Anthropic credit balance.** (Sonnet 5.5 and Haiku 5.5 both answered HTTP 200 on 2026-10-27, so the earlier organisation-level suspension is over; asking why it happened is optional.)
 1. Record the demo video (3–4 min) and a backup screen recording. The Google Neural2 voices are already accepted for the demo; speak English slowly and clearly on camera, because English transcription is the weaker side.
 2. Update the deck using the corrections table. Do not claim the unmet targets.
 3. Fill in the submission form. Draft text is available on request.

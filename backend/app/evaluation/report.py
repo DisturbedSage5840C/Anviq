@@ -77,11 +77,35 @@ def _refusal_cell(cites: Mapping[str, Any] | None) -> str:
     )
 
 
+def _seconds(ms: float) -> str:
+    return f"{ms / 1000:.1f} s"
+
+
+def _e2e_cell(latency: Mapping[str, Any] | None) -> str:
+    """Median and p95 over every probe turn, with the sample size beside them."""
+    if latency is None:
+        return "n/a"
+    turns = latency["all"]
+    return (
+        f"p50 {_seconds(turns['p50_ms'])}, p95 {_seconds(turns['p95_ms'])} over {turns['n']} turns"
+    )
+
+
+def _e2e_verdict(latency: Mapping[str, Any] | None) -> str:
+    """Passes only when both the median and the p95 are inside the target."""
+    if latency is None:
+        return "not run"
+    turns, target = latency["all"], latency["target"]
+    met = turns["p50_ms"] <= target["p50_ms"] and turns["p95_ms"] <= target["p95_ms"]
+    return "PASS" if met else "below target"
+
+
 def render(results: Path) -> str:
     character = _load(results, "character")
     coach = _load(results, "coach_kappa")
     cites = _load(results, "citations")
     cost = _load(results, "latency_cost")
+    latency = _load(results, "latency_e2e")
     lines = [
         "# Anviq evaluation report",
         "",
@@ -112,6 +136,10 @@ def render(results: Path) -> str:
         f"| Cost per teacher-day | <= $0.12 | {'n/a' if per_day is None else f'${per_day:.3f}'} | "
         f"{_verdict(cost, 'cost_pass')} |"
     )
+    lines.append(
+        f"| End-to-end latency (web room) | p50 <= 10 s, p95 <= 20 s | {_e2e_cell(latency)} | "
+        f"{_e2e_verdict(latency)} |"
+    )
     if character:
         lines += [
             "",
@@ -126,6 +154,25 @@ def render(results: Path) -> str:
     if coach:
         lines += ["", "## Coach kappa by criterion", "", "| Move:criterion | kappa |", "|---|---|"]
         lines += [f"| {k} | {v} |" for k, v in coach["kappa_by_criterion"].items()]
+    if latency:
+        lines += [
+            "",
+            "## End-to-end latency",
+            "",
+            "| Turns | n | p50 | p95 | max |",
+            "|---|---|---|---|---|",
+        ]
+        for name in ("all", "text", "voice", "model_turns_only"):
+            if name not in latency:
+                continue
+            row = latency[name]
+            lines.append(
+                f"| {name.replace('_', ' ')} | {row['n']} | {_seconds(row['p50_ms'])} | "
+                f"{_seconds(row['p95_ms'])} | {_seconds(row['max_ms'])} |"
+            )
+        if "method" in latency:
+            lines += ["", f"Method: {latency['method']}", ""]
+        lines += [f"- {caveat}" for caveat in latency.get("caveats", [])]
     if cost:
         lines += [
             "",

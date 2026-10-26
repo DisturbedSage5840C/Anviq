@@ -1,0 +1,38 @@
+{
+ "all": {
+  "n": 45,
+  "p50_ms": 5738,
+  "p95_ms": 9965,
+  "max_ms": 10190
+ },
+ "text": {
+  "n": 33,
+  "p50_ms": 5078,
+  "p95_ms": 10094,
+  "max_ms": 10190
+ },
+ "voice": {
+  "n": 12,
+  "p50_ms": 7590,
+  "p95_ms": 9965,
+  "max_ms": 9965
+ },
+ "model_turns_only": {
+  "n": 36,
+  "p50_ms": 6780,
+  "p95_ms": 10094,
+  "max_ms": 10190
+ },
+ "canned_replies": 9,
+ "target": {
+  "p50_ms": 10000,
+  "p95_ms": 20000
+ },
+ "method": "POST /web/turn over public HTTPS from the demo VM, 3 runs of 15 turns: 11 text (chat, Ask, plan, rehearse, menu) and 4 voice (Google-TTS WAV, so speech-to-text runs). Time runs from request sent to full response received, including speech-to-text, the brain and text-to-speech.",
+ "caveats": [
+  "Web room path measured from the VM, not a phone on a mobile network",
+  "WhatsApp delivery time excluded",
+  "45 turns: small sample, p95 is the 3rd-slowest turn",
+  "Includes 9 instant canned replies under 1.1 s"
+ ]
+}

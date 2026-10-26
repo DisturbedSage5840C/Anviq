@@ -156,7 +156,7 @@ screen recording of a full conversation and the browser web room as fallbacks.
   valid until **20 November 2026**, two days after the Grand Finale, and are not refunded. Keep enough
   for evaluators and the demo, and keep the key on the server only. The organisers are told at 80%
   usage.
-- A model can be suspended for the organisation for a while (the API answers 403 `permission_error`,
+- Sonnet 5.5 was suspended for the organisation until 26 Oct 2026, 09:41 UTC; a probe on 2026-10-27 showed it and Haiku 5.5 working again. A model can be suspended for the organisation for a while (the API answers 403 `permission_error`,
   "model suspended until <time>"). Turns that need that model fail until the time passes. If it
   happens near a demo, ask the organisers, and as a stopgap point `MODEL_SMART` at another model
   in `infra/demo.env` and rerun `up -d api worker`.

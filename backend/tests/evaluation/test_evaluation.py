@@ -247,6 +247,31 @@ def test_report_names_how_many_questions_the_books_cannot_answer(tmp_path: Path)
     assert "9 questions the books do not answer" in text and "50.0%" in text
 
 
+def test_report_shows_end_to_end_latency_with_its_sample_size(tmp_path: Path):
+    results = {
+        "all": {"n": 45, "p50_ms": 5738, "p95_ms": 9965, "max_ms": 10190},
+        "target": {"p50_ms": 10000, "p95_ms": 20000},
+    }
+    (tmp_path / "latency_e2e.json").write_text(json.dumps(results), encoding="utf-8")
+    rows = {
+        line.split("|")[1].strip(): line
+        for line in render(tmp_path).splitlines()
+        if line.startswith("|")
+    }
+    row = rows["End-to-end latency (web room)"]
+    assert "p50 5.7 s" in row and "p95 10.0 s" in row and "45 turns" in row
+    assert row.rstrip().endswith("PASS |")
+
+
+def test_report_fails_end_to_end_latency_when_either_percentile_misses(tmp_path: Path):
+    results = {
+        "all": {"n": 10, "p50_ms": 11000, "p95_ms": 15000, "max_ms": 16000},
+        "target": {"p50_ms": 10000, "p95_ms": 20000},
+    }
+    (tmp_path / "latency_e2e.json").write_text(json.dumps(results), encoding="utf-8")
+    assert "below target" in render(tmp_path)
+
+
 def test_a_hindi_page_without_devanagari_is_flagged_for_ocr():
     assert looks_broken("abcdefghij " * 10, "hi")
     assert not looks_broken("बच्चों को बंडल से गिनती सिखाएँ " * 5, "hi")

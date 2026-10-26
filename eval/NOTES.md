@@ -64,4 +64,4 @@
 
 ## Latency
 
-Model latency per purpose is in `report.md` (median: child 1.5 s, Ask answer 1.8 s, plan 2.7 s, coach 3.8 s). End-to-end turn latency, including speech and WhatsApp, has not been measured.
+Model latency per purpose is in `report.md` (median: child 1.5 s, Ask answer 1.8 s, plan 2.7 s, coach 3.8 s). End-to-end turn latency through the web room (speech, brain, response over HTTPS, from the demo VM) was measured on 2026-10-27 over 45 turns: p50 5.7 s, p95 10.0 s, max 10.2 s (text p50 5.1 s, voice p50 7.6 s). Details and caveats are in `report.md` and `results/latency_e2e.json`. It is not measured on a phone over a mobile network, WhatsApp delivery is not included, and the sample is small, so treat it as a smoke-level figure, not a field result.
