@@ -53,6 +53,25 @@ def test_sarvam_costs_follow_the_published_rates() -> None:
     assert tts_cost_inr("sarvam", 10_000) == Decimal("30.0000")
 
 
+def test_bulbul_v4_flash_costs_a_third_of_bulbul_v3_per_character() -> None:
+    assert tts_cost_inr("sarvam", 10_000, model="bulbul:v4-flash") == Decimal("10.0000")
+    assert tts_cost_inr("sarvam", 10_000, model="bulbul:v3") == Decimal("30.0000")
+
+
+def test_a_model_without_its_own_rate_is_costed_at_the_providers_default() -> None:
+    assert tts_cost_inr("sarvam", 10_000, model="bulbul:v9") == tts_cost_inr("sarvam", 10_000)
+    assert tts_cost_inr("google", 1000, model="bulbul:v4-flash") == Decimal("1.3440")
+
+
+async def test_a_synthesis_is_priced_at_the_model_it_was_spoken_by() -> None:
+    sink = Sink()
+    tts = MeteredTTS(FakeTTS(), sink, provider="sarvam", model="bulbul:v4-flash")
+
+    await tts.synthesize("a" * 1000, "en", VOICE)
+
+    assert sink.rows[0].est_cost_inr == Decimal("1.0000")
+
+
 def test_an_unknown_provider_is_costed_at_zero_rather_than_guessed() -> None:
     assert stt_cost_inr("other", Decimal(60)) == Decimal(0)
     assert tts_cost_inr("other", 100) == Decimal(0)

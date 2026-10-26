@@ -18,7 +18,9 @@ def build_speech(
         if stt is not None:
             stt = MeteredSTT(stt, sink, provider=settings.stt_provider)
         if tts is not None:
-            tts = MeteredTTS(tts, sink, provider=settings.tts_provider)
+            # Only Sarvam has per-model rates; Google is priced at its provider default.
+            model = settings.sarvam_tts_model if settings.tts_provider == "sarvam" else None
+            tts = MeteredTTS(tts, sink, provider=settings.tts_provider, model=model)
     return stt, tts
 
 

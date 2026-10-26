@@ -4,6 +4,7 @@ import httpx
 import pytest
 
 from app.config import Settings
+from app.speech.base import Voice
 from app.speech.factory import build_speech
 from app.speech.google import GoogleSTT, GoogleTTS
 from app.speech.metering import MeteredSTT, MeteredTTS, SpeechUsage
@@ -33,6 +34,29 @@ def test_a_usage_sink_wraps_the_providers_so_their_spend_is_recorded(http) -> No
 
     stt, tts = build_speech(Settings(**BASE, sarvam_api_key="k"), http, Sink())
     assert isinstance(stt, MeteredSTT) and isinstance(tts, MeteredTTS)
+
+
+@pytest.mark.parametrize(
+    ("model", "expected_inr"), [("bulbul:v3", "3.0000"), ("bulbul:v4-flash", "1.0000")]
+)
+async def test_spend_is_priced_at_the_configured_sarvam_voice_model(
+    model: str, expected_inr: str
+) -> None:
+    rows: list[SpeechUsage] = []
+
+    class Sink:
+        async def record(self, usage: SpeechUsage) -> None:
+            rows.append(usage)
+
+    audio = base64.b64encode(b"wav").decode()
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, json={"audios": [audio]}))
+    async with httpx.AsyncClient(transport=transport) as client:
+        settings = Settings(**BASE, sarvam_api_key="k", sarvam_tts_model=model)
+        _, tts = build_speech(settings, client, Sink())
+        assert tts is not None
+        await tts.synthesize("a" * 1000, "en", Voice("priya"))
+
+    assert [str(r.est_cost_inr) for r in rows] == [expected_inr]
 
 
 def test_no_sink_means_the_bare_providers(http) -> None:

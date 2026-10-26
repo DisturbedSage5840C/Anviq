@@ -14,6 +14,32 @@ LANGUAGE_CODES = {"hi": "hi-IN", "en": "en-IN"}
 TTS_MAX_CHARS = {"bulbul:v2": 1500, "bulbul:v3": 2500, "bulbul:v4-flash": 2500}
 DEFAULT_TTS_MAX_CHARS = 1500
 
+V4_FLASH = "bulbul:v4-flash"
+# Bulbul V4 Flash names its voices <name>_<lang>_<style> and rejects V3's short names, so each
+# persona's V3 speaker maps to one voice per language (kids voices for the children; chosen by
+# name from Sarvam's speaker list, not yet listened to). The coach's voice is also the fallback.
+_V4_SPEAKERS = {
+    ("priya", "hi"): "chhavi_hi_kids",
+    ("priya", "en"): "nupur_en_kids",
+    ("aditya", "hi"): "kunal_hi_kids",
+    ("aditya", "en"): "dev_en_conversational",
+    ("neha", "hi"): "ritu_hi_kids",
+    ("neha", "en"): "ishita_en_stories",
+    ("ritu", "hi"): "ritu_hi_edtech",
+    ("ritu", "en"): "ritu_en_edtech",
+}
+_V4_FALLBACK = {"hi": "ritu_hi_edtech", "en": "ritu_en_edtech"}
+
+
+def _v4_speaker(speaker: str, lang: str) -> str:
+    """A V4 Flash voice for a persona's V3 speaker; a name already in V4 form is kept as is."""
+    mapped = _V4_SPEAKERS.get((speaker, lang))
+    if mapped is not None:
+        return mapped
+    if f"_{lang}_" in speaker:
+        return speaker
+    return _V4_FALLBACK[lang]
+
 
 def _language_code(lang: str) -> str:
     try:
@@ -89,13 +115,15 @@ class SarvamTTS:
         limit = TTS_MAX_CHARS.get(self._model, DEFAULT_TTS_MAX_CHARS)
         if len(text) > limit:
             raise SpeechTextTooLongError(f"Text is {len(text)} chars; {self._model} allows {limit}")
+        language_code = _language_code(lang)  # also rejects an unsupported language
+        speaker = _v4_speaker(voice.speaker, lang) if self._model == V4_FLASH else voice.speaker
         body = await self._client.post(
             f"{self._base_url}/text-to-speech",
             json={
                 "text": text,
-                "language_code": _language_code(lang),
+                "language_code": language_code,
                 "model": self._model,
-                "speaker": voice.speaker,
+                "speaker": speaker,
                 "pace": voice.pace,
                 "speech_sample_rate": self._sample_rate,
                 "output_audio_codec": "wav",

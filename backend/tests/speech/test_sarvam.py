@@ -144,6 +144,83 @@ async def test_synthesize_posts_configured_model_speaker_and_pace(tts) -> None:
     assert audio == wav
 
 
+@pytest.fixture
+def v4_tts(http) -> SarvamTTS:
+    return SarvamTTS(
+        http,
+        api_key=KEY,
+        model="bulbul:v4-flash",
+        sample_rate=24000,
+        base_url=BASE,
+        retry_delay_s=0,
+    )
+
+
+async def _speaker_sent(tts: SarvamTTS, voice: Voice, lang: str) -> str:
+    route = respx.post(f"{BASE}/text-to-speech").respond(
+        json={"audios": [base64.b64encode(b"wav").decode()]}
+    )
+    await tts.synthesize("hello", lang, voice)
+    return json.loads(route.calls.last.request.content)["speaker"]
+
+
+@respx.mock
+@pytest.mark.parametrize(
+    ("v3_speaker", "lang", "expected"),
+    [
+        ("priya", "hi", "chhavi_hi_kids"),
+        ("priya", "en", "nupur_en_kids"),
+        ("aditya", "hi", "kunal_hi_kids"),
+        ("aditya", "en", "dev_en_conversational"),
+        ("neha", "hi", "ritu_hi_kids"),
+        ("neha", "en", "ishita_en_stories"),
+        ("ritu", "hi", "ritu_hi_edtech"),
+        ("ritu", "en", "ritu_en_edtech"),
+    ],
+)
+async def test_v4_flash_speaks_each_persona_in_its_language_suffixed_voice(
+    v4_tts, v3_speaker: str, lang: str, expected: str
+) -> None:
+    assert await _speaker_sent(v4_tts, Voice(v3_speaker, 1.0), lang) == expected
+
+
+@respx.mock
+async def test_v4_flash_keeps_the_personas_pace_and_the_rest_of_the_request(v4_tts) -> None:
+    route = respx.post(f"{BASE}/text-to-speech").respond(
+        json={"audios": [base64.b64encode(b"wav").decode()]}
+    )
+
+    await v4_tts.synthesize("नमस्ते", "hi", Voice("neha", 0.85))
+
+    assert json.loads(route.calls.last.request.content) == {
+        "text": "नमस्ते",
+        "language_code": "hi-IN",
+        "model": "bulbul:v4-flash",
+        "speaker": "ritu_hi_kids",
+        "pace": 0.85,
+        "speech_sample_rate": 24000,
+        "output_audio_codec": "wav",
+    }
+
+
+@respx.mock
+@pytest.mark.parametrize(("lang", "expected"), [("hi", "ritu_hi_edtech"), ("en", "ritu_en_edtech")])
+async def test_v4_flash_falls_back_to_the_coach_voice_for_an_unknown_speaker(
+    v4_tts, lang: str, expected: str
+) -> None:
+    assert await _speaker_sent(v4_tts, Voice("someone-new"), lang) == expected
+
+
+@respx.mock
+async def test_v4_flash_passes_an_already_suffixed_speaker_through(v4_tts) -> None:
+    assert await _speaker_sent(v4_tts, Voice("nupur_en_kids"), "en") == "nupur_en_kids"
+
+
+@respx.mock
+async def test_bulbul_v3_still_sends_the_short_speaker_name(tts) -> None:
+    assert await _speaker_sent(tts, Voice("aditya"), "en") == "aditya"
+
+
 @respx.mock
 async def test_synthesize_rejects_text_over_the_model_limit(http) -> None:
     v2 = SarvamTTS(http, api_key=KEY, model="bulbul:v2", base_url=BASE, retry_delay_s=0)
