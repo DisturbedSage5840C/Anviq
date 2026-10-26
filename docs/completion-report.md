@@ -63,7 +63,7 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 |---|---|---|
 | AI child keeps misconception ≥95% | 98.3% raw, 99.4% after one retry, 720 turns | **Pass.** Riya only. Aman and Meena not run. |
 | Coach κ ≥0.6 | 0.975 on 150 turns | **Pass on paper.** The gold set is Vansh's alone. Not independently adjudicated, so do not quote it to judges until it is. |
-| Citations ≥95% | Exact section 94.5% (86 of 91 answerable questions) in the latest run; 93.8% mean over three runs (93.4 to 94.5%); right course about 98%. Without the 10 alternate labels we added: 89.0% and 86.8% in two runs | **Not met** (best run one question short). The 10 alternate labels were added by us after seeing results and are not reviewed by a second person; scoring counts a question right if any cited source matches any accepted label. Most misses are broad Hindi questions. |
+| Citations ≥95% | Exact section 94.5% (86 of 91 answerable questions) in the latest run; 93.8% mean over three runs (93.4 to 94.5%); right course about 98%. Without the 10 alternate labels we added: 89.0% and 86.8% in two runs | **Not met** (best run one question short). The 10 alternate labels were added by us after seeing results and are not reviewed by a second person; scoring counts a question right if any cited source matches any accepted label. Most misses are broad Hindi questions. We accept this shortfall rather than add more labels after the fact; a review sheet for a second person is in `eval/review/citation_gold_review.md`. |
 | Out-of-scope refused | 40 of 40 | **Pass.** |
 | False refusals ≤5% | 0% (latest run; 22% before the fixes) | **Met.** Fixes: NCERT Teachers' Handbook (Classes 1-2) added to the corpus, 10 passages searched instead of 6, a larger answer limit with one retry, and a prompt that answers from the closest passages. Trade-off: the 9 of 100 questions the books do not cover are now answered, not refused. See `eval/NOTES.md`. |
 | Cost ≤US$0.12 per teacher-day | Roughly US$0.13 to 0.15 on Google speech, estimated from list prices: model US$0.068, voice about US$0.048 (Neural2, about US$16 per million characters), transcription about US$0.01 to 0.03, replaying an assumed day (5 rehearsal turns, 1 plan, 1 reflect, 1 in-scope question). The stored figure US$0.22 is inflated by test traffic. A later change makes the coach answer in one language, which should save about US$0.01 but is not measured | **Not shown to be met.** It sits just above the target, is a list-price estimate, and depends on the assumed day. Deck's US$0.05 is unsupported. The Google Neural2 voices work end to end on the VM (Hindi and English, speech-to-text and text-to-speech). The team lead listened to the samples on 26 Oct 2026 and accepted them for the demo, while noting they sound plainer than Sarvam or ElevenLabs. English transcription was weaker than Hindi in a small probe (confidence about 0.55, against 0.92 for Hindi). |
@@ -106,7 +106,7 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 
 **Team:**
 
-- Vansh: have a second person label the κ gold set. Relabel the citation gold at course level. Review Hindi copy and mirror thresholds.
+- Vansh: have a second person label the κ gold set, and tick through `eval/review/citation_gold_review.md` (the 5 misses and the 10 alternate labels). Relabel the citation gold at course level. Review Hindi copy and mirror thresholds.
 - Aadi: run the character eval for Aman and Meena on the VM.
 - Joepaul: set a GitHub display name (optional).
 
