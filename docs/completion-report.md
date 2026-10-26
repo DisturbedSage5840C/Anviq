@@ -81,20 +81,20 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 - **Log redaction `f6b80e4`:** phone numbers no longer appear in worker job logs. Verified live.
 - **Web room end-to-end flows** checked, with Ask demo questions that work and ones that get refused.
 - **Consent parsing fails closed (27 Oct):** a negated or buried recordings request ("don't save my recordings", a long sentence that happens to contain the phrase) never switches recordings on; the negated form switches them off.
-- **Devanagari cleaning (27 Oct):** doubled vowel signs are collapsed when Hindi text is ingested and again when an answer is built, so teachers see clean Hindi. The stored Hindi passages on the VM were not re-ingested (needs the source PDFs), so retrieval over them is still the older, weaker version.
+- **Devanagari cleaning (27 Oct):** doubled vowel signs are collapsed when Hindi text is ingested and again when an answer is built, so teachers see clean Hindi. The Hindi NISHTHA passages on the VM were re-ingested on 27 Oct from the source PDF with the new cleaner (903 passages, 417 English and 486 Hindi; passages with doubled vowel signs went from 437 to 0; a table backup was taken first). Some Hindi pages still show doubled or missing consonants (for example 'वीडिययो' for 'वीडियो'), because the PDF's font maps those glyphs wrongly and plain text extraction cannot repair it; only OCR would.
 - **Deploy-config tests and a dashboard CI job (27 Oct)**, and a named `TEMPLATELESS_PROVIDERS` set in `worker.py` for channels that cannot send reminders.
 
 ## 6. Honest limits to keep
 
 - No real teacher has used it. No pilot data. No 60% completion figure.
 - Reminders do not send on Evolution or Twilio (no templates).
-- Scanned Hindi pages would need OCR (Tesseract, a download we have not approved). Stored Hindi passages are not re-ingested.
+- Scanned Hindi pages would need OCR (Tesseract, a download we have not approved). Hindi passages were re-ingested on 27 Oct, but the pages with wrongly mapped consonants stay garbled until OCR is done.
 - Mirror clips are captured, encrypted, kept 30 days and deleted on request, but playback on Day 14 is not built. The clip database paths were checked by a standalone smoke script on the VM, not by the pytest suite.
 - The latency figure comes from the VM over HTTPS, not from a phone, on 45 turns; the Anthropic credit balance is unknown.
 - HawkScan has not run (no `HAWK_API_KEY`). The only secret scan is a grep, not gitleaks.
 - Evolution is unofficial. The phone must stay online and charged, and the SIM recharged.
 - Dashboard has no real cohort data.
-- Unknown senders on WhatsApp are not confirmed to be gated. Your own first message got through without a code.
+- WhatsApp is open to any sender by design, so judges can reach the demo number without a code. Limits that apply to every sender: consent comes before coaching, 60 messages per hour per sender (duplicates dropped), and 60 paid model steps per sender per day. There is no allow-list and no global cap, so a flood from many different numbers would not be stopped. The web room is the code-gated route.
 - Accepted risks: webhook-secret replay, Evolution image pinned by tag not digest, GCP trial ends 30 Jan 2027.
 - Credits can run out or be paused: the demo no longer depends on Sarvam (Google speech runs on the trial credit, which ends 2027-01-30), the Anthropic credits expire on 20 Nov 2026 (two days after the Grand Finale), and a model can be suspended for the organisation (Sonnet 5.5 was, briefly). `MODEL_SMART` can be pointed at another model; see `docs/free-demo-deploy.md`.
 
@@ -117,7 +117,7 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 - Aadi: run the character eval for Aman and Meena on the VM.
 - Joepaul: set a GitHub display name (optional).
 
-**Engineering, optional polish:** done on 27 Oct: the `TEMPLATELESS_PROVIDERS` set, Devanagari normalisation, the dashboard CI build, and compose and Caddyfile tests. Still open: OCR for scanned Hindi pages (needs a download and your OK), re-ingesting the Hindi corpus from the source PDFs, mirror-clip playback, and running the clip database tests inside the pytest suite.
+**Engineering, optional polish:** done on 27 Oct: the `TEMPLATELESS_PROVIDERS` set, Devanagari normalisation, the dashboard CI build, and compose and Caddyfile tests. Still open: OCR for scanned Hindi pages (needs a download and your OK), mirror-clip playback, and running the clip database tests inside the pytest suite.
 
 **Housekeeping after the demo:** delete the leftover VM backups, tarballs, probe scripts and stopped eval containers.
 

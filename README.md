@@ -105,8 +105,9 @@ Known limits:
 - The Hindi NISHTHA PDF was extracted with doubled vowel signs and garbled module headings. Search
   collapses the vowel signs, the chunker recognises the headings, and the text is cleaned both when
   it is ingested and when an answer is built, so teachers see clean Hindi. The Hindi passages
-  already stored on the demo VM have not been re-ingested, and scanned pages would need OCR, which
-  is not set up, so some Hindi retrieval is still weaker than English.
+  on the demo VM were re-ingested with the cleaner on 27 Oct, but some pages still have wrongly
+  mapped consonants in the PDF's font and would need OCR, which is not set up, so some Hindi
+  retrieval is still weaker than English.
 - The Day-1 / Day-14 mirror needs both practices recorded. Opt-in encrypted mirror clips are captured, stored (30 days) and deleted on request, but playing them back on Day 14 is not built.
 - The WhatsApp demo number runs on an unofficial gateway (Evolution API) for the demo only. It
   can send no template messages, so daily reminders do not work there, and it carries a ban risk
