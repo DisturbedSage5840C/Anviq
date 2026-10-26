@@ -52,6 +52,17 @@ jobs:
             uv run coverage report --include="app/$package/*" --fail-under=80
           done
 
+  dashboard:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      # Node ships on the runner; building proves the type check and static export still pass.
+      - run: npm ci
+      - run: npm run build
+
   secrets-scan:
     runs-on: ubuntu-latest
     steps:
