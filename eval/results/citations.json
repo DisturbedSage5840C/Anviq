@@ -3,8 +3,8 @@
   "out_of_scope": 40,
   "unavailable": 0,
   "citation_correct_rate": 0.0,
-  "course_citation_correct_rate": 0.5833333333333334,
+  "course_citation_correct_rate": 0.5897435897435898,
   "oos_refusal_rate": 1.0,
-  "false_refusal_rate": 0.28,
+  "false_refusal_rate": 0.22,
   "pass": false
 }

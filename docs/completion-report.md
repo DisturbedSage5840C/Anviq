@@ -63,9 +63,9 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 |---|---|---|
 | AI child keeps misconception ≥95% | 98.3% raw, 99.4% after one retry, 720 turns | **Pass.** Riya only. Aman and Meena not run. |
 | Coach κ ≥0.6 | 0.967 on 150 turns | **Pass on paper.** The gold set is Vansh's alone. Not independently adjudicated, so do not quote it to judges until it is. |
-| Citations ≥95% | 58.3% right course, 0% exact section | **Not met.** Gold labels use Module/§ numbers the books do not use. |
+| Citations ≥95% | 59.0% right course (46 of 78 answered), 0% exact section | **Not met.** Gold labels use Module/§ numbers the books do not use, and many numeracy questions are answered from NIPUN Bharat instead of Course 9. |
 | Out-of-scope refused | 40 of 40 | **Pass.** |
-| False refusals ≤5% | 22–28% | **Not met.** Some gold questions are not answerable from the ingested text. |
+| False refusals ≤5% | 22% (latest run; 22–28% across runs) | **Not met.** Verified cause: the ingested text lacks fine-grained maths pedagogy ("number line" 0 hits, "place value" 1, "bundle" 1), so the model rightly says the passages do not cover it. See `eval/NOTES.md`. |
 | Cost ≤US$0.12 per teacher-day | About US$0.15 re-priced (stored figure US$0.22 is inflated by test traffic) | **Not met.** Deck's US$0.05 is unsupported. |
 | Latency p50 ≤10 s, p95 ≤20 s | Model latency only (1.5–3.8 s median). End-to-end not measured. | **Unknown.** |
 | ≥60% of pilot teachers complete 5+ sessions | No pilot | **Unproven.** Remove it or label it a goal. |

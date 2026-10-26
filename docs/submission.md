@@ -34,7 +34,7 @@ if you have rehearsed two sessions on the same demo account beforehand.
 |---|---|---|
 | Cost about US$0.05 per teacher-day | About US$0.15 per teacher-day, with speech about a third of it; a cheaper voice or a volume plan lowers it | `eval/NOTES.md`, cost section |
 | 95% or more of citations correct | Measured: right course 58%, exact section 0% (gold labels number sections differently from the books). State the target as not yet met | `eval/report.md` |
-| Out-of-scope refused, 5% or fewer false refusals | Out-of-scope refused 40 of 40. In-scope wrongly refused 22 to 28% in two runs. Not met | `eval/report.md` |
+| Out-of-scope refused, 5% or fewer false refusals | Out-of-scope refused 40 of 40. In-scope wrongly refused 22% in the latest run (22 to 28% across runs). Not met | `eval/report.md` |
 | Coach agreement kappa 0.6 or more | 0.967 on our gold set, which our content lead wrote; say "not independently adjudicated" | `eval/datasets/gold_turns.jsonl` |
 | Children keep their misconception 95% or more | 98.3% raw (99.4% after one regeneration) for the Riya persona, 720 turns; Aman and Meena not yet run | `eval/report.md` |
 | 60% of pilot teachers complete 5+ sessions | Remove or label as a pilot goal; no pilot has run | none yet |

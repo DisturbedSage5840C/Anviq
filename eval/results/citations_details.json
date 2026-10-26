@@ -1,0 +1,1250 @@
+[
+  {
+    "question": "कक्षा 2 में हासिल वाला घटाना सिखाते समय बंडल और तीलियों का उपयोग कैसे करें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §3.3.2"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "जब बच्चा 52 में से 17 घटाने पर 45 लिख दे (छोटे में से बड़ा घटाए), तो उसे स्थानीय मान कैसे समझाएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.2"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 8: Learning Assessment"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "दो अंकों की संख्याओं में हासिल वाला जोड़ ठोस वस्तुओं से कैसे सिखाया जाता है?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy",
+      "NIPUN Bharat, §17.6"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "कक्षा 1 के बच्चों को 'आगे गिनकर' (counting on) एक अंक का जोड़ कैसे सिखाएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §17.6",
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "जोड़ और घटाव के बीच का संबंध बच्चों को गतिविधि के माध्यम से कैसे दिखाएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3",
+      "NISHTHA FLN Course 10: School Leadership for Foundational Literacy and Numeracy"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "शून्य के साथ घटाना (जैसे 40 में से 17 घटाना) सिखाते समय बच्चों की सामान्य गलतियाँ कैसे सुधारें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.3"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 1: Introduction to FLN Mission"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "बच्चों को एक संख्या के रूप में शून्य (0) की अवधारणा कैसे समझाएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §17.6"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "कक्षा 1 में 1 से 9 तक की संख्याओं की समझ और एक-से-एक संगति (one-to-one correspondence) कैसे विकसित करें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §3.3.2",
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "स्थानीय मान (इकाई और दहाई) सिखाने के लिए 10 के बंडल बनाने की गतिविधि कैसे कराएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2, §2.2"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 7: Multilingual Education in Primary Grades, §3.4"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "अगर बच्चा 'बावन' को 502 लिखता है, तो उसे दो अंकों की संख्या लिखना कैसे सिखाएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2, §2.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §17.6",
+      "NIPUN Bharat, §10.1.1"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "दो अंकों की संख्याओं की तुलना (जैसे 39 और 41 में कौन बड़ा है) सिखाते समय दहाई के अंक का महत्व कैसे बताएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2, §2.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3",
+      "NIPUN Bharat, §17.6"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "संख्या पट्टी (number line) और स्थानीय मान कार्ड की मदद से संख्याओं की तुलना कैसे कराएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2, §2.3"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "गणित सिखाने में ELPS (अनुभव, भाषा, चित्र, प्रतीक) दृष्टिकोण के चार चरण क्या हैं?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 1, §1.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "प्रारंभिक संख्या बोध (pre-number concepts) जैसे वर्गीकरण, क्रम और पैटर्न क्यों ज़रूरी हैं?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 1, §1.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "सीमा (subitizing) क्या है और बच्चे बिना गिने छोटी संख्याओं को कैसे पहचानते हैं?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 1, §1.3"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "कक्षा 3 में 'से ज़्यादा' और 'से कम' वाले इबारती सवाल (word problems) बच्चों को कैसे समझाएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 4, §4.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "इबारती सवालों में बच्चे सिर्फ़ शब्द देखकर जोड़ या घटाव न करें, इसके लिए सवाल की स्थिति पर चर्चा कैसे करें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 4, §4.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "प्रारंभिक कक्षाओं में गुणा को बार-बार जोड़ने (repeated addition) और समूह बनाने के रूप में कैसे पेश करें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 4, §4.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy",
+      "NIPUN Bharat, §10.1.1"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "भाग को बराबर बाँटने (equal sharing) के रूप में खेल-खेल में कैसे सिखाएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 4, §4.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §3.3.2",
+      "NIPUN Bharat, §17.6"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "गैर-मानक इकाइयों (जैसे बालिश्त, कदम) से लंबाई और भार का मापन कैसे सिखाएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 5, §5.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "आस-पास की वस्तुओं से 2D और 3D आकृतियों की पहचान कैसे कराएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 5, §5.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy",
+      "NIPUN Bharat, §3.3.3"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "निपुण भारत मिशन का मुख्य लक्ष्य और लक्षित कक्षाएँ क्या हैं?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 1: Introduction to FLN Mission, Module 1, §1.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat",
+      "NISHTHA FLN Course 1: Introduction to FLN Mission"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "बुनियादी साक्षरता और संख्या ज्ञान (FLN) बच्चों के आगे के सीखने के लिए क्यों आवश्यक है?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 1: Introduction to FLN Mission, Module 1, §1.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 11: Integration of ICT in Teaching, Learning and Assessment, Module 1",
+      "NISHTHA FLN Course 1: Introduction to FLN Mission"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "दक्षता आधारित शिक्षा (Competency Based Education) रटने वाली प्रणाली से कैसे अलग है?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 2: Shifting Towards Competency Based Education, Module 1, §1.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §4.2",
+      "NIPUN Bharat, §1.1"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "सीखने के प्रतिफल (Learning Outcomes) का उपयोग शिक्षक अपनी दैनिक पाठ योजना में कैसे करें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 2: Shifting Towards Competency Based Education, Module 2, §2.1"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 2: Shifting Towards Competency Based Education"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "प्रारंभिक वर्षों में बच्चे सबसे बेहतर कैसे सीखते हैं और जिज्ञासा की क्या भूमिका है?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 3: Understanding Learners: How Children Learn, Module 1, §1.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 3: Understanding Learners: How Children Learn, Module 2"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "कक्षा में बच्चों की गलतियों को सीखने के अवसर और अंतर्दृष्टि के रूप में कैसे उपयोग करें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 3: Understanding Learners: How Children Learn, Module 2, §2.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 3: Understanding Learners: How Children Learn"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "घर पर बुनियादी साक्षरता और संख्या ज्ञान को बढ़ावा देने के लिए माता-पिता को कौन सी सरल गतिविधियाँ सुझाएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 4: Involvement of Parents and Communities for FLN, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 4: Involvement of Parents and Communities for FLN, §1.1",
+      "NISHTHA FLN Course 4: Involvement of Parents and Communities for FLN, Module 6"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "समुदाय और एसएमसी (SMC) की भागीदारी से बच्चों की उपस्थिति और सीखने में कैसे सुधार करें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 4: Involvement of Parents and Communities for FLN, Module 1, §1.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §9.13",
+      "NISHTHA FLN Course 1: Introduction to FLN Mission"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "'विद्या प्रवेश' कार्यक्रम की अवधि क्या है और यह कक्षा 1 के बच्चों की स्कूल की तैयारी में कैसे मदद करता है?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 5: Understanding Vidya Pravesh and Balvatika, Module 1, §1.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 5: Understanding Vidya Pravesh and Balvatika"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "बालवाटिका में विकासात्मक लक्ष्य 1, 2 और 3 (स्वास्थ्य, संप्रेषण, और परिवेश से जुड़ाव) क्या हैं?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 5: Understanding Vidya Pravesh and Balvatika, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §4.4",
+      "NISHTHA FLN Course 2: Shifting Towards Competency Based Education"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "बुनियादी साक्षरता में मौखिक भाषा विकास (Oral Language Development) पढ़ने और लिखने का आधार कैसे बनता है?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 6: Foundational Language and Literacy, Module 1, §1.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §7.1",
+      "NISHTHA FLN Course 6: Foundational Language and Literacy, Module 1"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "ध्वनि जागरूकता (Phonological Awareness) और अक्षर-ध्वनि संबंध (decoding) सिखाने की गतिविधियाँ क्या हैं?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 6: Foundational Language and Literacy, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 5: Understanding Vidya Pravesh and Balvatika",
+      "NIPUN Bharat, §2.7"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "पढ़ने के चार स्तंभ (साझा पठन, निर्देशित पठन, सस्वर पठन और स्वतंत्र पठन) कक्षा में कैसे लागू करें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 6: Foundational Language and Literacy, Module 3, §3.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 6: Foundational Language and Literacy, Module 06",
+      "NIPUN Bharat, §2.5.1"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "प्राथमिक कक्षाओं में बच्चों की घर की भाषा या मातृभाषा का उपयोग गणित और भाषा सिखाने में कैसे करें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 7: Multilingual Education in Primary Grades, Module 1, §1.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 7: Multilingual Education in Primary Grades, Module 6",
+      "NISHTHA FLN Course 7: Multilingual Education in Primary Grades, Module 4",
+      "NISHTHA FLN Course 9: Foundational Numeracy"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "बहुभाषी कक्षा में भाषा सेतु (language bridging) की रणनीति क्या है?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 7: Multilingual Education in Primary Grades, Module 2, §2.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 7: Multilingual Education in Primary Grades, §3.4"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "सीखने के लिए आकलन (Assessment for Learning) और रूब्रिक/अवलोकन का उपयोग प्राथमिक कक्षा में कैसे करें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 8: Learning Assessment, Module 1, §1.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 5",
+      "NISHTHA FLN Course 8: Learning Assessment"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "समग्र प्रगति कार्ड (Holistic Progress Card - HPC) क्या है और इसमें बच्चों की प्रगति कैसे दर्ज की जाती है?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 8: Learning Assessment, Module 2, §2.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 8: Learning Assessment, §8.2",
+      "NISHTHA FLN Course 8: Learning Assessment, Module 4",
+      "NIPUN Bharat, §15.4"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "प्रधानाध्यापक और शैक्षणिक नेतृत्वकर्ता स्कूल में सहयोगात्मक FLN संस्कृति कैसे विकसित कर सकते हैं?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 10: School Leadership for Foundational Literacy and Numeracy, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 10: School Leadership for Foundational Literacy and Numeracy, Module 1"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "खिलौना आधारित शिक्षाशास्त्र (Toy-Based Pedagogy) से स्थानीय खिलौनों और खेलों द्वारा संख्या ज्ञान कैसे सिखाएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 12: Toy Based Pedagogy for Foundational Stage, Module 2, §2.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 12: Toy Based Pedagogy for Foundational Stage, Module 6"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "निपुण भारत दिशा-निर्देशों के अनुसार कक्षा 1 के लिए संख्या ज्ञान के 'लक्ष्य' (Lakshya) क्या हैं?",
+    "lang": "hi",
+    "gold": [
+      "NIPUN Bharat, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 2: Shifting Towards Competency Based Education, Module 2"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "निपुण भारत के अनुसार कक्षा 2 के अंत तक बच्चे को जोड़ और घटाव में क्या आना चाहिए?",
+    "lang": "hi",
+    "gold": [
+      "NIPUN Bharat, Module 2, §2.2"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "निपुण भारत के तहत कक्षा 3 के लिए संख्या ज्ञान और पठन के लक्ष्य क्या निर्धारित किए गए हैं?",
+    "lang": "hi",
+    "gold": [
+      "NIPUN Bharat, Module 2, §2.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §10.1"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "बहु-स्तरीय या बहु-कक्षीय (multigrade) कक्षा में अलग-अलग स्तर के बच्चों को एक साथ कैसे पढ़ाएँ?",
+    "lang": "hi",
+    "gold": [
+      "NIPUN Bharat, Module 3, §3.2"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 1: Introduction to FLN Mission"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "कक्षा में प्रिंट-समृद्ध वातावरण (print-rich environment) और गणित कोना (math corner) कैसे बनाएँ?",
+    "lang": "hi",
+    "gold": [
+      "NIPUN Bharat, Module 3, §3.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 5: Understanding Vidya Pravesh and Balvatika, Module 4"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "बच्चों में गणित के डर को कम करने के लिए खुले सिरे वाले सवाल (open-ended questions) कैसे पूछें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 1, §1.4"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 3: Understanding Learners: How Children Learn, Module 5",
+      "NIPUN Bharat, §6.5"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "कक्षा में जब बच्चा जवाब देने में हिचकिचाए तो शिक्षक को तुरंत जवाब देने के बजाय प्रतीक्षा समय (wait time) क्यों देना चाहिए?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 3: Understanding Learners: How Children Learn, Module 2, §2.1"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 5: Understanding Vidya Pravesh and Balvatika"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "सहकर्मी अधिगम (peer learning) में एक बच्चे के उत्तर पर दूसरे बच्चे से विचार साझा करने के लिए कैसे कहें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 3: Understanding Learners: How Children Learn, Module 2, §2.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 4"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "दीक्षा (DIKSHA) और डिजिटल सामग्री का उपयोग प्राथमिक कक्षा में कहानी और संख्या गतिविधियों के लिए कैसे करें?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 11: Integration of ICT in Teaching, Learning and Assessment, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §13.5",
+      "NISHTHA FLN Course 11: Integration of ICT in Teaching, Learning and Assessment"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "आंकड़ों का प्रबंधन (Data Handling) कक्षा 1 और 2 के बच्चों को चित्रलेख (pictograph) से कैसे सिखाएँ?",
+    "lang": "hi",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 5, §5.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "How should I use bundles of ten and loose sticks to teach two-digit subtraction with borrowing in Grade 2?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "When a child subtracts the smaller digit from the larger digit (getting 45 for 52 minus 17), how do we remediate using regrouping?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.2"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 8: Learning Assessment"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "What concrete activities help Grade 2 children understand carrying over in two-digit addition?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.2"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How do we transition Grade 1 children from counting all to counting on for single-digit addition?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.1"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NIPUN Bharat, §9.4"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How can we demonstrate the inverse relationship between addition and subtraction in Grade 1?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3",
+      "NISHTHA FLN Course 10: School Leadership for Foundational Literacy and Numeracy"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "Why do children make mistakes when subtracting across zero (such as 40 minus 17) and how should a teacher scaffold it?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.3"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NIPUN Bharat, §17.6"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How should the concept of zero as a placeholder and as absence of quantity be introduced in Grade 1?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2, §2.1"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 4: Involvement of Parents and Communities for FLN, §1.1"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "What activities build one-to-one correspondence and cardinality for numbers 1 to 9?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2",
+      "NIPUN Bharat, §3.3.1"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "How do we teach place value (tens and ones) so children do not write fifty-two as 502?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2, §2.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §17.6"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How can ganitmala and place-value arrow cards be used to teach two-digit number writing?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2, §2.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §17.6"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "When comparing 39 and 41, a child says 39 is bigger because 9 is bigger than 1. How do we guide them to compare tens first?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2, §2.3"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 1: Introduction to FLN Mission"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "What games help Grade 1 and 2 children compare two-digit numbers using bundles of ten?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2, §2.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "What are the four steps of the ELPS (Experience, Language, Pictures, Symbols) pedagogical sequence in foundational numeracy?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 1, §1.2"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 5: Understanding Vidya Pravesh and Balvatika"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "Which pre-number concepts (classification, seriation, one-to-one matching, patterns) should be taught before formal numbers?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 1, §1.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat",
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 2"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "What is subitizing and how do dot cards build number sense in early grades?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 1, §1.3"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How do we help Grade 3 children avoid the keyword trap ('more than' always means add) in comparison word problems?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 4, §4.2"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NIPUN Bharat, §3.3.2"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How can drawing pictures or acting out stories help children solve addition and subtraction word problems?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 4, §4.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 3"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "How is multiplication introduced through equal groups and arrays in foundational numeracy?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 4, §4.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §10.1.1",
+      "NIPUN Bharat, §3.3.2"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "What is the difference between equal sharing and equal grouping when introducing division?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 4, §4.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §17.6"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "Why should measurement start with non-standard units like handspans and footsteps before standard units?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 5, §5.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §3.3.4",
+      "NIPUN Bharat, §17.6"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How do we teach properties of 2D and 3D shapes through sorting everyday objects that roll or slide?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 5, §5.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §3.3.3",
+      "NISHTHA FLN Course 11: Integration of ICT in Teaching, Learning and Assessment, Module 6",
+      "NIPUN Bharat, §17.6"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How should simple data handling and pictographs be introduced in Grades 1 and 2?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 5, §5.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §3.3.6"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How does asking open-ended process questions ('how did you get that?') build mathematical thinking in young learners?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 1, §1.4"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 8: Learning Assessment, §8.2"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "What is the vision and target timeline of the NIPUN Bharat mission for foundational literacy and numeracy?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 1: Introduction to FLN Mission, Module 1, §1.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §9.2"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "Why is the foundational stage (ages 3 to 8, Balvatika to Grade 3) critical according to NEP 2020 and NIPUN Bharat?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 1: Introduction to FLN Mission, Module 1, §1.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 5: Understanding Vidya Pravesh and Balvatika, Module 1"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How does Competency-Based Education shift classroom practice from syllabus completion to learning outcomes?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 2: Shifting Towards Competency Based Education, Module 1, §1.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 2: Shifting Towards Competency Based Education, Module 1"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "How are NIPUN Bharat learning outcomes codified across Developmental Goals 1, 2, and 3?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 2: Shifting Towards Competency Based Education, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §4.5"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "What is constructivist pedagogy and how do young children construct knowledge from concrete experiences?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 3: Understanding Learners: How Children Learn, Module 1, §1.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 2: Shifting Towards Competency Based Education, Module 2",
+      "NIPUN Bharat, §5.1.4",
+      "NISHTHA FLN Course 7: Multilingual Education in Primary Grades"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "Why is wait time important when a shy child hesitates during classroom questioning?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 3: Understanding Learners: How Children Learn, Module 2, §2.1"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 5: Understanding Vidya Pravesh and Balvatika"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How can a child's incorrect answer be used constructively as a window into their thinking without shaming them?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 3: Understanding Learners: How Children Learn, Module 2, §2.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 4",
+      "NISHTHA FLN Course 9: Foundational Numeracy, Module 5"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How does peer discussion and revoicing help children learn from each other's mathematical methods?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 3: Understanding Learners: How Children Learn, Module 2, §2.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §3.3.7"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How can teachers engage parents with low literacy in supporting counting and storytelling at home?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 4: Involvement of Parents and Communities for FLN, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 8: Learning Assessment, Module 5",
+      "NISHTHA FLN Course 4: Involvement of Parents and Communities for FLN, §1.1"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "What is the role of community volunteers and SMC members in supporting the FLN mission?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 4: Involvement of Parents and Communities for FLN, Module 1, §1.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 1: Introduction to FLN Mission",
+      "NIPUN Bharat, §9.13"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "What is the 3-month Vidya Pravesh school preparation module for children entering Grade 1?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 5: Understanding Vidya Pravesh and Balvatika, Module 1, §1.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 5: Understanding Vidya Pravesh and Balvatika, Module 1",
+      "NISHTHA FLN Course 5: Understanding Vidya Pravesh and Balvatika, Module 6"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "How are the three Developmental Goals integrated into daily routines in Balvatika?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 5: Understanding Vidya Pravesh and Balvatika, Module 2, §2.1"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 2: Shifting Towards Competency Based Education"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "Why is Oral Language Development the foundation for reading comprehension and writing in Grades 1 to 3?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 6: Foundational Language and Literacy, Module 1, §1.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §2.7",
+      "NIPUN Bharat, §7.1"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "What is the balanced literacy approach combining decoding (akshar-sound mapping) and meaning-making?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 6: Foundational Language and Literacy, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §2.5.1",
+      "NISHTHA FLN Course 6: Foundational Language and Literacy, Module 3"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "How do read-aloud, shared reading, guided reading, and independent reading work together?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 6: Foundational Language and Literacy, Module 3, §3.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §2.5.1",
+      "NISHTHA FLN Course 6: Foundational Language and Literacy, Module 06"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "Why does NIPUN Bharat recommend using the child's home language or mother tongue in early grades?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 7: Multilingual Education in Primary Grades, Module 1, §1.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 7: Multilingual Education in Primary Grades",
+      "NIPUN Bharat, §17.6"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "How can a teacher use local contexts (market, festivals, kitchen) and home-language terms while preserving mathematical meaning?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 7: Multilingual Education in Primary Grades, Module 2, §2.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §3.3.7",
+      "NIPUN Bharat, §3.4"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How is formative School-Based Assessment (SBA) conducted through observation and checklists rather than high-stakes tests?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 8: Learning Assessment, Module 1, §1.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §6.3"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "What are the key features of the Holistic Progress Card (HPC) for the foundational stage?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 8: Learning Assessment, Module 2, §2.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §6.7",
+      "NISHTHA FLN Course 8: Learning Assessment, Module 4"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "How can head teachers and pedagogical leaders mentor teachers through non-judgmental classroom support?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 10: School Leadership for Foundational Literacy and Numeracy, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §10.1.3"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "When and how should digital tools and DIKSHA resources be used appropriately in foundational classes?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 11: Integration of ICT in Teaching, Learning and Assessment, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 11: Integration of ICT in Teaching, Learning and Assessment, Module 4"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "How can indigenous toys, puppets, and games be used to teach counting, shapes, and operations?",
+    "lang": "en",
+    "gold": [
+      "NISHTHA FLN Course 12: Toy Based Pedagogy for Foundational Stage, Module 2, §2.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 12: Toy Based Pedagogy for Foundational Stage, Module 2",
+      "NISHTHA FLN Course 12: Toy Based Pedagogy for Foundational Stage, Module 6",
+      "NISHTHA FLN Course 9: Foundational Numeracy"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "What are the NIPUN Bharat Lakshya targets for foundational numeracy at the end of Grade 1?",
+    "lang": "en",
+    "gold": [
+      "NIPUN Bharat, Module 2, §2.1"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §10.1.1",
+      "NIPUN Bharat, §10.1"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "What are the NIPUN Bharat Lakshya targets for addition and subtraction at the end of Grade 2?",
+    "lang": "en",
+    "gold": [
+      "NIPUN Bharat, Module 2, §2.2"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NIPUN Bharat"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "What are the NIPUN Bharat Lakshya targets for numeracy and reading fluency at the end of Grade 3?",
+    "lang": "en",
+    "gold": [
+      "NIPUN Bharat, Module 2, §2.3"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NIPUN Bharat, §10.1.1",
+      "NIPUN Bharat, §10.1"
+    ],
+    "course_correct": true
+  },
+  {
+    "question": "How should a teacher structure mixed-level prompts and group work in a multigrade Grade 1-3 classroom?",
+    "lang": "en",
+    "gold": [
+      "NIPUN Bharat, Module 3, §3.2"
+    ],
+    "outcome": "answered",
+    "sources": [
+      "NISHTHA FLN Course 3: Understanding Learners: How Children Learn, Module 5"
+    ],
+    "course_correct": false
+  },
+  {
+    "question": "How do you set up a learning corner for mathematics and literacy in a primary classroom?",
+    "lang": "en",
+    "gold": [
+      "NIPUN Bharat, Module 3, §3.1"
+    ],
+    "outcome": "refused",
+    "sources": [
+      "NISHTHA FLN Course 12: Toy Based Pedagogy for Foundational Stage, Module 3"
+    ],
+    "course_correct": false
+  }
+]

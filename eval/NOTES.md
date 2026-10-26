@@ -23,7 +23,7 @@
 
 150 turns from `datasets/gold_turns.jsonl`. This set is owned by Vansh. Do not describe it as double-rater, human-adjudicated gold unless that is confirmed, and do not quote this figure to judges until it is.
 
-## Citations: right course on 58% of answers, exact section 0%, both below target. Out-of-scope refusal 100%, false refusals 22-28%
+## Citations: right course on 59% of answers, exact section 0%, both below target. Out-of-scope refusal 100%, false refusals 22%
 
 - Out-of-scope questions (salary, transfers and so on) are refused every time (40 of 40).
 - First run: 851 chunks (447 English, 404 Hindi), all from the combined NISHTHA FLN course books, no NIPUN Bharat text. False refusals were 72%.
@@ -37,7 +37,10 @@
 - Some Hindi pages (one to five per course) extract as scanned or garbled text and need OCR; they are in the corpus but will not match well.
 - Chunker bug found and fixed on the way (commit 326a0d1): a numbered heading such as 6.5 was being read as a module, so NIPUN chunks were cited as "Module 6". A module now comes only from an explicit Module/Unit/Section heading.
 - Gold labels come from people. Do not regenerate them from the system's own retrieval. Relabel against the labels actually in `doc_chunks` (Vansh owns the set), at course level or with the book's own section numbers.
-- What is verified: out-of-scope questions are refused, and in-scope questions the corpus covers are answered with citations from the right course about three times in five. What is not: the 95% citation target, and the 5% false-refusal limit (now 22-28%). Do not claim either to judges.
+- Seventh run (latest, on the VM, per-question rows in `eval/results/citations_details.json`): 100 in-scope, 40 out-of-scope, none unavailable. Right course cited on 46 of 78 answered (59.0%), exact section 0.0%, false refusals 22%, out-of-scope refused 40 of 40. Hindi: 29 answered and right, 12 answered but wrong course, 9 refused. English: 17 right, 20 wrong, 13 refused. A diagnostic pass over the same questions found 67 answered and 33 refused for "no valid citation", and none refused by the question rewrite or the score floor, so every false refusal happens at the cited-answer step.
+- Root cause of the false refusals, checked by hand on six refused questions (52-17 giving 45, subtraction with a zero, ten bundles and place value, number-line comparison, subitizing): retrieval returned unrelated overview pages and the model correctly said the passages do not cover the question. Term counts over all 1,106 chunks agree: "number line" 0 hits, "tens and ones" 0, "comparing numbers" 0, "bundle" 1, "place value" 1, "subitiz" 2, "borrow" 3; Hindi "bundle" 0, "उधार" 0, "स्थानीय मान" 0. The NISHTHA Course 9 booklet is about 71k characters in English, a short course book that does not hold this fine-grained maths teaching. Many numeracy gold questions therefore get answered from NIPUN Bharat instead, which counts as the wrong course against a Course 9 gold label.
+- What would close it, and needs a human or an official file we could not fetch: add official foundational-numeracy teaching material (the NCERT Classes 1-2 teachers' handbook is the obvious candidate, but `ncert.nic.in` refused every connection from our machine on 26 Oct; `ciet.ncert.gov.in` works), and have Vansh relabel the gold to questions and sources the corpus really holds. Neither has been done, so no gold label or number was changed to make the result look better.
+- What is verified: out-of-scope questions are refused, and in-scope questions the corpus covers are answered with citations from the right course about three times in five. What is not: the 95% citation target, and the 5% false-refusal limit (now 22%). Do not claim either to judges.
 
 ## Cost per teacher-day: not a valid measurement yet
 

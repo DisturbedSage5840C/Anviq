@@ -83,8 +83,8 @@ Numbers from the last evaluation runs; the full tables and method are in [eval/r
 | Out-of-scope questions refused by Ask Anviq | 40 of 40 | Met |
 | Coach agreement with the gold labels (Cohen's kappa) | 0.967, on a gold set written by our content lead, not independently adjudicated | Met (target 0.6) |
 | AI child stays in character | 98.3% raw, 99.4% after one regeneration, for the Riya persona only (720 turns) | Met for Riya; Aman and Meena not yet run |
-| Citations that name the right source | Right course 58.3%; exact module and section 0% (our gold labels number sections differently from the books) | **Not met** (target 95%) |
-| In-scope questions wrongly refused | 28% in the last run (22% in an earlier one) | **Not met** (target 5% or less) |
+| Citations that name the right source | Right course 59.0%; exact module and section 0% (our gold labels number sections differently from the books) | **Not met** (target 95%) |
+| In-scope questions wrongly refused | 22% in the latest run (28% in an earlier one) | **Not met** (target 5% or less) |
 | Cost per teacher-day | About US$0.15, re-priced from 2 teacher-days of test traffic (the stored report figure is US$0.22; see [eval/NOTES.md](eval/NOTES.md)) | **Not met** (the code's target is US$0.12; the pitch deck says US$0.05) |
 
 Known limits:
