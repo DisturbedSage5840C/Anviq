@@ -18,10 +18,10 @@ repository as it is, and marks every gap.
    │                                          ▼
    └───────────────────────────────── worker (arq, same image)
                                          1 download media into memory
-                                         2 speech to text         ── Sarvam (Google fallback)
+                                         2 speech to text         ── Google (Sarvam is a switch)
                                          3 scrub, route           ── core/router
                                          4 reply copy             ── content/copy
-                                         5 text to speech, encode ── Sarvam, ffmpeg
+                                         5 text to speech, encode ── Google, ffmpeg
                                          6 send and persist
                                               │
                                               ▼
@@ -40,7 +40,7 @@ Meta's retry window even when a vendor is slow.
 |---|---|---|
 | WhatsApp webhook: signature check, dedupe, per-sender rate limit, enqueue | Built | `app/api/whatsapp_webhook.py`, `app/channel/` |
 | Health and readiness probes | Built | `app/api/health.py` |
-| Speech adapters (Sarvam, Google), provider switch by config, benchmark harness | Built | `app/speech/` |
+| Speech adapters (Google on the demo, Sarvam as a switch), provider switch by config, benchmark harness | Built | `app/speech/` |
 | Audio decode and encode (ffmpeg) | Built | `app/channel/audio.py` |
 | Router and session state machine, onboarding, consent, delete, export | Built | `app/core/`, `app/privacy/` |
 | Daily reminders (opt-in, template messages, every 15 minutes) | Built | `app/channel/reminders.py` |

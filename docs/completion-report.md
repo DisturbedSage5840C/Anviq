@@ -1,13 +1,13 @@
 # Anviq: end-to-end completion report
 
-Written 26 Oct 2026. Compares three things: the **build plan** (`ANVIQ_BUILD_PLAN.md`), the **idea-submission deck** (`Anviq Hack.pdf`, 11 slides) and **what is actually built and running**. Submission target is **31 Oct 2026, 23:59 IST**.
+Written 26 Oct 2026, updated 27 Oct 2026 for the final build. Compares three things: the **build plan** (`ANVIQ_BUILD_PLAN.md`), the **idea-submission deck** (`Anviq Hack.pdf`, 11 slides) and **what is actually built and running**. Submission target is **31 Oct 2026, 23:59 IST**.
 
 Status words: **Done** (built, tested, running), **Changed** (built differently from the plan), **Partial**, **Not built**, **Not run** (built but never exercised).
 
 ## 1. Headline
 
 - The core product works end to end on the live demo: WhatsApp on a real number (via Evolution), a browser web room for judges, Plan, Rehearse with AI children, Reflect, Ask Anviq with citations, privacy controls, a k≥20 dashboard.
-- Backend quality gates are green: 1531 tests pass (169 skipped), ruff, ruff format and mypy are clean. The demo VM is up with HTTPS and hardened headers.
+- Backend quality gates are green: 1640 tests pass (183 skipped, mostly database tests that need a local Postgres), ruff, ruff format and mypy are clean. CI also builds the dashboard, and 21 tests check the demo stack's exposure rules (only Caddy is public, secrets are required, the Evolution webhook is blocked from the internet). The demo VM runs the latest build with HTTPS and hardened headers.
 - **Two targets are not met or unproven** and must not be claimed to judges: citations (exact section 94.5% in the latest run, 93.8% on average over three runs, target 95%) and the pilot-completion rate (no pilot has run). False refusals (0%) and out-of-scope refusal (100%) are now met. Cost per teacher-day is **not shown to be met**: roughly US$0.13 to 0.15 on Google speech, a list-price estimate from an assumed day just above the US$0.12 target, so do not claim it as met. The demo speech is paid from the Google Cloud trial credit, so no cash is spent.
 - **Nothing has been tested with a real teacher yet.** The mini-pilot (28–31 Oct) has not started.
 - What remains is mostly people work: the demo video, the updated deck, the submission form, and a few keys and approvals only you can give.
@@ -38,7 +38,7 @@ Status words: **Done** (built, tested, running), **Changed** (built differently 
 | §9 Mini-pilot (28–31 Oct) and full pilot (2–16 Nov) | Not run | No teachers onboarded. No trust survey. No real κ data from teachers. |
 | §10 Schedule | Behind on pilot, ahead on infra | Feature freeze met in effect. |
 | §11 Submission package | Partial | Repo, privacy pack and `eval/report.md` exist. Video, updated deck and form are open. |
-| §13 Standards (TDD, ≥80% on cores, files under 800 lines) | Done | CI has ruff, mypy, pytest. |
+| §13 Standards (TDD, ≥80% on cores, files under 800 lines) | Done | CI has ruff, mypy, pytest and a dashboard build. `backend/tests/ops/test_deploy_config.py` checks the compose files and Caddyfile. |
 
 ## 3. Deck claims vs reality
 
@@ -80,11 +80,18 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 - **Security hardening:** `/docs` and `/openapi.json` closed, HSTS, Permissions-Policy, nosniff, CSP on the web room, Evolution on its own network, dashboard `next` upgraded (0 audit findings).
 - **Log redaction `f6b80e4`:** phone numbers no longer appear in worker job logs. Verified live.
 - **Web room end-to-end flows** checked, with Ask demo questions that work and ones that get refused.
+- **Consent parsing fails closed (27 Oct):** a negated or buried recordings request ("don't save my recordings", a long sentence that happens to contain the phrase) never switches recordings on; the negated form switches them off.
+- **Devanagari cleaning (27 Oct):** doubled vowel signs are collapsed when Hindi text is ingested and again when an answer is built, so teachers see clean Hindi. The stored Hindi passages on the VM were not re-ingested (needs the source PDFs), so retrieval over them is still the older, weaker version.
+- **Deploy-config tests and a dashboard CI job (27 Oct)**, and a named `TEMPLATELESS_PROVIDERS` set in `worker.py` for channels that cannot send reminders.
 
 ## 6. Honest limits to keep
 
 - No real teacher has used it. No pilot data. No 60% completion figure.
 - Reminders do not send on Evolution or Twilio (no templates).
+- Scanned Hindi pages would need OCR (Tesseract, a download we have not approved). Stored Hindi passages are not re-ingested.
+- Mirror clips are captured, encrypted, kept 30 days and deleted on request, but playback on Day 14 is not built. The clip database paths were checked by a standalone smoke script on the VM, not by the pytest suite.
+- The latency figure comes from the VM over HTTPS, not from a phone, on 45 turns; the Anthropic credit balance is unknown.
+- HawkScan has not run (no `HAWK_API_KEY`). The only secret scan is a grep, not gitleaks.
 - Evolution is unofficial. The phone must stay online and charged, and the SIM recharged.
 - Dashboard has no real cohort data.
 - Unknown senders on WhatsApp are not confirmed to be gated. Your own first message got through without a code.
@@ -110,7 +117,7 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 - Aadi: run the character eval for Aman and Meena on the VM.
 - Joepaul: set a GitHub display name (optional).
 
-**Engineering, optional polish:** a `TEMPLATELESS_PROVIDERS` set in `worker.py`, Unicode normalisation, OCR for garbled Hindi pages, a dashboard build step in CI, Caddyfile and compose tests.
+**Engineering, optional polish:** done on 27 Oct: the `TEMPLATELESS_PROVIDERS` set, Devanagari normalisation, the dashboard CI build, and compose and Caddyfile tests. Still open: OCR for scanned Hindi pages (needs a download and your OK), re-ingesting the Hindi corpus from the source PDFs, mirror-clip playback, and running the clip database tests inside the pytest suite.
 
 **Housekeeping after the demo:** delete the leftover VM backups, tarballs, probe scripts and stopped eval containers.
 
