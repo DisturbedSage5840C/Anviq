@@ -12,6 +12,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from app.evaluation.citations import CITATION_TARGET, FALSE_REFUSAL_LIMIT, REFUSAL_TARGET
+
 
 def _load(results: Path, name: str) -> dict[str, Any] | None:
     path = results / f"{name}.json"
@@ -26,6 +28,28 @@ def _verdict(result: Mapping[str, Any] | None, key: str = "pass") -> str:
     return "PASS" if result.get(key) else "below target"
 
 
+def _citation_verdict(cites: Mapping[str, Any] | None) -> str:
+    """The citation row passes on its own rate, not on the combined pass flag."""
+    if cites is None:
+        return "not run"
+    if cites.get("offline"):
+        return "harness check only (offline)"
+    return "PASS" if cites["citation_correct_rate"] >= CITATION_TARGET else "below target"
+
+
+def _refusal_verdict(cites: Mapping[str, Any] | None) -> str:
+    """The refusal row passes on refusals and false refusals alone, whatever the citation rate."""
+    if cites is None:
+        return "not run"
+    if cites.get("offline"):
+        return "harness check only (offline)"
+    met = (
+        cites["oos_refusal_rate"] >= REFUSAL_TARGET
+        and cites["false_refusal_rate"] <= FALSE_REFUSAL_LIMIT
+    )
+    return "PASS" if met else "below target"
+
+
 def _pct(value: float | None) -> str:
     return "n/a" if value is None else f"{value * 100:.1f}%"
 
@@ -37,6 +61,20 @@ def _citation_cell(cites: Mapping[str, Any] | None) -> str:
     strict = _pct(cites["citation_correct_rate"])
     course = cites.get("course_citation_correct_rate")
     return strict if course is None else f"{strict} section-level, {_pct(course)} course-level"
+
+
+def _refusal_cell(cites: Mapping[str, Any] | None) -> str:
+    """Out-of-scope refusal / false refusal, plus how the questions the books cannot answer went."""
+    if cites is None:
+        return "n/a / n/a"
+    cell = f"{_pct(cites['oos_refusal_rate'])} / {_pct(cites['false_refusal_rate'])}"
+    gap = cites.get("corpus_gap")
+    if not gap:
+        return cell
+    return (
+        f"{cell} (and {gap} questions the books do not answer, "
+        f"{_pct(cites['corpus_gap_refusal_rate'])} refused)"
+    )
 
 
 def render(results: Path) -> str:
@@ -62,11 +100,12 @@ def render(results: Path) -> str:
         f"{coach['mean_kappa'] if coach else 'n/a'} ({coach['source'] if coach else ''}) | "
         f"{_verdict(coach)} |"
     )
-    lines.append(f"| Citations correct | >=95% | {_citation_cell(cites)} | {_verdict(cites)} |")
+    lines.append(
+        f"| Citations correct | >=95% | {_citation_cell(cites)} | {_citation_verdict(cites)} |"
+    )
     lines.append(
         f"| Out-of-scope refused | >=95%, <=5% false refusals | "
-        f"{_pct(cites['oos_refusal_rate']) if cites else 'n/a'} / "
-        f"{_pct(cites['false_refusal_rate']) if cites else 'n/a'} | {_verdict(cites)} |"
+        f"{_refusal_cell(cites)} | {_refusal_verdict(cites)} |"
     )
     per_day = cost.get("usd_per_teacher_day") if cost else None
     lines.append(

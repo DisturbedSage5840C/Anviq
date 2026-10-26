@@ -19,7 +19,7 @@ install. Each day has four steps:
 4. **Reflect** on how it went, in a minute.
 
 Two more things sit beside the loop. **Ask Anviq** answers a pedagogy question only from the
-NISHTHA / NIPUN source documents and cites where; if nothing supports an answer it says so instead
+NISHTHA / NIPUN / NCERT handbook source documents and cites where; if nothing supports an answer it says so instead
 of guessing. The **Day-1 / Day-14 mirror** sets a teacher's first practice question beside their
 latest and shows growth as a plant (🌱 🌿 🌳), never a score and never compared with anyone.
 
@@ -49,7 +49,7 @@ flowchart LR
     W -->|speech to text and back| S[Google speech]
     W -->|route, reply| C[core: router, privacy]
     W -->|send voice and text| M
-    C -->|Ask Anviq: BM25 over NISHTHA / NIPUN| DB[(Postgres)]
+    C -->|Ask Anviq: BM25 over NISHTHA / NIPUN / NCERT handbook| DB[(Postgres)]
     DB -->|public_trends view, k >= 20| D[Mentor dashboard]
 ```
 
@@ -81,22 +81,27 @@ Numbers from the last evaluation runs; the full tables and method are in [eval/r
 | What | Result | Against the target |
 |---|---|---|
 | Out-of-scope questions refused by Ask Anviq | 40 of 40 | Met |
-| Coach agreement with the gold labels (Cohen's kappa) | 0.967, on a gold set written by our content lead, not independently adjudicated | Met (target 0.6) |
+| Coach agreement with the gold labels (Cohen's kappa) | 0.975, on a gold set written by our content lead, not independently adjudicated | Met (target 0.6) |
 | AI child stays in character | 98.3% raw, 99.4% after one regeneration, for the Riya persona only (720 turns) | Met for Riya; Aman and Meena not yet run |
-| Citations that name the right source | Right course 59.0%; exact module and section 0% (our gold labels number sections differently from the books) | **Not met** (target 95%) |
-| In-scope questions wrongly refused | 22% in the latest run (28% in an earlier one) | **Not met** (target 5% or less) |
+| Citations that name the right source | Exact module and section 94.5% (86 of 91 answerable questions) in the latest run; 93.8% on average over the last three runs (93.4 to 94.5%). Right course about 98%. Gold labels were re-keyed to the books' own headings, and 10 alternate labels were added by us after seeing results, not yet reviewed by a second person | **Not met** (target 95%; the best run was one question short) |
+| In-scope questions wrongly refused | 0% in the latest run (22% before the fixes described in [eval/NOTES.md](eval/NOTES.md)). 40 of 40 out-of-scope questions refused | Met (target 5% or less) |
 | Cost per teacher-day | Roughly US$0.13 to 0.15 on Google speech, estimated from list prices (Neural2 voice about US$16 per million characters) for a replay of an assumed day (5 rehearsal turns, 1 plan, 1 reflect, 1 in-scope question); not checked against a bill. The demo's speech is paid from the Google Cloud trial credit, so no cash is spent. The stored report figure is US$0.22, inflated by test traffic; see [eval/NOTES.md](eval/NOTES.md) | **Not shown to be met** (the code's target is US$0.12; the pitch deck says US$0.05, which is unsupported) |
 
 Known limits:
 
-- Ask Anviq answers only from the ingested NIPUN Bharat and NISHTHA FLN text. Some natural
-  questions (for example "ELPS approach" or "place value with bundles") are refused because that
-  text has no passage on them.
+- Ask Anviq answers only from the ingested NIPUN Bharat, NISHTHA FLN and NCERT Teachers' Handbook
+  (Classes 1-2) text. Nine of our 100 test questions are not covered by those books; Ask Anviq now
+  answers them from the nearest passages instead of refusing, so it can over-answer on topics the
+  books only touch.
+- The citation score counts a question right when any cited source matches any accepted label, and
+  most misses are Hindi questions on broad topics (word problems, why FLN matters, learning from
+  mistakes) that the books cover in several places.
 - The demo speaks and listens through Google speech (paid from a trial credit, no cash). The voices
   are clear but plainer than some other providers, and English transcription was less accurate than
   Hindi in a small check.
-- The Hindi NISHTHA PDF was extracted with doubled vowel signs; search collapses them, but some
-  passages stay garbled.
+- The Hindi NISHTHA PDF was extracted with doubled vowel signs and garbled module headings; search
+  collapses the vowel signs and the chunker now recognises the headings, but some passages stay
+  garbled.
 - The Day-1 / Day-14 mirror needs both practices recorded; the opt-in encrypted mirror clips are not built.
 - The WhatsApp demo number runs on an unofficial gateway (Evolution API) for the demo only. It
   can send no template messages, so daily reminders do not work there, and it carries a ban risk

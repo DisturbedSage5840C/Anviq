@@ -8,7 +8,7 @@ Status words: **Done** (built, tested, running), **Changed** (built differently 
 
 - The core product works end to end on the live demo: WhatsApp on a real number (via Evolution), a browser web room for judges, Plan, Rehearse with AI children, Reflect, Ask Anviq with citations, privacy controls, a k≥20 dashboard.
 - Backend quality gates are green: 1531 tests pass (169 skipped), ruff, ruff format and mypy are clean. The demo VM is up with HTTPS and hardened headers.
-- **Three targets are not met or unproven** and must not be claimed to judges: citations, false refusals, and the pilot-completion rate (no pilot has run). Cost per teacher-day is **not shown to be met**: roughly US$0.13 to 0.15 on Google speech, a list-price estimate from an assumed day just above the US$0.12 target, so do not claim it as met. The demo speech is paid from the Google Cloud trial credit, so no cash is spent.
+- **Two targets are not met or unproven** and must not be claimed to judges: citations (exact section 94.5% in the latest run, 93.8% on average over three runs, target 95%) and the pilot-completion rate (no pilot has run). False refusals (0%) and out-of-scope refusal (100%) are now met. Cost per teacher-day is **not shown to be met**: roughly US$0.13 to 0.15 on Google speech, a list-price estimate from an assumed day just above the US$0.12 target, so do not claim it as met. The demo speech is paid from the Google Cloud trial credit, so no cash is spent.
 - **Nothing has been tested with a real teacher yet.** The mini-pilot (28–31 Oct) has not started.
 - What remains is mostly people work: the demo video, the updated deck, the submission form, and a few keys and approvals only you can give.
 
@@ -24,8 +24,8 @@ Status words: **Done** (built, tested, running), **Changed** (built differently 
 | §4 Speech adapters (Google, Sarvam), confirm-back, benchmark | Done | The demo runs on Google for both listening and speaking (Neural2 voices); Sarvam stays as a switch-back option. Plus metering of speech usage. |
 | §4 Router state machine, consent, delete, export, opt-out | Done | Delete confirm flow is in `core/router.py`. |
 | §4 AI children, malrule verbalizer, answer guardrail | Done | Fallback sentence tested for every malrule. |
-| §4 Coach with one better phrasing | Done | κ 0.967, see §4 for the caveat. |
-| §4 Ask Anviq with citations and out-of-scope refusal | Partial | Works, refuses out-of-scope 40/40, but citation accuracy and false refusals miss target. |
+| §4 Coach with one better phrasing | Done | κ 0.975, see §4 for the caveat. |
+| §4 Ask Anviq with citations and out-of-scope refusal | Partial | Works, refuses out-of-scope 40/40, false refusals 0%; citation accuracy is 94.5% in the best run, just under the 95% target. |
 | §4 Guardrails and PII scrubber | Done | `guardrails/` includes `pii.py`. |
 | §4 Cron jobs (retention, cost report, reminders) | Done | Reminders are skipped on Twilio and Evolution (no templates). |
 | §4 Web room and demo codes | Done | Served at `/room/`, with a strict CSP. E2E tests written but the Playwright browser is not installed locally, so they have not been run. |
@@ -62,10 +62,10 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 | Target | Result | Verdict |
 |---|---|---|
 | AI child keeps misconception ≥95% | 98.3% raw, 99.4% after one retry, 720 turns | **Pass.** Riya only. Aman and Meena not run. |
-| Coach κ ≥0.6 | 0.967 on 150 turns | **Pass on paper.** The gold set is Vansh's alone. Not independently adjudicated, so do not quote it to judges until it is. |
-| Citations ≥95% | 59.0% right course (46 of 78 answered), 0% exact section | **Not met.** Gold labels use Module/§ numbers the books do not use, and many numeracy questions are answered from NIPUN Bharat instead of Course 9. |
+| Coach κ ≥0.6 | 0.975 on 150 turns | **Pass on paper.** The gold set is Vansh's alone. Not independently adjudicated, so do not quote it to judges until it is. |
+| Citations ≥95% | Exact section 94.5% (86 of 91 answerable questions) in the latest run; 93.8% mean over three runs (93.4 to 94.5%); right course about 98%. Without the 10 alternate labels we added: 89.0% and 86.8% in two runs | **Not met** (best run one question short). The 10 alternate labels were added by us after seeing results and are not reviewed by a second person; scoring counts a question right if any cited source matches any accepted label. Most misses are broad Hindi questions. |
 | Out-of-scope refused | 40 of 40 | **Pass.** |
-| False refusals ≤5% | 22% (latest run; 22–28% across runs) | **Not met.** Verified cause: the ingested text lacks fine-grained maths pedagogy ("number line" 0 hits, "place value" 1, "bundle" 1), so the model rightly says the passages do not cover it. See `eval/NOTES.md`. |
+| False refusals ≤5% | 0% (latest run; 22% before the fixes) | **Met.** Fixes: NCERT Teachers' Handbook (Classes 1-2) added to the corpus, 10 passages searched instead of 6, a larger answer limit with one retry, and a prompt that answers from the closest passages. Trade-off: the 9 of 100 questions the books do not cover are now answered, not refused. See `eval/NOTES.md`. |
 | Cost ≤US$0.12 per teacher-day | Roughly US$0.13 to 0.15 on Google speech, estimated from list prices: model US$0.068, voice about US$0.048 (Neural2, about US$16 per million characters), transcription about US$0.01 to 0.03, replaying an assumed day (5 rehearsal turns, 1 plan, 1 reflect, 1 in-scope question). The stored figure US$0.22 is inflated by test traffic. A later change makes the coach answer in one language, which should save about US$0.01 but is not measured | **Not shown to be met.** It sits just above the target, is a list-price estimate, and depends on the assumed day. Deck's US$0.05 is unsupported. The Google Neural2 voices work end to end on the VM (Hindi and English, speech-to-text and text-to-speech). The team lead listened to the samples on 26 Oct 2026 and accepted them for the demo, while noting they sound plainer than Sarvam or ElevenLabs. English transcription was weaker than Hindi in a small probe (confidence about 0.55, against 0.92 for Hindi). |
 | Latency p50 ≤10 s, p95 ≤20 s | Model latency only (1.5–3.8 s median). End-to-end not measured. | **Unknown.** |
 | ≥60% of pilot teachers complete 5+ sessions | No pilot | **Unproven.** Remove it or label it a goal. |

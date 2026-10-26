@@ -1,17 +1,17 @@
 {
   "turns": 150,
-  "unscored": 0,
+  "unscored": 5,
   "kappa_by_criterion": {
-    "1:C1": 1.0,
+    "1:C1": 0.973,
     "1:C2": 1.0,
-    "1:C3": 0.917,
+    "1:C3": 0.945,
     "1:C4": 1.0,
     "2:C1": 1.0,
-    "2:C2": 0.861,
+    "2:C2": 0.878,
     "2:C3": 1.0,
-    "2:C4": 0.955
+    "2:C4": 1.0
   },
-  "mean_kappa": 0.967,
+  "mean_kappa": 0.975,
   "pass": true,
   "offline": false,
   "source": "../eval/datasets/gold_turns.jsonl"

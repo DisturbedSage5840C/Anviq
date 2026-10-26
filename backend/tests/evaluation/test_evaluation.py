@@ -83,6 +83,15 @@ def test_a_subsection_counts_as_citing_its_gold_section():
     assert not label_matches("A, §31", "A, §3")
 
 
+def test_module_numbers_match_with_or_without_leading_zeros() -> None:
+    # The English NISHTHA book pads course 6 modules ("Module 05"); the Hindi one does not.
+    course = "NISHTHA FLN Course 6: Foundational Language and Literacy"
+    assert label_matches(f"{course}, Module 5", f"{course}, Module 05")
+    assert label_matches(f"{course}, Module 05, §5.1", f"{course}, Module 5, §5")
+    assert not label_matches(f"{course}, Module 15", f"{course}, Module 5")
+    assert not label_matches(f"{course}, Module 5", f"{course}, Module 6")
+
+
 def _reply(sources: tuple[str, ...], refused: bool) -> AskReply:
     return AskReply("t", "t", sources, refused)
 
@@ -102,6 +111,19 @@ def test_citation_scoring_separates_accuracy_refusal_and_false_refusal():
     assert report["unavailable"] == 1 and report["pass"] is False
 
 
+def test_corpus_gap_questions_are_scored_apart_and_never_change_the_verdict():
+    inscope = [({"gold": ["A, §1"]}, _reply(("A, §1",), False))]
+    oos = [_reply((), True)]
+    gap = [_reply((), True), _reply(("A, §9",), False), None]
+    with_gap = score(inscope, oos, gap)
+    assert with_gap["corpus_gap"] == 3
+    assert with_gap["corpus_gap_refusal_rate"] == pytest.approx(1 / 3)
+    assert with_gap["unavailable"] == 1
+    assert with_gap["false_refusal_rate"] == 0.0
+    assert with_gap["pass"] is True
+    assert score(inscope, oos)["corpus_gap"] == 0
+
+
 def test_report_says_not_run_rather_than_pass_when_results_are_missing(tmp_path: Path):
     text = render(tmp_path)
     assert "not run" in text and "PASS" not in text
@@ -117,6 +139,23 @@ def test_report_labels_offline_runs_as_harness_checks(tmp_path: Path):
     )  # fmt: skip
     text = render(tmp_path)
     assert "harness check only" in text and "| X | 100.0% |" in text
+
+
+def test_report_judges_citations_and_refusals_on_their_own_rates(tmp_path: Path):
+    (tmp_path / "citations.json").write_text(
+        json.dumps(
+            {"citation_correct_rate": 0.945, "course_citation_correct_rate": 0.978,
+             "oos_refusal_rate": 1.0, "false_refusal_rate": 0.0, "pass": False}
+        ),
+        encoding="utf-8",
+    )  # fmt: skip
+    rows = {
+        line.split("|")[1].strip(): line
+        for line in render(tmp_path).splitlines()
+        if line.startswith("|")
+    }
+    assert rows["Citations correct"].rstrip().endswith("below target |")
+    assert rows["Out-of-scope refused"].rstrip().endswith("PASS |")
 
 
 def test_manifest_rows_become_source_documents(tmp_path: Path):
@@ -198,6 +237,16 @@ def test_report_shows_the_course_level_citation_rate_only_when_it_was_recorded(t
     assert "10.0% section-level, 75.0% course-level" in render(tmp_path)
 
 
+def test_report_names_how_many_questions_the_books_cannot_answer(tmp_path: Path):
+    results = {
+        "citation_correct_rate": 0.9, "oos_refusal_rate": 1.0, "false_refusal_rate": 0.0,
+        "corpus_gap": 9, "corpus_gap_refusal_rate": 0.5,
+    }  # fmt: skip
+    (tmp_path / "citations.json").write_text(json.dumps(results), encoding="utf-8")
+    text = render(tmp_path)
+    assert "9 questions the books do not answer" in text and "50.0%" in text
+
+
 def test_a_hindi_page_without_devanagari_is_flagged_for_ocr():
     assert looks_broken("abcdefghij " * 10, "hi")
     assert not looks_broken("बच्चों को बंडल से गिनती सिखाएँ " * 5, "hi")
@@ -219,14 +268,21 @@ def test_shipped_eval_datasets_and_manifests_are_well_formed():
 
     inscope = _jsonl(repo_root / "eval" / "datasets" / "ask_inscope.jsonl")
     oos = _jsonl(repo_root / "eval" / "datasets" / "ask_oos.jsonl")
-    assert len(inscope) == 100
+    gap = _jsonl(repo_root / "eval" / "datasets" / "ask_corpus_gap.jsonl")
+    assert len(inscope) == 91
+    assert len(gap) == 9
+    assert len(inscope) + len(gap) == 100
+    assert all(q["question"] and q["lang"] in {"hi", "en"} and "gold" not in q for q in gap)
+    assert not {q["question"] for q in gap} & {q["question"] for q in inscope}
     assert len(oos) == 40
     assert all(q.get("question") and q.get("gold") for q in inscope)
     assert all(q.get("question") and q.get("lang") in {"hi", "en"} for q in oos)
 
     corpus_docs = read_manifest(repo_root / "content" / "corpus" / "manifest.csv")
     assert sorted((doc.source, doc.lang) for _, doc in corpus_docs) == (
-        [("NIPUN Bharat", "en")] + [("NISHTHA FLN", "en")] * 12 + [("NISHTHA FLN", "hi")] * 12
+        [("NCERT Teachers' Handbook Class 1-2", "en"), ("NIPUN Bharat", "en")]
+        + [("NISHTHA FLN", "en")] * 12
+        + [("NISHTHA FLN", "hi")] * 12
     )
     for lang in ("en", "hi"):
         courses = [d for _, d in corpus_docs if d.source == "NISHTHA FLN" and d.lang == lang]

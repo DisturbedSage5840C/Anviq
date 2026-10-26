@@ -40,7 +40,16 @@ _SECTION_TAIL = re.compile(r",\s*§[^,]*$")
 _MODULE_TAIL = re.compile(r",\s*Module\s[^,]*$")
 
 
+_MODULE_NUMBER = re.compile(r"(Module\s)0+(\d)")
+
+
+def _unpadded(label: str) -> str:
+    """ "Module 05" and "Module 5" name the same module; the two NISHTHA books pad differently."""
+    return _MODULE_NUMBER.sub(r"\1\2", label)
+
+
 def label_matches(cited: str, gold: str) -> bool:
+    cited, gold = _unpadded(cited), _unpadded(gold)
     return cited == gold or cited.startswith(f"{gold}.")
 
 
@@ -60,8 +69,15 @@ def _jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def score(
-    inscope: Sequence[tuple[dict[str, Any], AskReply | None]], oos: Sequence[AskReply | None]
+    inscope: Sequence[tuple[dict[str, Any], AskReply | None]],
+    oos: Sequence[AskReply | None],
+    gap: Sequence[AskReply | None] = (),
 ) -> dict[str, object]:
+    """Score the run. `gap` holds replies to questions the ingested books do not answer.
+
+    A refusal is the right reply to those, so they are reported beside the targets and never
+    count toward the citation, false-refusal or pass figures.
+    """
     answered = [(q, r) for q, r in inscope if r is not None and not r.refused]
     correct = sum(
         any(label_matches(s, g) for s in r.sources for g in q["gold"]) for q, r in answered
@@ -73,14 +89,18 @@ def score(
     refused = sum(1 for r in oos if r is not None and r.refused)
     citation_rate = rate(correct, len(answered))
     refusal_rate = rate(refused, len(oos))
+    gap_refused = sum(1 for r in gap if r is not None and r.refused)
     false_rate = rate(false_refusals, len(inscope))
     return {
         "inscope": len(inscope),
         "out_of_scope": len(oos),
-        "unavailable": sum(1 for _, r in inscope if r is None) + sum(1 for r in oos if r is None),
+        "corpus_gap": len(gap),
+        "unavailable": sum(1 for _, r in inscope if r is None)
+        + sum(1 for r in (*oos, *gap) if r is None),
         "citation_correct_rate": citation_rate,
         "course_citation_correct_rate": rate(right_course, len(answered)),
         "oos_refusal_rate": refusal_rate,
+        "corpus_gap_refusal_rate": rate(gap_refused, len(gap)),
         "false_refusal_rate": false_rate,
         "pass": citation_rate >= CITATION_TARGET
         and refusal_rate >= REFUSAL_TARGET
@@ -125,6 +145,8 @@ async def _main(args: argparse.Namespace) -> None:
         raise SystemExit("ANTHROPIC_API_KEY is not set")
     inscope = _jsonl(args.datasets / "ask_inscope.jsonl")
     oos = _jsonl(args.datasets / "ask_oos.jsonl")
+    gap_file = args.datasets / "ask_corpus_gap.jsonl"
+    gap = _jsonl(gap_file) if gap_file.exists() else []
     engine = create_async_engine(settings.database_url)
     gate = asyncio.Semaphore(args.concurrency)
     try:
@@ -136,9 +158,12 @@ async def _main(args: argparse.Namespace) -> None:
             )
             in_replies = await asyncio.gather(*(_ask(ask, q, gate) for q in inscope))
             oos_replies = await asyncio.gather(*(_ask(ask, q, gate) for q in oos))
+            gap_replies = await asyncio.gather(*(_ask(ask, q, gate) for q in gap))
     finally:
         await engine.dispose()
-    report = score(list(zip(inscope, in_replies, strict=True)), list(oos_replies))
+    report = score(
+        list(zip(inscope, in_replies, strict=True)), list(oos_replies), list(gap_replies)
+    )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2), encoding="utf-8")
     if args.details is not None:

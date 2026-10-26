@@ -11,7 +11,7 @@ from typing import Protocol
 
 RRF_K = 60
 PER_SEARCH = 20
-TOP_K = 6
+TOP_K = 10
 
 
 @dataclass(frozen=True)

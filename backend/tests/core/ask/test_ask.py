@@ -59,6 +59,19 @@ def test_hindi_module_headings_are_recognised():
     assert chunks[0].label() == "NIPUN Bharat, Module 2"
 
 
+def test_garbled_hindi_module_headings_from_the_nishtha_pdf_are_recognised():
+    # The Hindi NISHTHA PDF extracts "मॉड्यूल" as "मॉĠूल", and chapter dividers double the first
+    # letter ("ममॉĠूल"); a missed heading leaves a whole course with no module in its citation.
+    pages = [
+        (440, "ममॉĠूल 1 \n"),
+        (441, "ममॉĠूल 1 : बुनियादी संख्यात््मकता का परिचय \nपहला पाठ"),
+        (445, "मॉĠूल 2 : प्रारंभिक गणित\nदूसरा पाठ"),
+        (451, "मॉड्यूल 3 : जोड़ और घटाव\nतीसरा पाठ"),
+    ]
+    chunks = chunk_document(SourceDoc("NISHTHA FLN", 9, "Foundational Numeracy", "hi"), pages)
+    assert [(c.module, c.page) for c in chunks] == [("1", 441), ("2", 445), ("3", 451)]
+
+
 # --- retrieval --------------------------------------------------------------------------------
 
 
@@ -66,6 +79,11 @@ def test_rank_fusion_rewards_agreement_between_searches():
     a, b, c = (Passage(i, i, i, 0.1) for i in "abc")
     fused = fuse([[a, b, c], [b, c, a], [b, a]])
     assert [p.chunk_id for p in fused] == ["b", "a", "c"]
+
+
+def test_fusion_keeps_ten_passages_so_a_weaker_hindi_match_can_still_be_cited():
+    ranking = [Passage(str(i), str(i), str(i), 0.1) for i in range(20)]
+    assert len(fuse([ranking])) == 10
 
 
 class FixedSearch:
@@ -114,9 +132,16 @@ def test_or_query_keeps_filler_words_when_nothing_else_is_left():
 
 
 class Model:
-    def __init__(self, rewrite: _Rewrite | Exception, answer: list[dict[str, Any]] | Exception):
+    def __init__(
+        self,
+        rewrite: _Rewrite | Exception,
+        answer: list[dict[str, Any]] | Exception,
+        *,
+        retry_answer: list[dict[str, Any]] | None = None,
+    ):
         self.rewrite = rewrite
         self.answer = answer
+        self.retry_answer = retry_answer
         self.answer_calls: list[Sequence[Mapping[str, Any]]] = []
         self.rewrite_calls = 0
         self.rewrite_think: list[bool] = []
@@ -143,6 +168,8 @@ class Model:
         self.answer_think.append(think)
         if isinstance(self.answer, Exception):
             raise self.answer
+        if self.retry_answer is not None and len(self.answer_calls) > 1:
+            return Reply(tuple(self.retry_answer), USAGE)
         return Reply(tuple(self.answer), USAGE)
 
 
@@ -211,6 +238,32 @@ async def test_nothing_cited_means_refuse_with_the_nearest_section():
     reply = await ask(model, Retrieval([P1], P1)).answer("q", "hi")
     assert reply.refused
     assert "NISHTHA/NIPUN" in reply.text and P1.label in reply.text
+
+
+async def test_an_answer_with_no_cited_text_is_asked_for_once_more():
+    thinking_only = [{"type": "thinking", "thinking": ""}]
+    model = Model(IN_SCOPE, thinking_only, retry_answer=[cite("Use bundles.", 0)])
+
+    reply = await ask(model, Retrieval([P1], P1)).answer("q", "en")
+
+    assert not reply.refused and reply.spoken == "Use bundles."
+    assert len(model.answer_calls) == 2
+
+
+async def test_a_cited_answer_is_not_asked_for_twice():
+    model = Model(IN_SCOPE, [cite("Use bundles.", 0)])
+
+    await ask(model, Retrieval([P1], P1)).answer("q", "en")
+
+    assert len(model.answer_calls) == 1
+
+
+async def test_two_empty_answers_in_a_row_still_refuse():
+    model = Model(IN_SCOPE, [{"type": "text", "text": "Not covered."}])
+
+    reply = await ask(model, Retrieval([P1], P1)).answer("q", "en")
+
+    assert reply.refused and len(model.answer_calls) == 2
 
 
 async def test_out_of_scope_questions_are_refused_before_searching():

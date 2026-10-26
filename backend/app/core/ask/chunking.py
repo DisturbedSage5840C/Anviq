@@ -14,10 +14,13 @@ MAX_TOKENS = 600
 # A rough, script-independent token estimate: Devanagari words split into more tokens than English.
 TOKENS_PER_WORD = 1.6
 
+# The Hindi NISHTHA PDF extracts "मॉड्यूल" as "मॉĠूल", and chapter dividers double the first letter.
+_HINDI_MODULE = r"म{1,2}ॉ(?:ड्य{1,2}|Ġ)ूल"
+
 # "3.2 Title", "3.2.1 Title", "Module 3", "मॉड्यूल 3", "Unit 2", "इकाई 2", "Section 4".
 _HEADING = re.compile(
     r"^\s*(?:(?P<num>\d+(?:\.\d+){1,3})\.?\s+(?P<title>\S.{0,120})"
-    r"|(?:module|मॉड्यूल|unit|इकाई|section|खंड)\s+(?P<mod>\d+)\s*[:.\-–]?\s*(?P<mtitle>.{0,120}))\s*$",
+    rf"|(?:module|{_HINDI_MODULE}|unit|इकाई|section|खंड)\s+(?P<mod>\d+)\s*[:.\-–]?\s*(?P<mtitle>.{{0,120}}))\s*$",
     re.IGNORECASE,
 )
 

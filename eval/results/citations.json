@@ -1,10 +1,12 @@
 {
-  "inscope": 100,
+  "inscope": 91,
   "out_of_scope": 40,
+  "corpus_gap": 9,
   "unavailable": 0,
-  "citation_correct_rate": 0.0,
-  "course_citation_correct_rate": 0.5897435897435898,
+  "citation_correct_rate": 0.945054945054945,
+  "course_citation_correct_rate": 0.978021978021978,
   "oos_refusal_rate": 1.0,
-  "false_refusal_rate": 0.22,
+  "corpus_gap_refusal_rate": 0.0,
+  "false_refusal_rate": 0.0,
   "pass": false
 }
