@@ -49,6 +49,22 @@ def test_sentences_are_counted_across_scripts():
     assert sentence_count("") == 0
 
 
+@pytest.mark.parametrize(
+    "text",
+    ["Umm... my answer is 26!", "उम्म... मेरा जवाब 26 है।", "Hmm. 26 hai.", "Uh, um... 26."],
+)
+def test_a_hesitation_sound_before_the_answer_is_not_a_sentence(text: str):
+    assert sentence_count(text) == 1
+
+
+def test_a_hesitant_start_still_counts_the_real_sentences_after_it():
+    assert sentence_count("Umm... my answer is 26! I think so. Really.") == 3
+
+
+def test_a_word_that_merely_starts_like_a_filler_is_a_sentence():
+    assert sentence_count("Umbrella. Hummus.") == 2
+
+
 KW = {"answer": "45", "correct": "35", "allowed": {52, 17, 7, 2, 5, 4, 1}}
 
 
