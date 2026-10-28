@@ -61,7 +61,7 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 
 | Target | Result | Verdict |
 |---|---|---|
-| AI child keeps misconception ≥95% | Raw / after one retry, 720 turns each: Riya 98.2% / 99.7%, Aman 98.8% / 99.7%, Meena 96.4% / 99.9% | **Pass for Riya and Aman. Not fully met for Meena:** overall is above 95%, but CMP.ONES_DIGIT_DECIDES (86.7%) and SUB.SMALLER_FROM_LARGER (88.3%) are under the 90% per-rule bar on raw replies. |
+| AI child keeps misconception ≥95% | Raw / after one retry, 720 turns each: Riya 98.6% / 99.9%, Aman 99.0% / 99.7%, Meena 99.2% / 99.9% | **Pass for all three, per-rule bar met** (lowest rule 96.7% for each). Meena's two weak rules had been failing mostly because her shy "umm..." pauses were counted as sentence ends; the counter now treats an ellipsis as a pause (commit dfc835b) and all three were re-run. The model was not changed. |
 | Coach κ ≥0.6 | 0.975 on 150 turns | **Pass on paper.** The gold set is Vansh's alone. Not independently adjudicated, so do not quote it to judges until it is. |
 | Citations ≥95% | Exact section 94.5% (86 of 91 answerable questions) in the latest run; 93.8% mean over three runs (93.4 to 94.5%); right course about 98%. Without the 10 alternate labels we added: 89.0% and 86.8% in two runs | **Not met** (best run one question short). The 10 alternate labels were added by us after seeing results and are not reviewed by a second person; scoring counts a question right if any cited source matches any accepted label. Most misses are broad Hindi questions. We accept this shortfall rather than add more labels after the fact; a review sheet for a second person is in `eval/review/citation_gold_review.md`. |
 | Out-of-scope refused | 40 of 40 | **Pass.** |
@@ -113,8 +113,8 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 
 **Team:**
 
-- Vansh: have a second person label the κ gold set, and tick through `eval/review/citation_gold_review.md` (the 5 misses and the 10 alternate labels). Relabel the citation gold at course level. Review Hindi copy and mirror thresholds.
-- Aadi: look at why Meena's two weakest rules (CMP.ONES_DIGIT_DECIDES, SUB.SMALLER_FROM_LARGER) slip on raw replies. All three children have now been run.
+- Vansh (**sheet ready, a human is still needed**): a blind labelling sheet for the κ gold set is prepared in `eval/review/kappa_second_labeller.md` and `.csv` (150 turns, no gold labels shown; the key file maps rows back and stays with Vansh). A second person must fill it in; then compare with the gold. Also: have a second person tick through `eval/review/citation_gold_review.md` (the 5 misses and the 10 alternate labels). Relabel the citation gold at course level. Review Hindi copy and mirror thresholds.
+- Aadi: **done.** Meena's two weakest rules slipped because the sentence counter split on her hesitation ellipsis ("मैं... "), so 2-sentence replies counted as 3. Fixed in the check (`dfc835b`), all three children re-run: every rule is now at 96.7% or higher. One open nit: in rare injection cases she names the right answer while refusing it (`leaks_correct`, 1 of 240 replies); an optional prompt tweak.
 - Joepaul: set a GitHub display name (optional).
 
 **Engineering, optional polish:** done on 27 Oct: the `TEMPLATELESS_PROVIDERS` set, Devanagari normalisation, the dashboard CI build, and compose and Caddyfile tests. Still open: OCR for scanned Hindi pages (needs a download and your OK), mirror-clip playback, and running the clip database tests inside the pytest suite.

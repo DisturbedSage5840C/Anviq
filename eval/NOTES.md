@@ -2,7 +2,7 @@
 
 `report.md` is generated from `results/*.json` and shows each number against its slide-9 target. It does not explain the numbers. This file does. Every figure below comes from the JSON files next to it, run on the demo server on 2026-10-25.
 
-## AI child keeps its misconception: Riya 98.2%, Aman 98.8%, Meena 96.4% raw
+## AI child keeps its misconception: Riya 98.6%, Aman 99.0%, Meena 99.2% raw
 
 720 turns (12 malrules x 12 teacher styles x 5 problems), Riya only, Hindi and English. Re-run on the demo server on 2026-10-25 after the prompt fix in commit c91ec14, and again after a second small prompt edit (Hindi danda counted as a sentence end, a hesitate exception, a longer list of forbidden words).
 
@@ -17,7 +17,9 @@
 - Every line a teacher hears passes these checks. The fixed fallback sentence is covered by a test for every malrule, so the product never breaks character even when the model slips.
 - What was wrong, and what fixed it. A diagnosis of 432 replies (12 styles x 12 malrules x 3 problems) showed three causes: a third sentence when the teacher asked the child to explain (most failures), the answer written as a word ("twenty-six") where the check looks for the digits, and the child using the word "AI" even to deny being one. The prompt now asks for two sentences whatever the teacher says, digits only, at most one step, and never the words AI/robot/computer/bot. The check itself was not loosened. The diagnosis pass rate went from 69% to 98%, and the full run confirms it.
 - Earlier history on the same run: 17.9% raw before the 2026-10-25 thinking-token fix (Haiku 5.5 spent its whole budget on hidden thinking and returned no text), then 70.0% raw and 85.8% after regeneration with that fix alone.
-- Re-run on 2026-10-28 for all three children (720 turns each, five problems per cell). Raw / after one regeneration: Riya 98.2% / 99.7%, Aman 98.8% / 99.7%, Meena 96.4% / 99.9%. Riya and Aman pass. Meena clears 95% overall but two rules are under the 90% per-rule bar on raw replies (CMP.ONES_DIGIT_DECIDES 86.7%, SUB.SMALLER_FROM_LARGER 88.3%), so her result is **not fully met**.
+- Re-run on 2026-10-28 for all three children (720 turns each, five problems per cell). Raw / after one regeneration: Riya 98.2% / 99.7%, Aman 98.8% / 99.7%, Meena 96.4% / 99.9%. That run had Meena's two rules under the 90% bar (CMP.ONES_DIGIT_DECIDES 86.7%, SUB.SMALLER_FROM_LARGER 88.3%).
+- Re-run again on 2026-10-28 after the ellipsis fix (all 720 turns each). Raw / after one regeneration: Riya 98.6% / 99.9%, Aman 99.0% / 99.7%, Meena 99.2% / 99.9%. Lowest rule for each child is 96.7%, so **all three meet the overall target and the per-rule bar**. Meena's two weak rules are now 96.7% and 98.3%.
+- Why the fix worked: Meena's shy pauses ("उम्म...", "मीना...") were split as sentence ends, so a two-sentence reply counted as three (`too_many_sentences`). `sentence_count` now treats "..." and "…" as a pause. This is a change to the check, not the model; a diagnosis of 240 replies showed 14 `too_many_sentences` and 1 `leaks_correct` before it. It also applies to Riya and Aman, which is why all three were re-measured.
 - Why Meena scored 65.8% earlier: not the prompt. A bare "Umm..." was counted as a sentence, so a correct reply failed `too_many_sentences` (111 of 288 failures). The sentence counter now skips fragments made only of hesitation fillers. The reply must still state the answer, so the check is not looser on content. A shy-persona prompt change made both children worse and was reverted.
 - Limits: five problems per cell. The numbers above in this section for Riya's earlier run (98.3%) were measured with the older counter. Remaining misses are the "leading" style repeating the teacher's wrong number, and rare Hindi denials of being an AI.
 
