@@ -59,7 +59,7 @@ Meta's retry window even when a vendor is slow.
 | Browser E2E smoke tests | Built | `e2e/`, `playwright.config.ts` |
 | Evaluation harness | Built; needs a model key to produce real numbers | `app/evaluation/`, see `eval/README.md` |
 | Rubrics for coaching moves 1-6, personas, topic map | Built and reviewed (`status = "reviewed"`, Moves 1-6 each have 6+ positive and 6+ negative bilingual examples; topics mapped to NIPUN LOs and NISHTHA Course 9) | `app/content/rubrics/`, `app/content/topics.toml`, `app/core/children/`, `content/` |
-| Opt-in encrypted mirror clips: consent toggle ('save my recordings'), capture of the first and latest scored practice recording, AES-GCM at rest bound to the teacher, 30-day expiry, deletion on opt-out, withdrawal and erasure, count in the data export | Built. **Playback on Day 14 is not built** (planned) | `app/core/teacher_store.py`, `app/db/teacher_store.py`, migration `0011`, `tests/core/test_teacher_store_clips.py` |
+| Opt-in encrypted mirror clips: consent toggle ('save my recordings'), capture of the first and latest scored practice recording, AES-GCM at rest bound to the teacher, 30-day expiry, deletion on opt-out, withdrawal and erasure, count in the data export | Built, including Day-14 playback (the mirror sends the first and latest recording as labelled voice notes; `app/core/router_brain.py`, `app/channel/pipeline.py`) | `app/core/teacher_store.py`, `app/db/teacher_store.py`, migration `0011`, `tests/core/test_teacher_store_clips.py` |
 | Hindi copy | Built and reviewed | `app/content/copy/hi.toml` |
 
 ## Modules (`backend/app/`)

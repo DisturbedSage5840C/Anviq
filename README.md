@@ -108,7 +108,7 @@ Known limits:
   on the demo VM were re-ingested with the cleaner on 27 Oct, but some pages still have wrongly
   mapped consonants in the PDF's font and would need OCR, which is not set up, so some Hindi
   retrieval is still weaker than English.
-- The Day-1 / Day-14 mirror needs both practices recorded. Opt-in encrypted mirror clips are captured, stored (30 days) and deleted on request, but playing them back on Day 14 is not built.
+- The Day-1 / Day-14 mirror needs both practices recorded. Opt-in encrypted mirror clips are captured, stored (30 days) and deleted on request. On Day 14 the mirror sends the teacher their first and latest kept recording as voice notes in their own chat (tested with fakes; not yet heard on a real phone).
 - The WhatsApp demo number runs on an unofficial gateway (Evolution API) for the demo only. It
   can send no template messages, so daily reminders do not work there, and it carries a ban risk
   under WhatsApp's terms. The Meta Cloud API route is wired but waits on business verification.
@@ -162,7 +162,7 @@ uv run pytest --cov=app --cov-fail-under=80
 uv run ruff check . && uv run ruff format --check . && uv run mypy app
 ```
 
-The last full run passed 1662 tests (183 skipped). CI runs ruff, mypy and pytest for the backend and
+The last full run passed 1672 tests (183 skipped). CI runs ruff, mypy and pytest for the backend and
 builds the dashboard.
 
 The database tests skip without `DATABASE_URL`; point it at the compose Postgres
@@ -173,7 +173,7 @@ The browser front ends have their own checks from the repository root:
 
 ```bash
 npm install && npx playwright install chromium
-npm run test:e2e                                       # dashboard and web room smoke tests
+PATH="$PWD/backend/.venv/bin:$PATH" npm run test:e2e       # dashboard and web room smoke tests (needs `python` on PATH)
 ```
 
 The evaluation runs that need a model key are listed in [eval/README.md](eval/README.md).

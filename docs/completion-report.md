@@ -19,7 +19,7 @@ Status words: **Done** (built, tested, running), **Changed** (built differently 
 | §1 MVP scope (Moves 1–2, G1–3 numeracy, 3 personas, 12 malrules, Ask, dashboard, privacy) | Done | 12 executable malrules exist (`SUB.*`, `ADD.*`, `PV.*`, `CMP.*`, `WP.*`). Six rubric files `move_01`…`move_06` exist. |
 | §2 Architecture and stack | Changed | Meta Cloud API became three adapters (Meta, Twilio, Evolution). Ask retrieval is in-memory BM25, not pgvector + Voyage. Hosting is one GCP VM with Caddy, not Fly + Supabase + Upstash + Vercel. Models are Haiku 5.5 and Sonnet 5.5 as planned. |
 | §3 Pedagogy (daily loop, Day-14 mirror, self-rating) | Done | Plan and Reflect work live. Mirror uses 🌱/🌿/🌳 with a demo-cycle mode. Self-rating exists (`core/self_rating.py`). |
-| §3 Opt-in encrypted mirror clips | Built, except playback | 'save my recordings' / 'stop saving my recordings' consent toggle (consent notice v3), first and latest scored practice recording kept AES-GCM encrypted for 30 days, deleted on opt-out, withdrawal, erasure and expiry, count shown in 'send me my data'. **Playback on Day 14 is not built**: the deck must say playback is planned. Consent notice v3 needs Vansh's review. |
+| §3 Opt-in encrypted mirror clips | Built, including Day-14 playback | 'save my recordings' / 'stop saving my recordings' consent toggle (consent notice v3), first and latest scored practice recording kept AES-GCM encrypted for 30 days, deleted on opt-out, withdrawal, erasure and expiry, count shown in 'send me my data'. On Day 14 the mirror sends the first and latest kept recording back as voice notes, each under a label (tested with fakes, not yet heard on a real phone). Consent notice v3 needs Vansh's review. |
 | §4 Webhook, signature, dedupe, rate limit | Done | Hardened. Evolution webhook uses a shared-secret header and Caddy blocks it from the internet. |
 | §4 Speech adapters (Google, Sarvam), confirm-back, benchmark | Done | The demo runs on Google for both listening and speaking (Neural2 voices); Sarvam stays as a switch-back option. Plus metering of speech usage. |
 | §4 Router state machine, consent, delete, export, opt-out | Done | Delete confirm flow is in `core/router.py`. |
@@ -89,7 +89,7 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 - No real teacher has used it. No pilot data. No 60% completion figure.
 - Reminders do not send on Evolution or Twilio (no templates).
 - Scanned Hindi pages would need OCR (Tesseract, a download we have not approved). Hindi passages were re-ingested on 27 Oct, but the pages with wrongly mapped consonants stay garbled until OCR is done.
-- Mirror clips are captured, encrypted, kept 30 days and deleted on request, but playback on Day 14 is not built. The clip database paths were checked by a standalone smoke script on the VM, not by the pytest suite.
+- Mirror clips are captured, encrypted, kept 30 days and deleted on request, and the Day-14 mirror plays the first and latest back in the teacher's own chat. The clip database paths were checked by a standalone smoke script on the VM, not by the pytest suite.
 - The latency figure comes from the VM over HTTPS, not from a phone, on 45 turns; the Anthropic credit balance is unknown.
 - HawkScan has not run (no `HAWK_API_KEY`). The only secret scan is a grep, not gitleaks.
 - Evolution is unofficial. The phone must stay online and charged, and the SIM recharged.
@@ -117,7 +117,7 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 - Aadi: **done.** Meena's two weakest rules slipped because the sentence counter split on her hesitation ellipsis ("मैं... "), so 2-sentence replies counted as 3. Fixed in the check (`dfc835b`), all three children re-run: every rule is now at 96.7% or higher. One open nit: in rare injection cases she names the right answer while refusing it (`leaks_correct`, 1 of 240 replies); an optional prompt tweak.
 - Joepaul: set a GitHub display name (optional).
 
-**Engineering, optional polish:** done on 27 Oct: the `TEMPLATELESS_PROVIDERS` set, Devanagari normalisation, the dashboard CI build, and compose and Caddyfile tests. Still open: OCR for scanned Hindi pages (needs a download and your OK), mirror-clip playback, and running the clip database tests inside the pytest suite.
+**Engineering, optional polish:** done on 27 Oct: the `TEMPLATELESS_PROVIDERS` set, Devanagari normalisation, the dashboard CI build, and compose and Caddyfile tests. Still open: OCR for scanned Hindi pages (needs a download and your OK), and running the clip database tests inside the pytest suite.
 
 **Housekeeping after the demo:** delete the leftover VM backups, tarballs, probe scripts and stopped eval containers.
 

@@ -17,10 +17,21 @@ class Utterance:
 
 
 @dataclass(frozen=True)
+class ClipAudio:
+    """A recording the teacher chose to keep, played back to them under a short label."""
+
+    # Kept off repr and equality so the recording never reaches a log line.
+    audio: bytes = field(repr=False, compare=False)
+    mime: str
+    label: str
+
+
+@dataclass(frozen=True)
 class Reply:
     text: str
     lang: str
     speak: bool = True
+    clips: tuple[ClipAudio, ...] = ()
 
 
 class Brain(Protocol):

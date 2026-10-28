@@ -7,7 +7,7 @@ from typing import NamedTuple
 
 from app.content.copy import render
 from app.core.daily_loop import DailyLoop, LoopReply
-from app.core.dialogue import Reply, Utterance
+from app.core.dialogue import ClipAudio, Reply, Utterance
 from app.core.model_budget import ModelBudget
 from app.core.rehearsal_flow import RehearsalReply, Rehearsals
 from app.core.router import (
@@ -104,18 +104,20 @@ class RouterBrain:
         lang = transition.state.lang or before.lang
         reply = _compose(transition, lang, exports)
         wa_id = utterance.sender_wa_id
-        spoken = await self._run_loop_effects(key, wa_id, lang, transition)
+        loop_replies = await self._run_loop_effects(key, wa_id, lang, transition)
+        spoken = [r.text for r in loop_replies]
         spoken += await self._run_rehearsal(
             key, wa_id, lang, transition, slot, _recording(utterance)
         )
         if not spoken:
             return reply
         text = PARAGRAPH_BREAK.join(part for part in (reply.text, *spoken) if part)
-        return replace(reply, text=text, speak=True, lang=lang or UNKNOWN_LANG_TTS)
+        clips = await self._mirror_clips(key, lang, loop_replies)
+        return replace(reply, text=text, speak=True, lang=lang or UNKNOWN_LANG_TTS, clips=clips)
 
     async def _run_loop_effects(
         self, key: bytes, wa_id: str, lang: str | None, transition: Transition
-    ) -> list[str]:
+    ) -> list[LoopReply]:
         """Plan, Reflect, Ask and Mirror call the model, so they run after the database commit."""
         replies = [
             await self._run_one(key, lang or UNKNOWN_LANG_TTS, effect)
@@ -123,7 +125,32 @@ class RouterBrain:
             if isinstance(effect, _LOOP_EFFECTS)
         ]
         await self._settle_loop(key, wa_id, replies)
-        return [reply.text for reply in replies]
+        return replies
+
+    async def _mirror_clips(
+        self, key: bytes, lang: str | None, replies: list[LoopReply]
+    ) -> tuple[ClipAudio, ...]:
+        """The kept Day-1 and latest recordings, when the mirror just compared them.
+
+        Only a teacher who asked for recordings to be kept has any. A failure here costs the
+        teacher the playback, never the mirror text they already have.
+        """
+        if not any(reply.plays_clips for reply in replies):
+            return ()
+        try:
+            async with self._store.locked(key) as session:
+                pair = await session.first_and_latest_clips()
+        except Exception as exc:  # the type is the only safe detail; the audio is the teacher's
+            logger.error("mirror clips unavailable: %s", type(exc).__name__)
+            return ()
+        if pair is None:
+            return ()
+        first, latest = pair
+        tongue = lang or UNKNOWN_LANG_TTS
+        today = ClipAudio(latest.audio, latest.mime, render("mirror_today", tongue))
+        if first == latest:
+            return (today,)
+        return (ClipAudio(first.audio, first.mime, render("mirror_day1", tongue)), today)
 
     async def _run_one(self, key: bytes, lang: str, effect: LoopEffect) -> LoopReply:
         unavailable = _UNAVAILABLE[type(effect)]

@@ -123,6 +123,21 @@ class InboundPipeline:
 
     async def _deliver(self, sender: str, reply: Reply) -> None:
         await self._whatsapp.send_text(sender, reply.text)
+        await self._deliver_voice(sender, reply)
+        await self._deliver_clips(sender, reply)
+
+    async def _deliver_clips(self, sender: str, reply: Reply) -> None:
+        """The teacher's own kept recordings, each under a label. The text is already delivered."""
+        for clip in reply.clips:
+            try:
+                await self._whatsapp.send_text(sender, clip.label)
+                media_id = await self._whatsapp.upload_media(clip.audio, clip.mime)
+                await self._whatsapp.send_audio(sender, media_id)
+            except WhatsAppError:
+                logger.warning("mirror clip not sent; text was delivered", exc_info=True)
+                return
+
+    async def _deliver_voice(self, sender: str, reply: Reply) -> None:
         if not reply.speak or self._tts is None:
             return
         try:

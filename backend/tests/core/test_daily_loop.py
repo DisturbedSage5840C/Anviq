@@ -121,6 +121,7 @@ async def test_the_mirror_before_two_sessions_says_there_is_nothing_to_compare()
     reply = await _loop(mirrors=FakeMirrors(None)).mirror(TEACHER, "en")
 
     assert reply.text == render("mirror_not_ready", "en")
+    assert reply.plays_clips is False
 
 
 async def test_the_mirror_shows_both_turns_and_unlocks_the_next_move_once():
@@ -134,6 +135,7 @@ async def test_the_mirror_shows_both_turns_and_unlocks_the_next_move_once():
     assert "later words" in reply.text
     assert render("mirror_next_move", "en") in reply.text
     assert mirrors.completed == [TEACHER]
+    assert reply.plays_clips is True
 
 
 @pytest.mark.parametrize("lang", ["hi", "en"])

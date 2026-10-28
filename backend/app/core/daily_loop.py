@@ -34,6 +34,8 @@ class LoopReply:
     stay_in: Phase | None = None
     # The lesson topic a plan was made for, so a practice can follow it.
     topic_id: str | None = None
+    # Set when a real Day-1 / Day-14 comparison was shown, so the teacher's kept recordings follow.
+    plays_clips: bool = False
 
 
 class Plans(Protocol):
@@ -114,7 +116,7 @@ class PipelineDailyLoop:
         first, latest = pair
         shown = render_mirror(compare(first, latest), lang)
         await self._mirrors.complete(teacher)
-        return LoopReply(f"{shown}\n\n{render('mirror_next_move', lang)}")
+        return LoopReply(f"{shown}\n\n{render('mirror_next_move', lang)}", plays_clips=True)
 
     async def ask(self, teacher: bytes, lang: str, text: str) -> LoopReply:
         if self._asker is None:

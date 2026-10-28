@@ -13,8 +13,8 @@ from app.channel.replies import (
     UNSUPPORTED,
     VOICE_UNAVAILABLE,
 )
-from app.channel.whatsapp_client import DownloadedMedia, MediaTooLargeError
-from app.core.dialogue import Reply, Utterance
+from app.channel.whatsapp_client import DownloadedMedia, MediaTooLargeError, WhatsAppError
+from app.core.dialogue import ClipAudio, Reply, Utterance
 from app.speech.base import SpeechProviderError, Transcript, Voice
 
 SENDER = "919999900000"
@@ -26,6 +26,7 @@ class FakeWhatsApp:
     sent: list[tuple[str, str]] = field(default_factory=list)
     media: DownloadedMedia | Exception = DownloadedMedia(b"ogg", "audio/ogg")
     upload_error: Exception | None = None
+    uploads: list[tuple[bytes, str]] = field(default_factory=list)
 
     async def send_text(self, to: str, body: str) -> str:
         self.sent.append(("text", body))
@@ -38,6 +39,7 @@ class FakeWhatsApp:
     async def upload_media(self, data: bytes, mime_type: str) -> str:
         if self.upload_error is not None:
             raise self.upload_error
+        self.uploads.append((data, mime_type))
         return "media-1"
 
     async def download_media(self, media_id: str) -> DownloadedMedia:
@@ -252,3 +254,43 @@ async def test_reply_marked_text_only_is_not_spoken():
     await _pipeline(whatsapp, brain, tts=FakeTTS()).handle(_text())
 
     assert whatsapp.sent == [("text", "ठीक है")]
+
+
+CLIP_FIRST = ClipAudio(b"first-ogg", "audio/ogg", "First day")
+CLIP_LATEST = ClipAudio(b"latest-ogg", "audio/ogg", "Today")
+
+
+async def test_mirror_clips_follow_the_text_each_under_its_label():
+    whatsapp = FakeWhatsApp()
+    brain = RecordingBrain(Reply("THE MIRROR", "en", speak=False, clips=(CLIP_FIRST, CLIP_LATEST)))
+
+    await _pipeline(whatsapp, brain).handle(_text())
+
+    assert whatsapp.sent == [
+        ("text", "THE MIRROR"),
+        ("text", "First day"),
+        ("audio", "media-1"),
+        ("text", "Today"),
+        ("audio", "media-1"),
+    ]
+    assert whatsapp.uploads == [(b"first-ogg", "audio/ogg"), (b"latest-ogg", "audio/ogg")]
+
+
+async def test_mirror_clips_are_sent_after_the_spoken_reply():
+    whatsapp = FakeWhatsApp()
+    brain = RecordingBrain(Reply("THE MIRROR", "en", clips=(CLIP_FIRST,)))
+
+    await _pipeline(whatsapp, brain, tts=FakeTTS()).handle(_text())
+
+    assert [kind for kind, _ in whatsapp.sent] == ["text", "audio", "text", "audio"]
+    assert whatsapp.uploads[-1] == (b"first-ogg", "audio/ogg")
+
+
+async def test_a_clip_that_cannot_be_sent_does_not_lose_the_text():
+    whatsapp = FakeWhatsApp(upload_error=WhatsAppError("upload failed"))
+    brain = RecordingBrain(Reply("THE MIRROR", "en", speak=False, clips=(CLIP_FIRST,)))
+
+    await _pipeline(whatsapp, brain).handle(_text())
+
+    assert ("text", "THE MIRROR") in whatsapp.sent
+    assert ("audio", "media-1") not in whatsapp.sent

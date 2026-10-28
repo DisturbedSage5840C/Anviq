@@ -48,7 +48,7 @@ terms. Google Cloud's speech terms are to be recorded (see the actions below).
 | Phone number (hash and encrypted id) | To recognise the teacher and send a reply on WhatsApp | A hash alone cannot reply, so the reversible id is kept, encrypted |
 | Scrubbed transcripts, 90 days | To give feedback, resume a session, show progress | Shorter retention; 90 days covers a 14 day cycle plus review |
 | Rubric results | To show the teacher her own growth | None; this is the product |
-| Mirror voice clips | Day 14 "hear how you've grown" (playback is planned, not built) | Opt-in only ('save my recordings'), encrypted, only the first and latest practice recording kept, deleted after 30 days or when the teacher opts out, withdraws or erases |
+| Mirror voice clips | Day 14 "hear how you've grown" (the Day-14 mirror plays the first and latest back to the teacher in their own chat) | Opt-in only ('save my recordings'), encrypted, only the first and latest practice recording kept, deleted after 30 days or when the teacher opts out, withdraws or erases |
 | Consent records | To prove what was agreed and when | None; required |
 | Reminder preference | To send a reminder the teacher asked for | Off by default |
 | Raw audio | Not kept, except the opt-in mirror clips above. Otherwise decoded in memory and dropped | n/a |
