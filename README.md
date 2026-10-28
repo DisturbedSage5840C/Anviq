@@ -162,7 +162,7 @@ uv run pytest --cov=app --cov-fail-under=80
 uv run ruff check . && uv run ruff format --check . && uv run mypy app
 ```
 
-The last full run passed 1681 tests (183 skipped). CI runs ruff, mypy and pytest for the backend and
+The last full run passed 1692 tests (183 skipped). CI runs ruff, mypy and pytest for the backend and
 builds the dashboard.
 
 The database tests skip without `DATABASE_URL`; point it at the compose Postgres

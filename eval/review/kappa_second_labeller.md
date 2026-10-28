@@ -7,7 +7,9 @@ Purpose: the 150-turn gold set was labelled by one person (Vansh). Kappa is only
 1. Open `kappa_second_labeller.csv` in Google Sheets or Excel. Do not open `kappa_second_labeller_key.csv` or `../datasets/gold_turns.jsonl` until you finish.
 2. For each row read what the teacher said, then for C1 to C4 of that move write `1` if the teacher's line meets the criterion, `0` if not. Judge the teacher line only; the child text is context.
 3. Every row is from Move 1 or Move 2, and both have four criteria, so fill all four columns on every row.
-4. Save as CSV and give it back. Then run the comparison (Cohen's kappa between the two labellers, and each against the coach).
+4. Save as CSV and give it back. Then run, from `backend/`:
+   `uv run python -m app.evaluation.kappa_compare --sheet ../eval/review/<filled file>.csv`
+   It prints Cohen's kappa between the two labellers (same bar as the coach: mean >= 0.6, none < 0.5) and writes `eval/results/kappa_second_labeller.json` and `kappa_second_labeller_result.md`. A sheet with a blank or non-0/1 cell is refused, not scored.
 
 ## Criteria by move
 

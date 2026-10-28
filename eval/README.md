@@ -10,6 +10,7 @@ uv run python -m app.evaluation.coach_kappa             # coach vs the human gol
 uv run python -m app.evaluation.citations               # Ask Anviq citations and refusals
 uv run python -m app.evaluation.latency_cost --days 7   # model latency and $/teacher-day from usage tables
 uv run python -m app.evaluation.assumed_day            # prices one assumed teacher-day (no model calls)
+uv run python -m app.evaluation.kappa_compare --sheet <filled csv>   # second labeller vs gold (no model calls)
 uv run python -m app.evaluation.report                  # writes eval/report.md
 ```
 
