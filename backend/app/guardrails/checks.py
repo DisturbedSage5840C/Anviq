@@ -20,9 +20,9 @@ CITATION_PLACEHOLDER = ""
 _NUMBER = re.compile(r"\d+")
 _SENTENCE_END = re.compile(r"[।.?!]+")
 # A lone hesitation sound ("umm...", "उम्म...") is not a sentence; a shy child may open with one.
-_FILLER_ONLY = re.compile(
-    r"[\W_]*(?:(?:u+m+|u+h+|h+m+|e+r+|उ+म्*म*|हम्*म*|अ+)[\W_]*)+", re.IGNORECASE
-)
+_FILLER_WORD = re.compile(r"(?:u+m+|u+h+|h+m+|e+r+|उ+म्*म*|हम्*म*|अ+)", re.IGNORECASE)
+_FILLER_EDGE_PUNCTUATION = ",;:-–—…'\"“”‘’()"
+MAX_FILLER_WORD_CHARS = 12
 # A child never says it is a program. English words, Devanagari spellings and brand names.
 _AI_REVEAL = re.compile(
     r"(?<![\w])(?:ai|a\.i\.|artificial|language model|chatbot|bot|assistant|claude|anthropic|"
@@ -55,9 +55,17 @@ def reveals_ai(text: str) -> bool:
     return _AI_REVEAL.search(unicodedata.normalize("NFKC", text)) is not None
 
 
+def _is_filler_only(part: str) -> bool:
+    """True when every word of the fragment is a hesitation sound (and there is at least one)."""
+    words = [word for word in (w.strip(_FILLER_EDGE_PUNCTUATION) for w in part.split()) if word]
+    return bool(words) and all(
+        len(word) <= MAX_FILLER_WORD_CHARS and _FILLER_WORD.fullmatch(word) for word in words
+    )
+
+
 def sentence_count(text: str) -> int:
     parts = (part for part in _SENTENCE_END.split(text) if part.strip())
-    return sum(1 for part in parts if _FILLER_ONLY.fullmatch(part) is None)
+    return sum(1 for part in parts if not _is_filler_only(part))
 
 
 def child_utterance_ok(

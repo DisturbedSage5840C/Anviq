@@ -109,3 +109,11 @@ def test_teacher_text_cannot_close_its_own_tag():
     assert wrapped.count("<teacher_utterance>") == 1
     assert wrapped.count("</teacher_utterance>") == 1
     assert wrapped.startswith("<teacher_utterance>") and wrapped.endswith("</teacher_utterance>")
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [("अ" * 5000 + "x", 1), ("u" * 5000 + "!x", 2), ("um " * 3000 + "26", 1)],
+)
+def test_a_long_run_of_filler_like_characters_is_counted_quickly(text: str, expected: int):
+    assert sentence_count(text) == expected
