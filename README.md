@@ -88,7 +88,7 @@ Numbers from the last evaluation runs; the full tables and method are in [eval/r
 | Citations that name the right source | Exact module and section 94.5% (86 of 91 answerable questions) in the latest run; 93.8% on average over the last three runs (93.4 to 94.5%). Right course about 98%. Gold labels were re-keyed to the books' own headings, and 10 alternate labels were added by us after seeing results, not yet reviewed by a second person (a review sheet is in [eval/review/citation_gold_review.md](eval/review/citation_gold_review.md)) | **Not met** (target 95%; the best run was one question short; we accept this gap and do not claim the target) |
 | In-scope questions wrongly refused | 0% in the latest run (22% before the fixes described in [eval/NOTES.md](eval/NOTES.md)). 40 of 40 out-of-scope questions refused | Met (target 5% or less) |
 | Reply time, end to end (speech-to-text, model, text-to-speech, HTTPS) | 45 turns on 27 Oct 2026: median 5.7 s, 95th percentile 10.0 s, slowest 10.2 s. Measured from the demo VM, not from a phone on a mobile network; WhatsApp delivery is not included; small sample ([eval/results/latency_e2e.json](eval/results/latency_e2e.json)) | Met on this probe (targets 10 s median, 20 s 95th percentile); not shown for phones on slow networks |
-| Cost per teacher-day | Roughly US$0.13 to 0.15 on Google speech, estimated from list prices (Neural2 voice about US$16 per million characters) for a replay of an assumed day (5 rehearsal turns, 1 plan, 1 reflect, 1 in-scope question); not checked against a bill. The demo's speech is paid from the Google Cloud trial credit, so no cash is spent. The stored report figure is US$0.22, inflated by test traffic; see [eval/NOTES.md](eval/NOTES.md) | **Not shown to be met** (the code's target is US$0.12; the pitch deck says US$0.05, which is unsupported) |
+| Cost per teacher-day | About US$0.147 on Google speech, a list-price estimate for an assumed day (5 rehearsal turns, 1 plan, 1 reflect, 1 in-scope question, 1 topic lookup): model US$0.075, speech US$0.072 (Neural2 voice about US$16 per million characters). Token counts are measured averages from the demo; the day itself is an assumption and the figure is not checked against a bill. Running the coach on Haiku would price at about US$0.113, but it left more turns unscored (33 of 150 against 5) in a trial, so it is not adopted. The demo's speech is paid from the Google Cloud trial credit, so no cash is spent. The stored report figure of US$0.22 comes from 2 teacher-days of test traffic and is not used; see [eval/NOTES.md](eval/NOTES.md) | **Not met** (target US$0.12; the pitch deck says US$0.05, which is unsupported) |
 
 Known limits:
 
@@ -162,7 +162,7 @@ uv run pytest --cov=app --cov-fail-under=80
 uv run ruff check . && uv run ruff format --check . && uv run mypy app
 ```
 
-The last full run passed 1672 tests (183 skipped). CI runs ruff, mypy and pytest for the backend and
+The last full run passed 1681 tests (183 skipped). CI runs ruff, mypy and pytest for the backend and
 builds the dashboard.
 
 The database tests skip without `DATABASE_URL`; point it at the compose Postgres

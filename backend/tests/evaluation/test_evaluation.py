@@ -325,6 +325,42 @@ def test_report_fails_end_to_end_latency_when_either_percentile_misses(tmp_path:
     assert "below target" in render(tmp_path)
 
 
+def _cost_row(results: Path) -> str:
+    rows = {
+        line.split("|")[1].strip(): line
+        for line in render(results).splitlines()
+        if line.startswith("|")
+    }
+    return rows["Cost per teacher-day"]
+
+
+def test_report_prices_cost_from_the_assumed_day_not_the_inflated_stored_figure(tmp_path: Path):
+    (tmp_path / "latency_cost.json").write_text(
+        json.dumps({"usd_per_teacher_day": 0.22, "cost_pass": False, "model_latency_ms": {}}),
+        encoding="utf-8",
+    )
+    assumed = {
+        "scenarios": {"as deployed": {"usd_per_teacher_day": 0.147, "cost_pass": False}},
+    }
+    (tmp_path / "assumed_day.json").write_text(json.dumps(assumed), encoding="utf-8")
+
+    row = _cost_row(tmp_path)
+
+    assert "$0.147" in row and "assumed day" in row and "0.220" not in row
+    assert row.rstrip().endswith("below target |")
+
+
+def test_report_cost_falls_back_to_the_stored_figure_without_an_assumed_day(tmp_path: Path):
+    (tmp_path / "latency_cost.json").write_text(
+        json.dumps({"usd_per_teacher_day": 0.05, "cost_pass": True, "model_latency_ms": {}}),
+        encoding="utf-8",
+    )
+
+    row = _cost_row(tmp_path)
+
+    assert "$0.050" in row and row.rstrip().endswith("PASS |")
+
+
 def test_a_hindi_page_without_devanagari_is_flagged_for_ocr():
     assert looks_broken("abcdefghij " * 10, "hi")
     assert not looks_broken("बच्चों को बंडल से गिनती सिखाएँ " * 5, "hi")

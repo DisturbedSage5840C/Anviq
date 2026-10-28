@@ -32,7 +32,7 @@ if you have rehearsed two sessions on the same demo account beforehand.
 
 | Claim in the deck | Change it to | Evidence |
 |---|---|---|
-| Cost about US$0.05 per teacher-day | About US$0.15 per teacher-day, with speech about a third of it; a cheaper voice or a volume plan lowers it | `eval/NOTES.md`, cost section |
+| Cost about US$0.05 per teacher-day | About US$0.147 per teacher-day (model US$0.075, speech US$0.072), a list-price estimate for an assumed day; the US$0.12 target is not met | `eval/NOTES.md`, cost section |
 | 95% or more of citations correct | Measured on 91 answerable questions: exact section 94.5% in the latest run, 93.8% on average over three runs (93.4 to 94.5%), right course about 98%. 10 of the accepted labels were added by us after seeing results and are not reviewed by a second person. State the target as not yet met (the best run was one question short) | `eval/report.md` |
 | Out-of-scope refused, 5% or fewer false refusals | Out-of-scope refused 40 of 40. In-scope wrongly refused 0% in the latest run (22% before the fixes). Met. Nine of our 100 questions are not covered by the books; those are now answered from the nearest passages, not refused | `eval/report.md` |
 | Coach agreement kappa 0.6 or more | 0.975 on our gold set, which our content lead wrote; say "not independently adjudicated" | `eval/datasets/gold_turns.jsonl` |

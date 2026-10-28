@@ -58,13 +58,15 @@
 - Where it still misses: broad Hindi questions whose answer sits in several places, and four Hindi questions (14, 20, 24, 40) whose best chunk is the bare "NIPUN Bharat" front matter with no section number. Run-to-run variation is about one question. We did not relabel further, add more alternates or raise `TOP_K` again, because that would be tuning to the test set.
 - Cost: each full run is about US$2 of Anthropic credit.
 
-## Cost per teacher-day: not a valid measurement yet
+## Cost per teacher-day: about US$0.147, not met
 
-- The stored figure ($0.220) comes from the last 7 days of mostly test traffic: 2 teacher-days, 37 model calls.
-- It is inflated. Rows written before the 2026-10-25 fix used old Haiku pricing. The eval (`app/evaluation/latency_cost.py`) now recomputes model spend from the stored token counts at the current price table instead of reading the stored estimate, so old rows cannot distort the figure.
-- Prices were checked on 2026-10-25 against Anthropic's pricing page (Haiku 5.5 US$0.10/0.50, Sonnet 5.5 US$2/10, Opus 5.5 US$4/20 per million tokens) and Sarvam's price list (speech-to-text Rs 29.40 per hour, Bulbul V3 text-to-speech Rs 30 per 10,000 characters). The same check found one wrong number: a cache hit costs 0.05 of the input price on Sonnet 5.5 and Opus 5.5, not 0.1, and the table now says so. The Google speech rates were not re-checked.
-- Re-pricing the stored token counts plus the recorded speech cost gives roughly US$0.15 per teacher-day, about a third of it speech. Sarvam's cheaper Bulbul V4 Flash voice or a volume plan would lower the speech share.
-- The deck's target of about US$0.05 per teacher-day is not supported by any measurement yet. It needs a real pilot day, or a replay of full sessions, with prices confirmed.
+- **Method.** `python -m app.evaluation.assumed_day` prices one written-down day: 5 coach turns, 5 child replies, 1 plan, 1 topic lookup, 1 reflection, 1 Ask rewrite and 1 Ask answer, 90 s of speech-to-text and 3,000 spoken characters. Token counts per call are means taken from the demo's recorded usage; prices are the repo's price table and the Google rates in the code (Rs 0.0224 per second of speech-to-text, Rs 0.001344 per character for Neural2), at an assumed Rs 84 per US dollar. The result is `eval/results/assumed_day.json`.
+- **Result.** Model US$0.075 (the Ask answer is the biggest call at US$0.027, then the five coach turns at US$0.035) plus speech US$0.072 (voice US$0.048, transcription US$0.024) gives **US$0.147 against the US$0.12 target. Not met.**
+- **What would lower it.** The scenario list in the same file prices the coach on Haiku at the same token counts: about US$0.113, which would pass. We did not adopt it. In the 150-turn gold set Haiku left 33 turns unscored (Sonnet 5) and one criterion fell to kappa 0.61, so it trades coaching reliability for cost. That choice is the team's, not ours to make quietly in the last days. Trimming the 11.7k-token Ask prompt or caching the fixed voice copy would also help but would need the citation and speech checks re-run.
+- **What the figure is not.** It is not a bill and not a measured day. The call mix, seconds and characters are assumptions, the exchange rate is assumed, and the Google speech rates in the code have not been re-checked against Google's current price list or an invoice. A real pilot day would replace it.
+- **The stored `latency_cost.json` figure (US$0.220)** comes from 2 teacher-days and 37 calls of mostly test traffic, with old rows priced at the old Haiku rate. The report now uses the assumed day instead and falls back to the stored figure only when no assumed-day result exists.
+- Prices were checked on 2026-10-25 against Anthropic's pricing page (Haiku 5.5 US$0.10/0.50, Sonnet 5.5 US$2/10, Opus 5.5 US$4/20 per million tokens); a cache hit costs 0.05 of the input price on Sonnet 5.5 and Opus 5.5.
+- The deck's target of about US$0.05 per teacher-day is not supported by any measurement.
 
 ## Latency
 

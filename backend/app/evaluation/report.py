@@ -103,6 +103,23 @@ def _e2e_verdict(latency: Mapping[str, Any] | None) -> str:
     return "PASS" if met else "below target"
 
 
+def _cost_row(assumed: Mapping[str, Any] | None, stored: Mapping[str, Any] | None) -> str:
+    """Cost per teacher-day: the priced assumed day when present, else the stored usage figure.
+
+    The stored figure divides real spend by the few teacher-days of test traffic, so it is only
+    the fallback; the assumed day is a fixed, written-down day priced at current rates.
+    """
+    if assumed is not None:
+        deployed = assumed["scenarios"]["as deployed"]
+        return (
+            f"| Cost per teacher-day | <= $0.12 | ${deployed['usd_per_teacher_day']:.3f} "
+            f"(list-price estimate for an assumed day) | {_verdict(deployed, 'cost_pass')} |"
+        )
+    per_day = stored.get("usd_per_teacher_day") if stored else None
+    cell = "n/a" if per_day is None else f"${per_day:.3f}"
+    return f"| Cost per teacher-day | <= $0.12 | {cell} | {_verdict(stored, 'cost_pass')} |"
+
+
 def render(results: Path) -> str:
     character = _load(results, "character")
     coach = _load(results, "coach_kappa")
@@ -141,11 +158,7 @@ def render(results: Path) -> str:
         f"| Out-of-scope refused | >=95%, <=5% false refusals | "
         f"{_refusal_cell(cites)} | {_refusal_verdict(cites)} |"
     )
-    per_day = cost.get("usd_per_teacher_day") if cost else None
-    lines.append(
-        f"| Cost per teacher-day | <= $0.12 | {'n/a' if per_day is None else f'${per_day:.3f}'} | "
-        f"{_verdict(cost, 'cost_pass')} |"
-    )
+    lines.append(_cost_row(_load(results, "assumed_day"), cost))
     lines.append(
         f"| End-to-end latency (web room) | p50 <= 10 s, p95 <= 20 s | {_e2e_cell(latency)} | "
         f"{_e2e_verdict(latency)} |"

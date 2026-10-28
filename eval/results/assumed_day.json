@@ -1,0 +1,49 @@
+{
+  "assumed_day": {
+    "calls": {
+      "coach": 5,
+      "child": 5,
+      "plan": 1,
+      "topic": 1,
+      "reflect": 1,
+      "ask_rewrite": 1,
+      "ask_answer": 1
+    },
+    "stt_seconds": 90,
+    "tts_characters": 3000
+  },
+  "inr_per_usd": 84.0,
+  "target_usd": 0.12,
+  "scenarios": {
+    "as deployed": {
+      "llm_usd": 0.074966,
+      "speech_usd": 0.072,
+      "by_purpose_usd": {
+        "coach": 0.035385,
+        "child": 0.00045,
+        "plan": 0.007444,
+        "topic": 9.6e-05,
+        "reflect": 0.004432,
+        "ask_rewrite": 0.000125,
+        "ask_answer": 0.027034
+      },
+      "usd_per_teacher_day": 0.146966,
+      "cost_pass": false
+    },
+    "coach on Haiku (not adopted)": {
+      "llm_usd": 0.041376,
+      "speech_usd": 0.072,
+      "by_purpose_usd": {
+        "coach": 0.001795,
+        "child": 0.00045,
+        "plan": 0.007444,
+        "topic": 9.6e-05,
+        "reflect": 0.004432,
+        "ask_rewrite": 0.000125,
+        "ask_answer": 0.027034
+      },
+      "usd_per_teacher_day": 0.113376,
+      "cost_pass": true
+    }
+  }
+}
