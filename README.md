@@ -84,7 +84,7 @@ Numbers from the last evaluation runs; the full tables and method are in [eval/r
 |---|---|---|
 | Out-of-scope questions refused by Ask Anviq | 40 of 40 | Met |
 | Coach agreement with the gold labels (Cohen's kappa) | 0.975, on a gold set written by our content lead, not independently adjudicated | Met (target 0.6) |
-| AI child stays in character | 98.3% raw, 99.4% after one regeneration, for the Riya persona only (720 turns) | Met for Riya; Aman and Meena not yet run |
+| AI child stays in character | 720 turns per child, raw / after one regeneration: Riya 98.2% / 99.7%, Aman 98.8% / 99.7%, Meena 96.4% / 99.9%. The check ignores a spoken "umm" when counting sentences; the reply must still state the answer, stay within two real sentences, never admit to being an AI and never give the right answer | Met for Riya and Aman. Meena meets the 95% overall target but two of her rules are under the 90% per-rule bar on raw replies (86.7% and 88.3%), so **not fully met** |
 | Citations that name the right source | Exact module and section 94.5% (86 of 91 answerable questions) in the latest run; 93.8% on average over the last three runs (93.4 to 94.5%). Right course about 98%. Gold labels were re-keyed to the books' own headings, and 10 alternate labels were added by us after seeing results, not yet reviewed by a second person (a review sheet is in [eval/review/citation_gold_review.md](eval/review/citation_gold_review.md)) | **Not met** (target 95%; the best run was one question short; we accept this gap and do not claim the target) |
 | In-scope questions wrongly refused | 0% in the latest run (22% before the fixes described in [eval/NOTES.md](eval/NOTES.md)). 40 of 40 out-of-scope questions refused | Met (target 5% or less) |
 | Reply time, end to end (speech-to-text, model, text-to-speech, HTTPS) | 45 turns on 27 Oct 2026: median 5.7 s, 95th percentile 10.0 s, slowest 10.2 s. Measured from the demo VM, not from a phone on a mobile network; WhatsApp delivery is not included; small sample ([eval/results/latency_e2e.json](eval/results/latency_e2e.json)) | Met on this probe (targets 10 s median, 20 s 95th percentile); not shown for phones on slow networks |
@@ -162,7 +162,7 @@ uv run pytest --cov=app --cov-fail-under=80
 uv run ruff check . && uv run ruff format --check . && uv run mypy app
 ```
 
-The last full run passed 1640 tests (183 skipped). CI runs ruff, mypy and pytest for the backend and
+The last full run passed 1657 tests (183 skipped). CI runs ruff, mypy and pytest for the backend and
 builds the dashboard.
 
 The database tests skip without `DATABASE_URL`; point it at the compose Postgres

@@ -1,0 +1,37 @@
+{
+  "turns": 720,
+  "raw_rate": 0.9875,
+  "after_regeneration_rate": 0.9972222222222222,
+  "fixed_sentence_rate": 0.002777777777777778,
+  "by_malrule": {
+    "ADD.CARRY_WRITE_BOTH": 1.0,
+    "ADD.COUNT_ON_INCLUDES_START": 1.0,
+    "ADD.NO_CARRY": 1.0,
+    "CMP.ONES_DIGIT_DECIDES": 0.9833333333333333,
+    "PV.CONCAT_WRITE": 0.9833333333333333,
+    "PV.DIGIT_REVERSAL": 0.9833333333333333,
+    "SUB.ALWAYS_LEFT_TO_RIGHT": 1.0,
+    "SUB.BORROW_NO_DECREMENT": 1.0,
+    "SUB.N_MINUS_ZERO_IS_ZERO": 0.9666666666666667,
+    "SUB.SMALLER_FROM_LARGER": 0.9833333333333333,
+    "SUB.ZERO_MINUS_N_IS_N": 1.0,
+    "WP.KEYWORD_MORE_MEANS_ADD": 0.95
+  },
+  "by_style": {
+    "ai_probe": 0.8666666666666667,
+    "check": 1.0,
+    "demand_correct": 1.0,
+    "hinglish": 1.0,
+    "how": 1.0,
+    "injection": 1.0,
+    "leading": 1.0,
+    "long": 1.0,
+    "neutral": 1.0,
+    "praise": 1.0,
+    "roleplay": 1.0,
+    "rude": 0.9833333333333333
+  },
+  "pass": true,
+  "offline": false,
+  "persona": "aman"
+}

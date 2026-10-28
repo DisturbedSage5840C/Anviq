@@ -7,7 +7,7 @@ Status words: **Done** (built, tested, running), **Changed** (built differently 
 ## 1. Headline
 
 - The core product works end to end on the live demo: WhatsApp on a real number (via Evolution), a browser web room for judges, Plan, Rehearse with AI children, Reflect, Ask Anviq with citations, privacy controls, a k≥20 dashboard.
-- Backend quality gates are green: 1640 tests pass (183 skipped, mostly database tests that need a local Postgres), ruff, ruff format and mypy are clean. CI also builds the dashboard, and 21 tests check the demo stack's exposure rules (only Caddy is public, secrets are required, the Evolution webhook is blocked from the internet). The demo VM runs the latest build with HTTPS and hardened headers.
+- Backend quality gates are green: 1657 tests pass (183 skipped, mostly database tests that need a local Postgres), ruff, ruff format and mypy are clean. CI also builds the dashboard, and 21 tests check the demo stack's exposure rules (only Caddy is public, secrets are required, the Evolution webhook is blocked from the internet). The demo VM runs the latest build with HTTPS and hardened headers.
 - **Two targets are not met or unproven** and must not be claimed to judges: citations (exact section 94.5% in the latest run, 93.8% on average over three runs, target 95%) and the pilot-completion rate (no pilot has run). False refusals (0%) and out-of-scope refusal (100%) are now met. Cost per teacher-day is **not shown to be met**: roughly US$0.13 to 0.15 on Google speech, a list-price estimate from an assumed day just above the US$0.12 target, so do not claim it as met. The demo speech is paid from the Google Cloud trial credit, so no cash is spent.
 - **Nothing has been tested with a real teacher yet.** The mini-pilot (28–31 Oct) has not started.
 - What remains is mostly people work: the demo video, the updated deck, the submission form, and a few keys and approvals only you can give.
@@ -61,7 +61,7 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 
 | Target | Result | Verdict |
 |---|---|---|
-| AI child keeps misconception ≥95% | 98.3% raw, 99.4% after one retry, 720 turns | **Pass.** Riya only. Aman and Meena not run. |
+| AI child keeps misconception ≥95% | Raw / after one retry, 720 turns each: Riya 98.2% / 99.7%, Aman 98.8% / 99.7%, Meena 96.4% / 99.9% | **Pass for Riya and Aman. Not fully met for Meena:** overall is above 95%, but CMP.ONES_DIGIT_DECIDES (86.7%) and SUB.SMALLER_FROM_LARGER (88.3%) are under the 90% per-rule bar on raw replies. |
 | Coach κ ≥0.6 | 0.975 on 150 turns | **Pass on paper.** The gold set is Vansh's alone. Not independently adjudicated, so do not quote it to judges until it is. |
 | Citations ≥95% | Exact section 94.5% (86 of 91 answerable questions) in the latest run; 93.8% mean over three runs (93.4 to 94.5%); right course about 98%. Without the 10 alternate labels we added: 89.0% and 86.8% in two runs | **Not met** (best run one question short). The 10 alternate labels were added by us after seeing results and are not reviewed by a second person; scoring counts a question right if any cited source matches any accepted label. Most misses are broad Hindi questions. We accept this shortfall rather than add more labels after the fact; a review sheet for a second person is in `eval/review/citation_gold_review.md`. |
 | Out-of-scope refused | 40 of 40 | **Pass.** |
@@ -114,7 +114,7 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 **Team:**
 
 - Vansh: have a second person label the κ gold set, and tick through `eval/review/citation_gold_review.md` (the 5 misses and the 10 alternate labels). Relabel the citation gold at course level. Review Hindi copy and mirror thresholds.
-- Aadi: run the character eval for Aman and Meena on the VM.
+- Aadi: look at why Meena's two weakest rules (CMP.ONES_DIGIT_DECIDES, SUB.SMALLER_FROM_LARGER) slip on raw replies. All three children have now been run.
 - Joepaul: set a GitHub display name (optional).
 
 **Engineering, optional polish:** done on 27 Oct: the `TEMPLATELESS_PROVIDERS` set, Devanagari normalisation, the dashboard CI build, and compose and Caddyfile tests. Still open: OCR for scanned Hindi pages (needs a download and your OK), mirror-clip playback, and running the clip database tests inside the pytest suite.
