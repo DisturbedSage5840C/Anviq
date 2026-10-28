@@ -19,6 +19,8 @@ CITATION_PLACEHOLDER = ""
 # Python's \d matches Devanagari digits, and int() reads them, so ४५ and 45 are the same number.
 _NUMBER = re.compile(r"\d+")
 _SENTENCE_END = re.compile(r"[।.?!]+")
+# "..." is a spoken pause inside a sentence ("मुझे लगता है... 23 बड़ा है"), not the end of one.
+_PAUSE = re.compile(r"\.{2,}|…")
 # A lone hesitation sound ("umm...", "उम्म...") is not a sentence; a shy child may open with one.
 _FILLER_WORD = re.compile(r"(?:u+m+|u+h+|h+m+|e+r+|उ+म्*म*|हम्*म*|अ+)", re.IGNORECASE)
 _FILLER_EDGE_PUNCTUATION = ",;:-–—…'\"“”‘’()"
@@ -64,7 +66,7 @@ def _is_filler_only(part: str) -> bool:
 
 
 def sentence_count(text: str) -> int:
-    parts = (part for part in _SENTENCE_END.split(text) if part.strip())
+    parts = (part for part in _SENTENCE_END.split(_PAUSE.sub(" ", text)) if part.strip())
     return sum(1 for part in parts if not _is_filler_only(part))
 
 

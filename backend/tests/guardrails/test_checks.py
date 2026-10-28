@@ -61,6 +61,23 @@ def test_a_hesitant_start_still_counts_the_real_sentences_after_it():
     assert sentence_count("Umm... my answer is 26! I think so. Really.") == 3
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "मेरा जवाब 23 है। मुझे लगता है, उम्म... 23 बड़ा है।",
+        "मीना... मेरा जवाब 39 है। उम्म, मैंने आखिरी अंक देखे, 9 और 5।",
+        "49! मैं… 49 बड़ा है।",
+        "My answer is 22. Umm, I think 22... teacher.",
+    ],
+)
+def test_an_ellipsis_is_a_pause_inside_a_sentence_not_the_end_of_one(text: str):
+    assert sentence_count(text) == 2
+
+
+def test_real_sentences_after_a_pause_are_still_counted():
+    assert sentence_count("उम... 35! मुझे लगता है। मैंने ऐसे ही किया।") == 3
+
+
 def test_a_word_that_merely_starts_like_a_filler_is_a_sentence():
     assert sentence_count("Umbrella. Hummus.") == 2
 
