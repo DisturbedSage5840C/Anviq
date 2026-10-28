@@ -88,7 +88,7 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 
 - No real teacher has used it. No pilot data. No 60% completion figure.
 - Reminders do not send on Evolution or Twilio (no templates).
-- Scanned Hindi pages would need OCR (Tesseract, a download we have not approved). Hindi passages were re-ingested on 27 Oct, but the pages with wrongly mapped consonants stay garbled until OCR is done.
+- Hindi text layer: OCR (Tesseract) was tried on 28 Oct and not adopted, because it returns nonsense on the worst pages. Repeated letters are handled in search instead (29/29 Hindi questions find the right course in the top five, up from 27/29). A few pages (for example PDF pages 51, 321 and 637) stay damaged, and shown text can still have doubled letters.
 - Mirror clips are captured, encrypted, kept 30 days and deleted on request, and the Day-14 mirror plays the first and latest back in the teacher's own chat. The clip database paths were checked by a standalone smoke script on the VM, not by the pytest suite.
 - The latency figure comes from the VM over HTTPS, not from a phone, on 45 turns; the Anthropic credit balance is unknown.
 - HawkScan has not run (no `HAWK_API_KEY`). The only secret scan is a grep, not gitleaks.
@@ -117,7 +117,7 @@ Corrections to make in the deck are already tabulated in `docs/submission.md` ("
 - Aadi: **done.** Meena's two weakest rules slipped because the sentence counter split on her hesitation ellipsis ("मैं... "), so 2-sentence replies counted as 3. Fixed in the check (`dfc835b`), all three children re-run: every rule is now at 96.7% or higher. One open nit: in rare injection cases she names the right answer while refusing it (`leaks_correct`, 1 of 240 replies); an optional prompt tweak.
 - Joepaul: set a GitHub display name (optional).
 
-**Engineering, optional polish:** done on 27 Oct: the `TEMPLATELESS_PROVIDERS` set, Devanagari normalisation, the dashboard CI build, and compose and Caddyfile tests. Still open: OCR for scanned Hindi pages (needs a download and your OK), and running the clip database tests inside the pytest suite.
+**Engineering, optional polish:** done on 27 Oct: the `TEMPLATELESS_PROVIDERS` set, Devanagari normalisation, the dashboard CI build, and compose and Caddyfile tests. Hindi OCR was tried and not adopted (see above). Still open: running the clip database tests inside the pytest suite.
 
 **Housekeeping after the demo:** delete the leftover VM backups, tarballs, probe scripts and stopped eval containers.
 

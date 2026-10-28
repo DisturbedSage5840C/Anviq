@@ -47,3 +47,15 @@ def test_cleaning_twice_gives_the_same_result():
     once = clean_text("बच््चोों")
 
     assert clean_text(once) == once
+
+
+def test_the_mis_mapped_running_header_glyph_is_repaired_to_module():
+    assert clean_text("मॉ\u0120ूल 3") == "मॉड्यूल 3"
+
+
+@pytest.mark.parametrize(
+    ("ligature", "letters"),
+    [("\ufb01", "fi"), ("\ufb02", "fl"), ("\ufb00", "ff"), ("\ufb03", "ffi"), ("\ufb04", "ffl")],
+)
+def test_latin_ligature_glyphs_become_plain_letters(ligature: str, letters: str):
+    assert clean_text(f"of{ligature}ce") == f"of{letters}ce"

@@ -22,13 +22,18 @@ MIN_WORD_CHARS = 2
 # The NISHTHA Hindi PDFs were extracted with doubled marks ("सेे", "बच््चोों"). Real Hindi never
 # repeats the same sign or vowel sign, so a run of one collapses to a single mark.
 _REPEATED_MARK = re.compile(r"([ँ-ःा-्])\1+")
+# The same extraction also doubles letters ("बच्चचे", "ययह", "वीडिययो"). A stray extra letter cannot
+# be told from a real word by frequency ("इससे" is real), so the stored text is left as it is and
+# runs collapse here, on the index side and the query side alike, so the two still meet.
+_REPEATED_LETTER = re.compile(r"([ऄ-हक़-ॡ])\1+")
 K1 = 1.2  # how quickly repeated occurrences of a word stop adding score
 B = 0.75  # how strongly long passages are discounted
 
 
 def tokenize(text: str) -> list[str]:
     """Lower-cased words of two or more characters; works for Hindi and English alike."""
-    words = _WORD.findall(_REPEATED_MARK.sub(r"\1", text))
+    collapsed = _REPEATED_LETTER.sub(r"\1", _REPEATED_MARK.sub(r"\1", text))
+    words = _WORD.findall(collapsed)
     return [w.casefold() for w in words if len(w) >= MIN_WORD_CHARS]
 
 

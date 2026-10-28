@@ -105,9 +105,13 @@ Known limits:
 - The Hindi NISHTHA PDF was extracted with doubled vowel signs and garbled module headings. Search
   collapses the vowel signs, the chunker recognises the headings, and the text is cleaned both when
   it is ingested and when an answer is built, so teachers see clean Hindi. The Hindi passages
-  on the demo VM were re-ingested with the cleaner on 27 Oct, but some pages still have wrongly
-  mapped consonants in the PDF's font and would need OCR, which is not set up, so some Hindi
-  retrieval is still weaker than English.
+  on the demo VM were re-ingested with the cleaner on 27 Oct. The text layer also repeats single
+  letters ("बच्चचे", "ययह"; about 12% of Hindi words). A stored word cannot be corrected safely,
+  because "इससे" is real, so search collapses repeated letters on both the passage and the question
+  side instead (28 Oct: the right course in the top five for 29 of 29 Hindi questions, up from 27).
+  Tesseract OCR was tried on the 174 pages with odd glyphs: it is clean on a few text pages but
+  returns nonsense on the worst ones (courses 1 to 3 pages 51, 321 and 637), so it was not adopted.
+  Those few pages stay damaged, and the answer text can still show doubled letters.
 - The Day-1 / Day-14 mirror needs both practices recorded. Opt-in encrypted mirror clips are captured, stored (30 days) and deleted on request. On Day 14 the mirror sends the teacher their first and latest kept recording as voice notes in their own chat (tested with fakes; not yet heard on a real phone).
 - The WhatsApp demo number runs on an unofficial gateway (Evolution API) for the demo only. It
   can send no template messages, so daily reminders do not work there, and it carries a ban risk
@@ -162,7 +166,7 @@ uv run pytest --cov=app --cov-fail-under=80
 uv run ruff check . && uv run ruff format --check . && uv run mypy app
 ```
 
-The last full run passed 1692 tests (183 skipped). CI runs ruff, mypy and pytest for the backend and
+The last full run passed 1700 tests (183 skipped). CI runs ruff, mypy and pytest for the backend and
 builds the dashboard.
 
 The database tests skip without `DATABASE_URL`; point it at the compose Postgres
