@@ -4,25 +4,29 @@ Anything these functions return None for falls through to the next stage (an LLM
 added with the planner) or to the current state's default.
 """
 
-import re
-import unicodedata
 from enum import StrEnum
 
-# Devanagari block minus the danda (U+0964) and double danda (U+0965), which are punctuation.
-_TOKEN = re.compile(r"[\w\u0900-\u0963\u0966-\u097F]+")
+from app.core.lexicon import (
+    QUESTION_WORDS_OTHER,
+    ROMAN_NO,
+    ROMAN_QUESTION,
+    ROMAN_YES,
+    in_lexicon,
+    squeezed,
+    tokenise,
+)
+
 SHORT_UTTERANCE_MAX_TOKENS = 3
 # Saving recordings needs a clear yes, so the opt-in must be a short message, not a phrase buried
 # in a longer sentence.
 CLIPS_OPT_IN_MAX_TOKENS = 8
 QUESTION_MIN_TOKENS = 3
+# "haan" and "nahi" typed in English letters answer a yes/no prompt only when that is all the
+# message is. "bacche nahi samajhte jab main ghatana sikhati hoon" is a teacher describing a
+# problem, and a stray "no" must never read as refusing consent.
+ROMAN_ANSWER_MAX_TOKENS = 4
 
-
-def _normalise(text: str) -> str:
-    return unicodedata.normalize("NFC", text).casefold()
-
-
-def _tokens(text: str) -> tuple[str, ...]:
-    return tuple(_TOKEN.findall(_normalise(text)))
+_tokens = tokenise
 
 
 def _phrases(*phrases: str) -> tuple[tuple[str, ...], ...]:
@@ -167,11 +171,14 @@ def classify_menu(text: str) -> MenuIntent | None:
 # English puts the question word first; Hindi puts it anywhere ("बच्चे घटाना क्यों नहीं सीख पाते").
 _ENGLISH_OPENERS = frozenset(_tokens("how what why when where which who whom"))
 _HINDI_QUESTION_WORDS = frozenset(_tokens("क्या कैसे कैसी क्यों कब कहाँ कहां कौन कितना कितने कितनी किस"))
+# Question words of Hindi typed in English letters, and of the other Indian scripts.
+_OTHER_QUESTION_WORDS = ROMAN_QUESTION | QUESTION_WORDS_OTHER
 
 
 def looks_like_question(text: str) -> bool:
     """A real question, not a fragment: ends in "?", opens with an English wh-/how word, or has
-    a Hindi question word anywhere.
+    a Hindi question word anywhere, in Devanagari or typed in English letters, or a question word
+    of another Indian script (Marathi, Tamil, Bengali and so on).
 
     Auxiliary openers ("do", "is", "can") are left out: "do not worry" is a statement, and each
     question costs two model calls. Needs a few words, so "what?" falls through to the menu.
@@ -183,6 +190,7 @@ def looks_like_question(text: str) -> bool:
         text.rstrip().endswith(("?", "？"))
         or tokens[0] in _ENGLISH_OPENERS
         or not _HINDI_QUESTION_WORDS.isdisjoint(tokens)
+        or any(in_lexicon(token, _OTHER_QUESTION_WORDS) for token in tokens)
     )
 
 
@@ -190,23 +198,37 @@ _YES = frozenset(_tokens("हाँ हां हा जी ठीक सही 
 _NO = frozenset(_tokens("नहीं नही ना no n nope"))
 
 
-def parse_yes_no(text: str) -> bool | None:
-    tokens = set(_tokens(text))
-    if tokens & _NO:
+def _says(tokens: tuple[str, ...], native: frozenset[str], roman: frozenset[str]) -> bool:
+    if not native.isdisjoint(tokens):
+        return True
+    if len(tokens) > ROMAN_ANSWER_MAX_TOKENS:
         return False
-    if tokens & _YES:
+    return any(in_lexicon(token, roman) for token in tokens)
+
+
+def parse_yes_no(text: str) -> bool | None:
+    """True for yes, False for no, None when it is neither. No outranks yes ("haan par nahi").
+
+    Handles stretched letters ("yeees", "haaan"); romanized Hindi counts only in a short reply.
+    """
+    tokens = _tokens(text)
+    stretched = frozenset(form for token in tokens for form in squeezed(token))
+    if _says(tokens, _NO, ROMAN_NO) or not _NO.isdisjoint(stretched):
+        return False
+    if _says(tokens, _YES, ROMAN_YES) or not _YES.isdisjoint(stretched):
         return True
     return None
 
 
 _LANGUAGES = {
     "hi": frozenset(_tokens("hindi हिंदी हिन्दी")),
-    "en": frozenset(_tokens("english अंग्रेजी अंग्रेज़ी इंग्लिश")),
+    "en": frozenset(_tokens("english angrezi angreji inglish अंग्रेजी अंग्रेज़ी इंग्लिश")),
 }
 
 
 def parse_language(text: str) -> str | None:
-    tokens = set(_tokens(text))
+    """An explicit request for a language ("Hindi please"). Detection never calls this."""
+    tokens = {form for token in _tokens(text) for form in squeezed(token)}
     for code, words in _LANGUAGES.items():
         if tokens & words:
             return code

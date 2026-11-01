@@ -145,12 +145,20 @@ class Model:
         self.answer_calls: list[Sequence[Mapping[str, Any]]] = []
         self.rewrite_calls = 0
         self.rewrite_think: list[bool] = []
+        self.rewrite_messages: list[str] = []
         self.answer_think: list[bool] = []
 
     async def complete_json(
-        self, purpose: str, *, schema: type[BaseModel], think: bool = True, **_: Any
+        self,
+        purpose: str,
+        *,
+        schema: type[BaseModel],
+        think: bool = True,
+        messages: Sequence[Mapping[str, Any]] = (),
+        **_: Any,
     ) -> Any:
         self.rewrite_calls += 1
+        self.rewrite_messages.extend(str(m["content"]) for m in messages)
         self.rewrite_think.append(think)
         if isinstance(self.rewrite, Exception):
             raise self.rewrite
@@ -211,6 +219,27 @@ async def test_the_query_rewrite_runs_without_thinking_so_a_small_budget_is_enou
     await ask(model, Retrieval([P1], P1)).answer("q", "en")
 
     assert model.rewrite_think == [False]
+
+
+async def test_the_rewrite_is_told_when_hindi_was_typed_in_english_letters():
+    model = Model(IN_SCOPE, [cite("Use bundles.", 0)])
+
+    reply = await ask(model, Retrieval([P1], P1)).answer(
+        "bacche ghatana kyun nahi seekh paate", "en"
+    )
+
+    first_line = model.rewrite_messages[0].splitlines()[0]
+    assert '"written_in":"Hindi typed in English letters"' in first_line
+    assert '"lang":"en"' in first_line  # the reply language is still the session's
+    assert not reply.refused
+
+
+async def test_the_rewrite_gets_no_wording_hint_for_plain_english():
+    model = Model(IN_SCOPE, [cite("Use bundles.", 0)])
+
+    await ask(model, Retrieval([P1], P1)).answer("How do I teach place value?", "en")
+
+    assert "written_in" not in model.rewrite_messages[0]
 
 
 async def test_the_cited_answer_runs_without_thinking_so_it_cannot_use_up_the_token_cap():

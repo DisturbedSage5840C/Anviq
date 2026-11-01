@@ -285,3 +285,75 @@ def test_question_shaped_messages_are_recognised(text: str):
 )
 def test_statements_and_fragments_are_not_questions(text: str):
     assert looks_like_question(text) is False
+
+
+@pytest.mark.parametrize(
+    "text", ["haan", "Haan", "haaan", "haanji", "ji haan", "han", "theek hai", "bilkul", "accha"]
+)
+def test_romanized_hindi_yes_is_understood(text: str):
+    assert parse_yes_no(text) is True
+
+
+@pytest.mark.parametrize("text", ["nahi", "nahin", "naheen", "nahiii", "na", "nahi ji"])
+def test_romanized_hindi_no_is_understood(text: str):
+    assert parse_yes_no(text) is False
+
+
+def test_romanized_no_outranks_yes_in_the_same_message():
+    assert parse_yes_no("haan par nahi") is False
+
+
+def test_a_long_romanized_sentence_is_not_an_answer():
+    # Consent and "start practice" hang on this: a statement that merely contains "nahi" is not a no.
+    assert parse_yes_no("bacche nahi samajhte jab main ghatana sikhati hoon") is None
+    assert parse_yes_no("theek se samjhao ki yeh kaise kaam karta hai") is None
+
+
+@pytest.mark.parametrize("text", ["I will plan the class", "what a day", "banana", "hand it over"])
+def test_english_sentences_that_look_like_romanized_words_are_not_answers(text: str):
+    assert parse_yes_no(text) is None
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "bacche ghatana kyun nahi seekh paate",
+        "kya karu jab bacche padhte nahi",
+        "kaise sikhaun jod",
+        "बच्चे घटाना क्यों नहीं सीख पाते",
+        "मुलांना वजाबाकी कशी शिकवावी",
+        "குழந்தைகளுக்கு கழித்தல் எப்படி கற்பிப்பது",
+        "বাচ্চাদের বিয়োগ কীভাবে শেখাব",
+    ],
+)
+def test_questions_in_other_scripts_and_romanized_hindi_are_recognised(text: str):
+    assert looks_like_question(text) is True
+
+
+@pytest.mark.parametrize("text", ["aaj maine jod padhaya", "bacche khush hain", "haan ji"])
+def test_romanized_statements_are_not_questions(text: str):
+    assert looks_like_question(text) is False
+
+
+def test_repeated_letters_collapse_only_for_romanized_words():
+    assert parse_yes_no("yeees") is True
+    assert parse_language("hindiii please") == "hi"
+
+
+@pytest.mark.parametrize(
+    ("text", "code"),
+    [
+        ("Hindi please", "hi"),
+        ("hindi mein baat karo", "hi"),
+        ("english please", "en"),
+        ("angrezi mein", "en"),
+        ("अंग्रेजी में बोलो", "en"),
+    ],
+)
+def test_explicit_language_requests_in_either_script(text: str, code: str):
+    assert parse_language(text) == code
+
+
+def test_detected_language_is_never_a_language_request():
+    assert parse_language("nahi, aap batao") is None
+    assert parse_language("मुलांना वजाबाकी कशी शिकवावी") is None
