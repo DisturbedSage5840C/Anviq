@@ -15,6 +15,9 @@ from app.core.children.malrules import (
     division,
     fraction_add,
     large_number,
+    lexicon,
+    literacy_decoding,
+    literacy_spelling,
     multiplication,
     place_value,
     subtraction,
@@ -35,6 +38,8 @@ ALL_RULES: tuple[Malrule, ...] = (
     *fraction_add.RULES,
     *area.RULES,
     *large_number.RULES,
+    *literacy_decoding.RULES,
+    *literacy_spelling.RULES,
 )
 RULES_BY_ID = {rule.id: rule for rule in ALL_RULES}
 MISCONCEPTIONS_PER_TOPIC = 3
@@ -53,6 +58,12 @@ _KIND_BY_TOPIC = {
     fraction_add.TOPIC: Kind.ADD_FRACTIONS,
     area.TOPIC: Kind.AREA,
     large_number.TOPIC: Kind.WRITE_LARGE_NUMBER,
+    literacy_decoding.TOPIC_LETTERS: Kind.READ_WORD,
+    literacy_decoding.TOPIC_BLEND: Kind.READ_WORD,
+    literacy_decoding.TOPIC_SIGHT: Kind.READ_WORD,
+    literacy_spelling.TOPIC_SOUND: Kind.SPELL_WORD,
+    literacy_spelling.TOPIC_PLURAL: Kind.SPELL_WORD,
+    literacy_spelling.TOPIC_SUFFIX: Kind.SPELL_WORD,
 }
 TOPIC_IDS = tuple(_KIND_BY_TOPIC)
 # Riya runs the main misconception, Meena a second one; see core/children/personas.py.
@@ -97,6 +108,10 @@ def _draw(kind: Kind, rng: random.Random) -> Problem:
             return Problem(kind, rng.randint(3, 30), rng.randint(2, 20))
         case Kind.WRITE_LARGE_NUMBER:
             return Problem(kind, rng.randint(1, 999) * 1000 + rng.randint(1, 99))
+        case Kind.READ_WORD:
+            return Problem(kind, text=rng.choice(lexicon.READ_WORDS))
+        case Kind.SPELL_WORD:
+            return Problem(kind, text=rng.choice(lexicon.SPELL_WORDS))
     raise AssertionError(kind)  # pragma: no cover
 
 

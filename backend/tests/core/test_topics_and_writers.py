@@ -59,7 +59,7 @@ class Scripted:
 def test_every_topic_with_a_rehearsal_has_a_topic_entry_and_the_reverse():
     topics = load_topics()
     assert {t.id for t in topics} == set(TOPIC_IDS)
-    for topic in topics:
+    for topic in (t for t in topics if t.subject == "numeracy"):
         if topic.grade <= 3:  # NIPUN and NISHTHA FLN stop at Class 3
             assert topic.nipun_lo.startswith("IL")
             assert "NISHTHA FLN Course 9" in topic.nishtha_ref

@@ -21,6 +21,7 @@ LANGS = frozenset({"en", "hi"})
 WEEKS = frozenset({"A", "B"})
 MAX_TEXT_CHARS = 2000  # a spoken question, a child's line or a coach comment is far shorter
 MAX_COUNT = 100
+MAX_WORD_CHARS = 40  # the longest reading or spelling word is far shorter
 MAX_PROBLEM_NUMBER = 1_000_000  # Class 4-5 numbers reach six digits; nothing larger is ever drawn
 MAX_RAW_CHARS = 200_000  # MAX_TURNS exchanges of the longest texts is well under half of this
 _CHILD_KEYS = frozenset(persona.key for persona in PERSONAS)
@@ -37,6 +38,7 @@ def dump(state: RehearsalState) -> str:
                 "b": problem.b,
                 "c": problem.c,
                 "d": problem.d,
+                "text": problem.text,
             },
             "primary_id": state.primary_id,
             "secondary_id": state.secondary_id,
@@ -134,6 +136,14 @@ def _count(value: Any) -> int:
     return value
 
 
+def _word(value: Any) -> str:
+    """The word of a reading or spelling problem: a short string, never a long one."""
+    text = _text(value)
+    if len(text) > MAX_WORD_CHARS:
+        raise ValueError("word too long")
+    return text
+
+
 def _problem_number(value: Any) -> int:
     """An operand of the practice problem: a real int, never negative, never absurdly large."""
     if type(value) is not int or not 0 <= value <= MAX_PROBLEM_NUMBER:
@@ -155,13 +165,15 @@ def _move(value: Any) -> int:
 
 
 def _problem(data: Any) -> Problem:
-    # `c` and `d` are absent in sessions saved before fractions existed, so they default to 0.
+    # `c`, `d` and `text` are absent in sessions saved before fractions and literacy existed, so
+    # they default to 0 and "". Word problems carry no numbers, so `a` and `b` default too.
     return Problem(
         Kind(_text(data["kind"])),
-        _problem_number(data["a"]),
-        _problem_number(data["b"]),
+        _problem_number(data.get("a", 0)),
+        _problem_number(data.get("b", 0)),
         _problem_number(data.get("c", 0)),
         _problem_number(data.get("d", 0)),
+        _word(data.get("text", "")),
     )
 
 

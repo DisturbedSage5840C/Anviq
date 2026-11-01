@@ -1,4 +1,4 @@
-"""A concrete numeracy problem a child is asked, and the plain correct answer to it."""
+"""A concrete problem a child is asked (numeracy or literacy), and the plain correct answer."""
 
 from dataclasses import dataclass
 from enum import StrEnum
@@ -16,15 +16,18 @@ class Kind(StrEnum):
     AREA = "area"  # area of a rectangle with length a and breadth b
     ADD_FRACTIONS = "add_fractions"  # a/b + c/d
     WRITE_LARGE_NUMBER = "write_large_number"  # write the number a (up to 6 digits) in digits
+    READ_WORD = "read_word"  # read the word `text` aloud
+    SPELL_WORD = "spell_word"  # write the word `text`, after hearing it said
 
 
 @dataclass(frozen=True)
 class Problem:
     kind: Kind
-    a: int
+    a: int = 0
     b: int = 0
     c: int = 0  # the numerator of the second fraction; used only by ADD_FRACTIONS
     d: int = 0  # the denominator of the second fraction; used only by ADD_FRACTIONS
+    text: str = ""  # the word to read or spell; used only by READ_WORD and SPELL_WORD
 
     def correct_answer(self) -> str:
         match self.kind:
@@ -44,6 +47,8 @@ class Problem:
                 return _fraction_text(self.fraction_sum())
             case Kind.WRITE_LARGE_NUMBER:
                 return str(self.a)
+            case Kind.READ_WORD | Kind.SPELL_WORD:
+                return self.text
         raise AssertionError(self.kind)  # pragma: no cover
 
     def statement(self) -> str:
@@ -69,6 +74,10 @@ class Problem:
                 return f"{self.a}/{self.b} + {self.c}/{self.d}"
             case Kind.WRITE_LARGE_NUMBER:
                 return f"write {self.a} in digits"
+            case Kind.READ_WORD:
+                return f"read the word '{self.text}' aloud"
+            case Kind.SPELL_WORD:
+                return f"write the word '{self.text}' after hearing it"
         raise AssertionError(self.kind)  # pragma: no cover
 
     def fraction_sum(self) -> Fraction:

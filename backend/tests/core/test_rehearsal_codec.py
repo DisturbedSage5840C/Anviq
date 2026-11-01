@@ -259,3 +259,49 @@ def test_load_rejects_waiting_for_a_rating_when_nothing_was_scored() -> None:
     data["awaiting_rating"] = True
 
     assert load(json.dumps(data)) is None
+
+
+@pytest.mark.parametrize(
+    ("topic_id", "kind", "word"),
+    [
+        ("LIT.G1.BLEND", Kind.READ_WORD, "cat"),
+        ("LIT.G1.LETTER_SOUND", Kind.READ_WORD, "बकरी"),
+        ("LIT.G5.SPELL_SUFFIX", Kind.SPELL_WORD, "running"),
+    ],
+)
+def test_round_trips_a_word_problem_keeping_the_word(topic_id: str, kind: Kind, word: str) -> None:
+    state = start(topic_id, 2, "A", "hi", random.Random(3))
+    state = replace(state, problem=Problem(kind, text=word))
+
+    loaded = load(dump(state))
+
+    assert loaded is not None
+    assert loaded.problem == Problem(kind, text=word)
+
+
+def test_a_word_problem_saved_without_numbers_still_loads() -> None:
+    data = json.loads(dump(start("LIT.G1.BLEND", 2, "A", "hi", random.Random(3))))
+    data["problem"] = {"kind": "read_word", "text": "cat"}
+
+    loaded = load(json.dumps(data))
+
+    assert loaded is not None
+    assert loaded.problem.text == "cat"
+
+
+def test_a_session_saved_before_literacy_existed_has_no_word() -> None:
+    data = json.loads(dump(fresh()))
+    del data["problem"]["text"]
+
+    loaded = load(json.dumps(data))
+
+    assert loaded is not None
+    assert loaded.problem.text == ""
+
+
+@pytest.mark.parametrize("word", ["x" * 41, 7, ["cat"]])
+def test_load_rejects_a_word_the_engine_would_not_have_drawn(word: object) -> None:
+    data = json.loads(dump(fresh()))
+    data["problem"]["text"] = word
+
+    assert load(json.dumps(data)) is None

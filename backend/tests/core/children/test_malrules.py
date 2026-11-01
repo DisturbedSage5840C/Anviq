@@ -39,12 +39,14 @@ EXAMPLES = [
 ]
 
 RULE_COUNT = 20
+LITERACY_PREFIXES = ("LIT", "SPELL")  # word rules, covered in test_literacy.py
+NUMERACY_RULES = {k: v for k, v in RULES_BY_ID.items() if not k.startswith(LITERACY_PREFIXES)}
 ANSWER_SHAPE = re.compile(r"^[1-9]\d*(/[1-9]\d*)?$")  # a whole number or a fraction n/d
 
 
 def test_there_are_twenty_unique_rules():
-    assert len(ALL_RULES) == RULE_COUNT
-    assert len(RULES_BY_ID) == RULE_COUNT
+    assert len(NUMERACY_RULES) == RULE_COUNT
+    assert len(RULES_BY_ID) == len(ALL_RULES)
 
 
 @pytest.mark.parametrize(("rule_id", "problem", "wrong", "right"), EXAMPLES)
@@ -88,7 +90,7 @@ def _grid(rule_id: str) -> Iterator[Problem]:
         yield from (Problem(kind, a, b) for a in range(1, 100) for b in range(0, 100))
 
 
-@pytest.mark.parametrize("rule_id", sorted(RULES_BY_ID))
+@pytest.mark.parametrize("rule_id", sorted(NUMERACY_RULES))
 def test_wherever_a_rule_applies_its_answer_is_wrong(rule_id: str):
     rule = RULES_BY_ID[rule_id]
     applicable = [p for p in _grid(rule_id) if rule.applies(p)]
@@ -99,7 +101,7 @@ def test_wherever_a_rule_applies_its_answer_is_wrong(rule_id: str):
         assert ANSWER_SHAPE.match(result.answer), (rule_id, problem, result.answer)
 
 
-@pytest.mark.parametrize("rule_id", sorted(RULES_BY_ID))
+@pytest.mark.parametrize("rule_id", sorted(NUMERACY_RULES))
 def test_generated_problems_always_trigger_the_rule(rule_id: str):
     rule = RULES_BY_ID[rule_id]
     rng = random.Random(7)

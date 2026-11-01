@@ -86,4 +86,8 @@ def correct_steps(problem: Problem) -> tuple[str, ...]:
         return _fraction_steps(problem)
     if problem.kind is Kind.WRITE_LARGE_NUMBER:
         return _large_number_steps(problem.a)
+    if problem.kind is Kind.READ_WORD:
+        return (f"looks at every letter of {problem.text} and sounds it out in order",)
+    if problem.kind is Kind.SPELL_WORD:
+        return (f"says {problem.text} slowly and writes down each sound, then checks the spelling",)
     return (f"worked out {problem.statement()} carefully, one step at a time",)

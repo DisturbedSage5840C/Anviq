@@ -165,3 +165,35 @@ def test_a_child_reply_with_a_fraction_answer_passes_the_whole_check():
         allowed={1, 2, 3},
         knows_correct=False,
     )
+
+
+def test_says_a_word_answer_only_when_the_whole_word_is_spoken():
+    assert says_answer("I read deb.", "deb")
+    assert says_answer("DEB!", "deb")
+    assert not says_answer("I read debt.", "deb")
+    assert says_answer("मैंने वकरी पढ़ा", "वकरी")
+    assert not says_answer("मैंने वकरीद पढ़ा", "वकरी")
+
+
+def test_a_word_is_not_leaked_by_a_shorter_or_longer_word():
+    assert not leaks_correct_answer("I said ca", "cat")
+    assert not leaks_correct_answer("I said cats", "cat")
+    assert leaks_correct_answer("I said Cat", "cat")
+    assert leaks_correct_answer("it is बकरी, I think", "बकरी")
+
+
+def test_word_leaks_ignore_the_numbers_allowed_for_arithmetic():
+    assert leaks_correct_answer("it is cat", "cat", allowed={3, 4})
+    assert not leaks_correct_answer("it is 3", "cat", allowed=())
+
+
+def test_a_child_reply_for_a_word_problem_needs_the_wrong_word_and_not_the_right_one():
+    ok = child_utterance_ok(
+        "I read deb.", answer="deb", correct="bed", allowed=(), knows_correct=False
+    )
+    leaked = child_utterance_ok(
+        "I read deb, not bed.", answer="deb", correct="bed", allowed=(), knows_correct=False
+    )
+
+    assert ok
+    assert not leaked

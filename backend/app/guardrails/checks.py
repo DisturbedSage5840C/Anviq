@@ -19,6 +19,9 @@ CITATION_PLACEHOLDER = ""
 # Python's \d matches Devanagari digits, and int() reads them, so ४५ and 45 are the same number.
 _NUMBER = re.compile(r"\d+")
 _FRACTION_ANSWER = re.compile(r"(?P<n>\d+)/(?P<d>\d+)")
+_NUMBER_ANSWER = re.compile(r"\d+")
+# Unicode letters (L), combining marks (M) and digits (N) are the parts of a word.
+_WORD_CATEGORIES = frozenset("LMN")
 _SENTENCE_END = re.compile(r"[।.?!]+")
 # "..." is a spoken pause inside a sentence ("मुझे लगता है... 23 बड़ा है"), not the end of one.
 _PAUSE = re.compile(r"\.{2,}|…")
@@ -60,9 +63,37 @@ def _says_fraction(utterance: str, numerator: int, denominator: int) -> bool:
     return _fraction_pattern(numerator, denominator).search(text) is not None
 
 
+def _is_word_answer(answer: str) -> bool:
+    """A reading or spelling answer: anything that is neither a whole number nor "n/d"."""
+    text = answer.strip()
+    return _NUMBER_ANSWER.fullmatch(text) is None and _FRACTION_ANSWER.fullmatch(text) is None
+
+
+def _words_in(text: str) -> frozenset[str]:
+    """Whole words, case-folded. Letters, combining marks and digits make up a word, so a
+    Devanagari word is not split at its vowel signs the way a `\\w` pattern would split it."""
+    words: list[str] = []
+    current: list[str] = []
+    for char in unicodedata.normalize("NFC", text).casefold():
+        if unicodedata.category(char)[0] in _WORD_CATEGORIES:
+            current.append(char)
+        elif current:
+            words.append("".join(current))
+            current = []
+    if current:
+        words.append("".join(current))
+    return frozenset(words)
+
+
+def _says_word(utterance: str, word: str) -> bool:
+    return unicodedata.normalize("NFC", word.strip()).casefold() in _words_in(utterance)
+
+
 def says_answer(utterance: str, answer: str) -> bool:
-    """True when the child's words contain exactly `answer`: a number in any digit script, or a
-    fraction written "n/d"."""
+    """True when the child's words contain exactly `answer`: a number in any digit script, a
+    fraction written "n/d", or, for reading and spelling, the whole word."""
+    if _is_word_answer(answer):
+        return _says_word(utterance, answer)
     fraction = _fraction_parts(answer)
     if fraction is not None:
         return _says_fraction(utterance, *fraction)
@@ -74,8 +105,11 @@ def leaks_correct_answer(utterance: str, correct: str, allowed: Collection[int] 
 
     A number that is part of the problem or the child's own steps may legitimately be spoken, so
     those are passed in `allowed` and never count as a leak. A fraction counts as spoken only as
-    "n/d"; it is not a leak when both of its parts belong to the problem.
+    "n/d"; it is not a leak when both of its parts belong to the problem. A word is a leak when
+    it is spoken whole; "ca" does not leak "cat".
     """
+    if _is_word_answer(correct):
+        return _says_word(utterance, correct)
     fraction = _fraction_parts(correct)
     if fraction is not None:
         numerator, denominator = fraction

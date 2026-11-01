@@ -1,0 +1,53 @@
+# Literacy topics for Classes 1-5 that Anviq can plan and rehearse.
+# Every topic here has at least one executable misconception in core/children/malrules/literacy_*.
+#
+# These cover decoding and spelling only. Comprehension, vocabulary, oral language and fluency have
+# no executable misconception yet, so no topic is claimed for them.
+#
+# No NIPUN / NISHTHA reference codes are given: none have been checked for these topics, and an
+# invented reference is worse than a blank one. The rules' `source` says they await expert review.
+#
+# `keywords` follow the rules in topics.toml: ASCII matches at the start of a word, other scripts
+# match anywhere. Romanized Hindi keywords are included because teachers type that way.
+
+[[topic]]
+id = "LIT.G1.LETTER_SOUND"
+grade = 1
+title_en = "letter sounds and look-alike letters"
+title_hi = "अक्षर की ध्वनि और मिलते-जुलते अक्षर"
+keywords = ["letter sound", "letter", "alphabet", "phonics", "b and d", "reversal", "reverse", "mirror", "akshar", "varnamala", "वर्णमाला", "अक्षर", "ध्वनि", "उल्टा"]
+
+[[topic]]
+id = "LIT.G1.BLEND"
+grade = 1
+title_en = "blending sounds to read short words"
+title_hi = "ध्वनियाँ जोड़कर छोटे शब्द पढ़ना"
+keywords = ["blend", "blending", "sound out", "decoding", "decode", "cvc", "short word", "vowel", "matra", "मात्रा", "शब्द पढ़ना", "ध्वनि जोड़"]
+
+[[topic]]
+id = "LIT.G2.SIGHT_WORDS"
+grade = 2
+title_en = "reading common words at sight"
+title_hi = "आम शब्दों को पहचानकर पढ़ना"
+keywords = ["sight word", "sight words", "common word", "word recognition", "reading words", "shabd pehchan", "शब्द पहचान", "पहचानकर पढ़"]
+
+[[topic]]
+id = "LIT.G3.SPELL_SOUND"
+grade = 3
+title_en = "spelling words that do not sound the way they are written"
+title_hi = "जैसे बोलते हैं वैसे न लिखे जाने वाले शब्दों की वर्तनी"
+keywords = ["spelling", "spell", "spellings", "vartani", "वर्तनी", "सही लिखना", "सही वर्तनी"]
+
+[[topic]]
+id = "LIT.G4.SPELL_PLURAL"
+grade = 4
+title_en = "spelling plurals of words ending in y"
+title_hi = "y पर खत्म होने वाले शब्दों का बहुवचन (अंग्रेज़ी वर्तनी)"
+keywords = ["plural", "plurals", "ies", "words ending in y", "bahuvachan", "बहुवचन"]
+
+[[topic]]
+id = "LIT.G5.SPELL_SUFFIX"
+grade = 5
+title_en = "spelling when adding -ing and -ed"
+title_hi = "-ing और -ed जोड़ते समय वर्तनी"
+keywords = ["suffix", "suffixes", "adding ing", "adding ed", "double the letter", "silent e", "ing form", "प्रत्यय", "ing जोड़"]
