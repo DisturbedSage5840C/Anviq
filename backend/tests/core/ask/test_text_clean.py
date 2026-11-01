@@ -59,3 +59,19 @@ def test_the_mis_mapped_running_header_glyph_is_repaired_to_module():
 )
 def test_latin_ligature_glyphs_become_plain_letters(ligature: str, letters: str):
     assert clean_text(f"of{ligature}ce") == f"of{letters}ce"
+
+
+def test_the_reprint_stamp_line_is_removed_but_the_text_around_it_stays():
+    page = "First line of the lesson.\nReprint 2026-27\nSecond line of the lesson.\n"
+
+    assert clean_text(page) == "First line of the lesson.\nSecond line of the lesson.\n"
+
+
+def test_a_reprint_stamp_with_other_years_or_spacing_is_removed():
+    assert clean_text("a\n  Reprint 2025-26  \nb") == "a\nb"
+
+
+def test_the_word_reprint_inside_a_sentence_is_kept():
+    text = "The publisher will reprint 2026-27 copies of the book."
+
+    assert clean_text(text) == text

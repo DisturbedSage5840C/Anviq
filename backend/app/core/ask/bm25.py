@@ -58,13 +58,23 @@ class Bm25Index:
             for term, df in document_frequency.items()
         }
 
-    def rank(self, terms: Sequence[str], limit: int) -> list[Hit]:
-        """The best `limit` passages sharing at least one term, best first (ties by id)."""
+    def rank(
+        self, terms: Sequence[str], limit: int, allowed: frozenset[str] | None = None
+    ) -> list[Hit]:
+        """The best `limit` passages sharing at least one term, best first (ties by id).
+
+        `allowed` limits which passages compete. Word rarity (idf) and the 0..1 normalisation still
+        come from the whole corpus, so a score means the same with or without the limit.
+        """
         unique = [t for t in dict.fromkeys(terms) if t in self._idf]
         if not unique or limit <= 0:
             return []
         best_possible = sum(self._idf[t] * (K1 + 1) for t in unique)
-        scored = [(self._score(i, unique) / best_possible, i) for i in range(len(self._ids))]
+        scored = [
+            (self._score(i, unique) / best_possible, i)
+            for i in range(len(self._ids))
+            if allowed is None or self._ids[i] in allowed
+        ]
         hits = [Hit(self._ids[i], s) for s, i in scored if s > 0]
         hits.sort(key=lambda h: (-h.score, h.doc_id))
         return hits[:limit]

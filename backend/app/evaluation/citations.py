@@ -7,8 +7,16 @@ refused; <=5% of in-scope questions wrongly refused. Needs the corpus ingested a
     ask_oos.jsonl:      {"question": "...", "lang": "en"}
 
 A cited label counts as correct when it equals a gold label or is a subsection of one (gold
-"...§3" accepts "...§3.2"). The report also gives a looser course-level rate, which ignores the
-module and section, because the gold's Module/§ numbering need not match the book's own headings.
+"...§3" accepts "...§3.2"). A textbook gold may name a book ("NCERT Class 3 Maths Mela"), a
+chapter ("..., Ch 4") or a page ("..., Ch 4, p.12"); it accepts any label inside it. The report
+also gives a looser course-level rate, which ignores the module and section (or, for a textbook,
+the chapter and page), because the gold's numbering need not match the book's own headings. The
+citation rate is also reported per corpus, "guidance" (NISHTHA, NIPUN, handbook, NCF) and
+"textbook", so the textbook questions never move the guidance figure, and per "split" (dev or
+held_out) for the questions that name one. The refusal rates for out-of-scope and corpus-gap
+questions mix both corpora, because those questions belong to neither. The optional files
+ask_textbook_inscope/oos/gap.jsonl are added to the sets when present. A question may carry a
+"grade" (1-5), which limits retrieval to that class as it does for a teacher.
 
     python -m app.evaluation.citations --datasets ../eval/datasets
 """
@@ -38,6 +46,9 @@ FALSE_REFUSAL_LIMIT = 0.05
 
 _SECTION_TAIL = re.compile(r",\s*§[^,]*$")
 _MODULE_TAIL = re.compile(r",\s*Module\s[^,]*$")
+_PAGE_TAIL = re.compile(r",\s*p\.\d+$")
+_CHAPTER_TAIL = re.compile(r",\s*Ch\s+\d+(?::.*)?$")
+TEXTBOOK_PREFIX = "NCERT "
 
 
 _MODULE_NUMBER = re.compile(r"(Module\s)0+(\d)")
@@ -48,24 +59,87 @@ def _unpadded(label: str) -> str:
     return _MODULE_NUMBER.sub(r"\1\2", label)
 
 
+def corpus_of(label: str) -> str:
+    """ "textbook" for an NCERT textbook label, "guidance" for everything else."""
+    return "textbook" if label.startswith(TEXTBOOK_PREFIX) else "guidance"
+
+
 def label_matches(cited: str, gold: str) -> bool:
+    """True when `cited` is `gold` or sits inside it (a subsection, or a chapter or page of a book).
+
+    A guidance gold is only extended at a "." (§3 accepts §3.2). A textbook gold is also extended
+    at "," or ":" (a book accepts its chapters, a chapter its pages), and never mid-word, so
+    "Ch 4" does not accept "Ch 41" and a book does not accept a book whose title starts the same.
+    """
     cited, gold = _unpadded(cited), _unpadded(gold)
-    return cited == gold or cited.startswith(f"{gold}.")
+    boundaries = (".", ",", ":") if corpus_of(gold) == "textbook" else (".",)
+    return cited == gold or any(cited.startswith(f"{gold}{mark}") for mark in boundaries)
 
 
 def course_of(label: str) -> str:
-    """A citation without its module and section: "NISHTHA FLN Course 9: Foundational Numeracy".
+    """A citation without its finer parts: "NISHTHA FLN Course 9: Foundational Numeracy", or for a
+    textbook "NCERT Class 3 Maths Mela".
 
-    Only a trailing ", §…" and then a trailing ", Module …" are removed, so commas inside a course
-    title (Course 11) survive.
+    Only a trailing ", p.N", ", Ch N[: title]", ", §…" and then ", Module …" are removed, in that
+    order, so commas inside a course title (Course 11) survive.
     """
-    return _MODULE_TAIL.sub("", _SECTION_TAIL.sub("", label))
+    book = _CHAPTER_TAIL.sub("", _PAGE_TAIL.sub("", label))
+    return _MODULE_TAIL.sub("", _SECTION_TAIL.sub("", book))
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
     return [
         json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
+
+
+def _by_corpus(
+    answered: Sequence[tuple[dict[str, Any], AskReply]], hits: Sequence[bool]
+) -> dict[str, dict[str, float | int]]:
+    """Answered and correct counts and the citation rate for each corpus a question's gold is in."""
+    totals: dict[str, list[int]] = {}
+    for (question, _), hit in zip(answered, hits, strict=True):
+        counts = totals.setdefault(corpus_of(question["gold"][0]), [0, 0])
+        counts[0] += 1
+        counts[1] += int(hit)
+    return {
+        name: {"answered": n, "correct": ok, "rate": rate(ok, n)}
+        for name, (n, ok) in sorted(totals.items())
+    }
+
+
+def _by_split(
+    answered: Sequence[tuple[dict[str, Any], AskReply]], hits: Sequence[bool]
+) -> dict[str, dict[str, float | int]]:
+    """Citation counts per "split" (dev or held_out); questions without a split are skipped."""
+    totals: dict[str, list[int]] = {}
+    for (question, _), hit in zip(answered, hits, strict=True):
+        name = question.get("split")
+        if name is None:
+            continue
+        counts = totals.setdefault(name, [0, 0])
+        counts[0] += 1
+        counts[1] += int(hit)
+    return {
+        name: {"answered": n, "correct": ok, "rate": rate(ok, n)}
+        for name, (n, ok) in sorted(totals.items())
+    }
+
+
+def load_eval_sets(
+    datasets: Path,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    """The in-scope, out-of-scope and corpus-gap questions: the guidance sets, then the textbook
+    sets when their files exist. The two required files raise `FileNotFoundError` if absent."""
+
+    def optional(name: str) -> list[dict[str, Any]]:
+        path = datasets / name
+        return _jsonl(path) if path.exists() else []
+
+    inscope = _jsonl(datasets / "ask_inscope.jsonl") + optional("ask_textbook_inscope.jsonl")
+    oos = _jsonl(datasets / "ask_oos.jsonl") + optional("ask_textbook_oos.jsonl")
+    gap = optional("ask_corpus_gap.jsonl") + optional("ask_textbook_gap.jsonl")
+    return inscope, oos, gap
 
 
 def score(
@@ -79,9 +153,8 @@ def score(
     count toward the citation, false-refusal or pass figures.
     """
     answered = [(q, r) for q, r in inscope if r is not None and not r.refused]
-    correct = sum(
-        any(label_matches(s, g) for s in r.sources for g in q["gold"]) for q, r in answered
-    )
+    hits = [any(label_matches(s, g) for s in r.sources for g in q["gold"]) for q, r in answered]
+    correct = sum(hits)
     right_course = sum(
         any(course_of(s) == course_of(g) for s in r.sources for g in q["gold"]) for q, r in answered
     )
@@ -98,6 +171,8 @@ def score(
         "unavailable": sum(1 for _, r in inscope if r is None)
         + sum(1 for r in (*oos, *gap) if r is None),
         "citation_correct_rate": citation_rate,
+        "citation_by_corpus": _by_corpus(answered, hits),
+        "citation_by_split": _by_split(answered, hits),
         "course_citation_correct_rate": rate(right_course, len(answered)),
         "oos_refusal_rate": refusal_rate,
         "corpus_gap_refusal_rate": rate(gap_refused, len(gap)),
@@ -134,7 +209,9 @@ def question_details(
 async def _ask(ask: AskAnviq, question: dict[str, Any], gate: asyncio.Semaphore) -> AskReply | None:
     async with gate:
         try:
-            return await ask.answer(question["question"], question.get("lang", "hi"))
+            return await ask.answer(
+                question["question"], question.get("lang", "hi"), grade=question.get("grade")
+            )
         except AskUnavailableError:
             return None
 
@@ -143,10 +220,7 @@ async def _main(args: argparse.Namespace) -> None:
     settings = get_settings()
     if settings.anthropic_api_key is None:
         raise SystemExit("ANTHROPIC_API_KEY is not set")
-    inscope = _jsonl(args.datasets / "ask_inscope.jsonl")
-    oos = _jsonl(args.datasets / "ask_oos.jsonl")
-    gap_file = args.datasets / "ask_corpus_gap.jsonl"
-    gap = _jsonl(gap_file) if gap_file.exists() else []
+    inscope, oos, gap = load_eval_sets(args.datasets)
     engine = create_async_engine(settings.database_url)
     gate = asyncio.Semaphore(args.concurrency)
     try:

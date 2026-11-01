@@ -16,7 +16,7 @@ from typing import Any, Protocol
 from pydantic import BaseModel
 
 from app.content.copy import render
-from app.core.ask.retrieve import Passage, Queries, Retrieval
+from app.core.ask.retrieve import Passage, Queries, Retrieval, Scope, scope_for_grade
 from app.core.ask.text_clean import clean_text
 from app.core.langid import detect, wording_hint
 from app.guardrails.checks import valid_citations, wrap_teacher_text
@@ -83,7 +83,7 @@ class _Rewrite(BaseModel):
 
 
 class Retriever(Protocol):
-    async def retrieve(self, queries: Queries) -> Retrieval: ...
+    async def retrieve(self, queries: Queries, scope: Scope | None = None) -> Retrieval: ...
 
 
 class AskClient(RawClient, StructuredClient, Protocol):
@@ -169,12 +169,14 @@ class AskAnviq:
         self._fast = fast_model
         self._smart = smart_model
 
-    async def answer(self, question: str, lang: str) -> AskReply:
+    async def answer(self, question: str, lang: str, grade: str | None = None) -> AskReply:
         asked = wrap_teacher_text(scrub(question))
         rewrite = await self._rewrite(asked, lang)
         if not rewrite.in_scope:
             return refusal(lang, None)
-        found = await self._retriever.retrieve(Queries(rewrite.hi, rewrite.en))
+        found = await self._retriever.retrieve(
+            Queries(rewrite.hi, rewrite.en), scope_for_grade(grade)
+        )
         if not found.passages:
             return refusal(lang, found.nearest)
         text, used = await self._cited_answer(asked, lang, found.passages)

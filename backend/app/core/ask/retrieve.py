@@ -22,8 +22,39 @@ class Passage:
     score: float  # the search's own relevance score; only comparable within one search
 
 
+@dataclass(frozen=True)
+class Scope:
+    """Which passages a question may draw on. An empty field means no limit on that field.
+
+    A passage with no class or subject (NISHTHA, NIPUN, the Handbook) is not tied to one, so it
+    passes the class and subject limits: asking as a Class 3 teacher still reaches the guidance.
+    """
+
+    class_levels: frozenset[int] = frozenset()
+    subjects: frozenset[str] = frozenset()
+    sources: frozenset[str] = frozenset()
+
+    def admits(self, class_level: int | None, subject: str | None, source: str | None) -> bool:
+        if self.sources and source not in self.sources:
+            return False
+        if self.class_levels and class_level is not None and class_level not in self.class_levels:
+            return False
+        return not (self.subjects and subject is not None and subject not in self.subjects)
+
+
+_CLASS_GRADES = {str(level): level for level in range(1, 6)}
+
+
+def scope_for_grade(grade: str | None) -> Scope | None:
+    """One class limits textbooks to that class; multi-grade or unknown limits nothing."""
+    level = _CLASS_GRADES.get(grade or "")
+    return None if level is None else Scope(class_levels=frozenset({level}))
+
+
 class Search(Protocol):
-    async def search(self, query: str, lang: str, limit: int) -> list[Passage]: ...
+    async def search(
+        self, query: str, lang: str, limit: int, scope: Scope | None = None
+    ) -> list[Passage]: ...
 
 
 def fuse(rankings: Sequence[Sequence[Passage]], top_k: int = TOP_K) -> list[Passage]:
@@ -57,12 +88,16 @@ class HybridRetriever:
         self._searches = searches
         self._min_score = min_score  # τ: tuned on eval/datasets/ask_*.jsonl
 
-    async def retrieve(self, queries: Queries) -> Retrieval:
+    async def retrieve(self, queries: Queries, scope: Scope | None = None) -> Retrieval:
         rankings = []
         for search in self._searches:
             for lang, query in (("hi", queries.hi), ("en", queries.en)):
-                if query.strip():
+                if not query.strip():
+                    continue
+                if scope is None:
                     rankings.append(await search.search(query, lang, PER_SEARCH))
+                else:
+                    rankings.append(await search.search(query, lang, PER_SEARCH, scope))
         passages = fuse(rankings)
         if not passages:
             return Retrieval([], None)

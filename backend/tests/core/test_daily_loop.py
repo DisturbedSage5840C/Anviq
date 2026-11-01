@@ -169,9 +169,11 @@ class FakeAsker:
     def __init__(self, result: AskReply | Exception) -> None:
         self.result = result
         self.seen: list[tuple[str, str]] = []
+        self.grades: list[str | None] = []
 
-    async def answer(self, question: str, lang: str) -> AskReply:
+    async def answer(self, question: str, lang: str, grade: str | None = None) -> AskReply:
         self.seen.append((question, lang))
+        self.grades.append(grade)
         if isinstance(self.result, Exception):
             raise self.result
         return self.result
@@ -225,3 +227,12 @@ async def test_without_a_corpus_the_question_is_reported_unavailable():
     reply = await _asking(None).ask(TEACHER, "en", "How do I teach tens?")
 
     assert reply.text == render("ask_unavailable", "en")
+
+
+async def test_the_teachers_class_goes_with_the_question():
+    answer = AskReply("Use bundles.\n\nSource: NISHTHA 9", "Use bundles.", ("NISHTHA 9",), False)
+    asker = FakeAsker(answer)
+
+    await _asking(asker).ask(TEACHER, "en", "How do I teach tens?", "4")
+
+    assert asker.grades == ["4"]

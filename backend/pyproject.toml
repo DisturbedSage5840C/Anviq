@@ -29,10 +29,12 @@ dev = [
   "fakeredis>=2.40.0",
   "pip-audit>=2.10.1",
   "pyyaml>=6.0",
+  "truststore>=0.10.5",
 ]
 # Only `python -m app.core.ask.ingest` needs PDF extraction: uv sync --group ingest
 ingest = [
   "pymupdf>=1.24",
+  "truststore>=0.10.5",
 ]
 
 [tool.pytest.ini_options]

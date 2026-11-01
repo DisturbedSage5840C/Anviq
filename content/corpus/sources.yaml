@@ -1,0 +1,38 @@
+# NCERT Class 1-5 core set (new NCF-aligned series, English + Hindi): 26 books.
+# Files: https://ncert.nic.in/textbook/pdf/{code}ps.pdf (prelims) and {code}01.pdf .. {code}NN.pdf.
+# Raw PDFs stay on the build laptop (gitignored). Not included yet: regional languages, Urdu,
+# the older series (Marigold, Math-Magic, Rimjhim), Arts and Physical Education volumes.
+books:
+  - {code: aemr1, class_level: 1, subject: english, lang: en, title: "Mridang", chapters: 9}
+  - {code: ahsr1, class_level: 1, subject: hindi, lang: hi, title: "Sarangi", chapters: 19}
+  - {code: aejm1, class_level: 1, subject: mathematics, lang: en, title: "Joyful Mathematics", chapters: 13}
+  - {code: ahjm1, class_level: 1, subject: mathematics, lang: hi, title: "Joyful Mathematics (Hindi)", chapters: 13}
+  - {code: bemr1, class_level: 2, subject: english, lang: en, title: "Mridang", chapters: 13}
+  - {code: bhsr1, class_level: 2, subject: hindi, lang: hi, title: "Sarangi", chapters: 26}
+  - {code: bejm1, class_level: 2, subject: mathematics, lang: en, title: "Joyful Mathematics", chapters: 11}
+  - {code: bhjm1, class_level: 2, subject: mathematics, lang: hi, title: "Joyful Mathematics (Hindi)", chapters: 11}
+  - {code: cesa1, class_level: 3, subject: english, lang: en, title: "Santoor", chapters: 12}
+  - {code: chve1, class_level: 3, subject: hindi, lang: hi, title: "Veena", chapters: 18}
+  - {code: cemm1, class_level: 3, subject: mathematics, lang: en, title: "Maths Mela", chapters: 14}
+  - {code: chmm1, class_level: 3, subject: mathematics, lang: hi, title: "Ganit Mela", chapters: 14}
+  - {code: ceev1, class_level: 3, subject: environment, lang: en, title: "Our Wondrous World", chapters: 12}
+  - {code: chev1, class_level: 3, subject: environment, lang: hi, title: "Hamara Adhbhut Sansar", chapters: 12}
+  - {code: desa1, class_level: 4, subject: english, lang: en, title: "Santoor", chapters: 12}
+  - {code: dhve1, class_level: 4, subject: hindi, lang: hi, title: "Veena", chapters: 13}
+  - {code: demm1, class_level: 4, subject: mathematics, lang: en, title: "Math-Mela", chapters: 14}
+  - {code: dhmm1, class_level: 4, subject: mathematics, lang: hi, title: "Ganit Mela", chapters: 14}
+  - {code: deev1, class_level: 4, subject: environment, lang: en, title: "Our Wonderous World", chapters: 10}
+  - {code: dhev1, class_level: 4, subject: environment, lang: hi, title: "Hamara Adhbhut Sansar", chapters: 10}
+  - {code: eesa1, class_level: 5, subject: english, lang: en, title: "Santoor", chapters: 10}
+  - {code: ehve1, class_level: 5, subject: hindi, lang: hi, title: "Veena", chapters: 12}
+  - {code: eemm1, class_level: 5, subject: mathematics, lang: en, title: "Math-Mela", chapters: 15}
+  - {code: ehmm1, class_level: 5, subject: mathematics, lang: hi, title: "Ganit-Mela", chapters: 15}
+  - {code: eeev1, class_level: 5, subject: environment, lang: en, title: "Our Wonderous World", chapters: 10}
+  - {code: ehev1, class_level: 5, subject: environment, lang: hi, title: "Hamara Adbhut Sansar", chapters: 10}
+
+documents:
+  - {key: ncf_foundational_stage, title: "NCF for the Foundational Stage", url: "https://ncert.nic.in/pdf/NCF_for_Foundational_Stage_20_October_2022.pdf"}
+  - {key: nipun_bharat_guidelines, title: "NIPUN Bharat Guidelines", url: "https://diksha.gov.in/assets/docs/NIPUN-BHARAT-GUIDELINES-EN.pdf"}
+  - {key: teachers_handbook_1_2, title: "Teachers Handbook Class 1-2", url: "https://ncert.nic.in/dee/pdf/Revised_Teachers_Handbook_Class_1-2.pdf"}
+  - {key: nishtha_fln_english, title: "NISHTHA FLN (English)", url: "https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_ENGLISH.pdf"}
+  - {key: nishtha_fln_hindi, title: "NISHTHA FLN (Hindi)", url: "https://ciet.ncert.gov.in/storage/app/public/files/17/Nishtha/NISHTHA_FLN_HINDI.pdf"}

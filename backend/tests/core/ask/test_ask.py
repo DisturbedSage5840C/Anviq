@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from app.core.ask.answer import AskAnviq, AskUnavailableError, _Rewrite, cited_text
 from app.core.ask.chunking import MAX_TOKENS, Chunk, SourceDoc, chunk_document, estimate_tokens
-from app.core.ask.retrieve import HybridRetriever, Passage, Queries, Retrieval, fuse
+from app.core.ask.retrieve import HybridRetriever, Passage, Queries, Retrieval, Scope, fuse
 from app.db.corpus import or_query
 from app.llm.client import LLMError, Reply, Usage
 
@@ -185,9 +185,11 @@ class Fixed:
     def __init__(self, retrieval: Retrieval) -> None:
         self.retrieval = retrieval
         self.queries: list[Queries] = []
+        self.scopes: list[Scope | None] = []
 
-    async def retrieve(self, queries: Queries) -> Retrieval:
+    async def retrieve(self, queries: Queries, scope: Scope | None = None) -> Retrieval:
         self.queries.append(queries)
+        self.scopes.append(scope)
         return self.retrieval
 
 
@@ -390,3 +392,27 @@ def test_the_ask_prompts_require_plain_text():
 
     assert "plain text" in _ANSWER.lower()
     assert "emoji" in _ANSWER.lower()
+
+
+@pytest.mark.parametrize("grade", ["1", "2", "3", "4", "5"])
+async def test_a_teachers_class_limits_textbooks_to_that_class(grade: str):
+    model = Model(IN_SCOPE, [cite("Use bundles.", 0)])
+    retriever = Fixed(Retrieval([P1], P1))
+
+    await AskAnviq(model, retriever, fast_model="f", smart_model="s").answer(  # type: ignore[arg-type]
+        "How do I teach tens?", "en", grade
+    )
+
+    assert retriever.scopes == [Scope(class_levels=frozenset({int(grade)}))]
+
+
+@pytest.mark.parametrize("grade", [None, "multi", "", "7", "x"])
+async def test_without_a_single_known_class_nothing_is_limited(grade: str | None):
+    model = Model(IN_SCOPE, [cite("Use bundles.", 0)])
+    retriever = Fixed(Retrieval([P1], P1))
+
+    await AskAnviq(model, retriever, fast_model="f", smart_model="s").answer(  # type: ignore[arg-type]
+        "How do I teach tens?", "en", grade
+    )
+
+    assert retriever.scopes == [None]

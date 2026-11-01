@@ -269,6 +269,7 @@ async def test_a_yes_sent_within_the_timeout_still_deletes_the_teacher():
 class RecordingLoop:
     def __init__(self, stay_in: Phase | None = None) -> None:
         self.calls: list[tuple[str, bytes, str, str | None]] = []
+        self.grades: list[str | None] = []
         self.stay_in = stay_in
 
     async def plan(self, teacher: bytes, lang: str, text: str) -> LoopReply:
@@ -283,8 +284,11 @@ class RecordingLoop:
         self.calls.append(("mirror", teacher, lang, None))
         return LoopReply("THE MIRROR")
 
-    async def ask(self, teacher: bytes, lang: str, text: str) -> LoopReply:
+    async def ask(
+        self, teacher: bytes, lang: str, text: str, grade: str | None = None
+    ) -> LoopReply:
         self.calls.append(("ask", teacher, lang, text))
+        self.grades.append(grade)
         return LoopReply("THE ANSWER")
 
 
@@ -377,6 +381,15 @@ async def test_a_question_is_asked_for_then_answered_from_the_loop(store: InMemo
     assert answer.text == "THE ANSWER"
     assert loop.calls == [("ask", _hash(), "en", "How do I teach place value?")]
     assert store.teachers[_hash()].state.phase is Phase.IDLE
+
+
+async def test_the_class_the_teacher_chose_goes_with_their_question(store: InMemoryTeacherStore):
+    loop = RecordingLoop()
+    brain = await _looped(store, loop)  # onboarding chooses class 2
+
+    await brain.respond(_say("Why do children confuse b and d?"))
+
+    assert loop.grades == ["2"]
 
 
 async def test_a_question_typed_at_the_menu_reaches_the_loop(store: InMemoryTeacherStore):

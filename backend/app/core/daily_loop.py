@@ -63,7 +63,7 @@ class Mirrors(Protocol):
 
 
 class Answers(Protocol):
-    async def answer(self, question: str, lang: str) -> AskReply: ...
+    async def answer(self, question: str, lang: str, grade: str | None = None) -> AskReply: ...
 
 
 class DailyLoop(Protocol):
@@ -73,7 +73,9 @@ class DailyLoop(Protocol):
 
     async def mirror(self, teacher: bytes, lang: str) -> LoopReply: ...
 
-    async def ask(self, teacher: bytes, lang: str, text: str) -> LoopReply: ...
+    async def ask(
+        self, teacher: bytes, lang: str, text: str, grade: str | None = None
+    ) -> LoopReply: ...
 
 
 class PipelineDailyLoop:
@@ -120,11 +122,13 @@ class PipelineDailyLoop:
         await self._mirrors.complete(teacher)
         return LoopReply(f"{shown}\n\n{render('mirror_next_move', lang)}", plays_clips=True)
 
-    async def ask(self, teacher: bytes, lang: str, text: str) -> LoopReply:
+    async def ask(
+        self, teacher: bytes, lang: str, text: str, grade: str | None = None
+    ) -> LoopReply:
         if self._asker is None:
             return LoopReply(render("ask_unavailable", lang))
         try:
-            reply = await self._asker.answer(text, lang)
+            reply = await self._asker.answer(text, lang, grade)
         except AskUnavailableError as exc:
             logger.error("ask unavailable: %s", type(exc).__name__)
             return LoopReply(render("ask_unavailable", lang))

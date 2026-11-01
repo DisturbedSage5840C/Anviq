@@ -8,6 +8,7 @@ a model cannot invent a course or section number.
 import re
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, replace
+from typing import NamedTuple
 
 MIN_TOKENS = 300
 MAX_TOKENS = 600
@@ -35,6 +36,14 @@ class SourceDoc:
     # whole file.
     first_page: int | None = None
     last_page: int | None = None
+    # Set for an NCERT textbook chapter (one PDF per chapter). Chapter and book come from the
+    # file, so a textbook is never split on heading patterns.
+    class_level: int | None = None
+    subject: str | None = None
+    book_code: str | None = None
+    book_title: str | None = None
+    chapter_no: int | None = None
+    chapter_title: str | None = None
 
 
 @dataclass(frozen=True)
@@ -48,9 +57,17 @@ class Chunk:
     page: int
     lang: str
     text: str
+    class_level: int | None = None
+    subject: str | None = None
+    book_code: str | None = None
+    book_title: str | None = None
+    chapter_no: int | None = None
+    chapter_title: str | None = None
 
     def label(self) -> str:
         """The citation line, e.g. "NISHTHA FLN Course 9: Foundational Numeracy, Module 3, §3.2"."""
+        if self.book_code:
+            return self._textbook_label()
         parts = [self.source]
         if self.course_no is not None:
             parts[0] += f" Course {self.course_no}"
@@ -62,9 +79,32 @@ class Chunk:
             parts.append(f"§{self.section_no}")
         return ", ".join(parts)
 
+    def _textbook_label(self) -> str:
+        """A textbook citation, e.g. "NCERT Class 3 Maths Mela, Ch 4: Fun with Shapes, p.12"."""
+        book = " ".join(
+            part
+            for part in (
+                self.source,
+                f"Class {self.class_level}" if self.class_level else None,
+                self.book_title,
+            )
+            if part
+        )
+        chapter = None
+        if self.chapter_no is not None:
+            chapter = f"Ch {self.chapter_no}"
+            if self.chapter_title:
+                chapter += f": {self.chapter_title}"
+        return ", ".join(part for part in (book, chapter, f"p.{self.page}") if part)
+
 
 def estimate_tokens(text: str) -> int:
     return round(len(text.split()) * TOKENS_PER_WORD)
+
+
+class _Line(NamedTuple):
+    page: int
+    text: str
 
 
 @dataclass(frozen=True)
@@ -73,20 +113,20 @@ class _Section:
     number: str | None
     title: str | None
     page: int
-    lines: tuple[str, ...]
+    lines: tuple[_Line, ...]
 
 
-def _sections(pages: Iterable[tuple[int, str]]) -> Iterator[_Section]:
+def _sections(pages: Iterable[tuple[int, str]], *, headings: bool = True) -> Iterator[_Section]:
     current = _Section(None, None, None, 1, ())
     module: str | None = None
     for page_no, page_text in pages:
         if not current.lines:
             current = replace(current, page=page_no)
         for line in page_text.splitlines():
-            heading = _HEADING.match(line)
+            heading = _HEADING.match(line) if headings else None
             if heading is None:
                 if line.strip():
-                    current = replace(current, lines=(*current.lines, line.strip()))
+                    current = replace(current, lines=(*current.lines, _Line(page_no, line.strip())))
                 continue
             if current.lines:
                 yield current
@@ -104,23 +144,30 @@ def _sections(pages: Iterable[tuple[int, str]]) -> Iterator[_Section]:
         yield current
 
 
-def _windows(lines: tuple[str, ...]) -> Iterator[str]:
-    """Paragraph-preserving windows of at most MAX_TOKENS; a short tail joins the previous one."""
-    windows: list[list[str]] = [[]]
+def _windows(lines: tuple[_Line, ...]) -> Iterator[tuple[int, str]]:
+    """Paragraph-preserving windows of at most MAX_TOKENS, each with the page it starts on.
+
+    A short tail joins the previous window.
+    """
+    windows: list[list[_Line]] = [[]]
     size = 0
     for line in lines:
-        cost = estimate_tokens(line)
+        cost = estimate_tokens(line.text)
         if size + cost > MAX_TOKENS and windows[-1]:
             windows.append([])
             size = 0
         windows[-1].append(line)
         size += cost
-    if len(windows) > 1 and estimate_tokens(" ".join(windows[-1])) < MIN_TOKENS // 2:
+    if len(windows) > 1 and _tokens(windows[-1]) < MIN_TOKENS // 2:
         tail = windows.pop()
         windows[-1].extend(tail)
     for window in windows:
         if window:
-            yield " ".join(window)
+            yield window[0].page, " ".join(line.text for line in window)
+
+
+def _tokens(window: list[_Line]) -> int:
+    return estimate_tokens(" ".join(line.text for line in window))
 
 
 def chunk_document(doc: SourceDoc, pages: Iterable[tuple[int, str]]) -> list[Chunk]:
@@ -133,10 +180,16 @@ def chunk_document(doc: SourceDoc, pages: Iterable[tuple[int, str]]) -> list[Chu
             module=section.module,
             section_no=section.number,
             section_title=section.title,
-            page=section.page,
+            page=page,
             lang=doc.lang,
             text=text,
+            class_level=doc.class_level,
+            subject=doc.subject,
+            book_code=doc.book_code,
+            book_title=doc.book_title,
+            chapter_no=doc.chapter_no,
+            chapter_title=doc.chapter_title,
         )
-        for section in _sections(pages)
-        for text in _windows(section.lines)
+        for section in _sections(pages, headings=doc.book_code is None)
+        for page, text in _windows(section.lines)
     ]

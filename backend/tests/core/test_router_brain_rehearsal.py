@@ -33,7 +33,9 @@ class PlanningLoop:
     async def mirror(self, teacher: bytes, lang: str) -> LoopReply:
         return LoopReply("THE MIRROR")
 
-    async def ask(self, teacher: bytes, lang: str, text: str) -> LoopReply:
+    async def ask(
+        self, teacher: bytes, lang: str, text: str, grade: str | None = None
+    ) -> LoopReply:
         return LoopReply("THE ANSWER")
 
 

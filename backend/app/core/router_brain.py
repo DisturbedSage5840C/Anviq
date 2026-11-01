@@ -151,7 +151,7 @@ class RouterBrain:
     ) -> list[LoopReply]:
         """Plan, Reflect, Ask and Mirror call the model, so they run after the database commit."""
         replies = [
-            await self._run_one(key, lang or UNKNOWN_LANG_TTS, effect)
+            await self._run_one(key, lang or UNKNOWN_LANG_TTS, effect, transition.state.grade_band)
             for effect in transition.effects
             if isinstance(effect, _LOOP_EFFECTS)
         ]
@@ -183,7 +183,9 @@ class RouterBrain:
             return (today,)
         return (ClipAudio(first.audio, first.mime, render("mirror_day1", tongue)), today)
 
-    async def _run_one(self, key: bytes, lang: str, effect: LoopEffect) -> LoopReply:
+    async def _run_one(
+        self, key: bytes, lang: str, effect: LoopEffect, grade: str | None
+    ) -> LoopReply:
         unavailable = _UNAVAILABLE[type(effect)]
         if self._loop is None:
             return LoopReply(render(unavailable, lang))
@@ -198,7 +200,7 @@ class RouterBrain:
                 case ShowMirror():
                     return await self._loop.mirror(key, lang)
                 case AskQuestion(text):
-                    return await self._loop.ask(key, lang, text)
+                    return await self._loop.ask(key, lang, text, grade)
         except Exception as exc:  # the teacher gets a kind message; the details never carry content
             logger.error("daily loop step failed: %s", type(exc).__name__)
             return LoopReply(render(unavailable, lang))

@@ -394,7 +394,11 @@ def test_shipped_eval_datasets_and_manifests_are_well_formed():
 
     corpus_docs = read_manifest(repo_root / "content" / "corpus" / "manifest.csv")
     assert sorted((doc.source, doc.lang) for _, doc in corpus_docs) == (
-        [("NCERT Teachers' Handbook Class 1-2", "en"), ("NIPUN Bharat", "en")]
+        [
+            ("NCERT Teachers' Handbook Class 1-2", "en"),
+            ("NCF Foundational Stage", "en"),
+            ("NIPUN Bharat", "en"),
+        ]
         + [("NISHTHA FLN", "en")] * 12
         + [("NISHTHA FLN", "hi")] * 12
     )

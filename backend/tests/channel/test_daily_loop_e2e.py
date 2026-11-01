@@ -119,7 +119,7 @@ class FixedAsker:
     def __init__(self) -> None:
         self.seen: list[tuple[str, str]] = []
 
-    async def answer(self, question: str, lang: str) -> AskReply:
+    async def answer(self, question: str, lang: str, grade: str | None = None) -> AskReply:
         self.seen.append((question, lang))
         text = "Use tens and ones.\n\nSource: NIPUN 4"
         return AskReply(text, "Use tens and ones.", ("NIPUN 4",), False)

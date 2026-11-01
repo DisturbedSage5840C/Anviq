@@ -1,0 +1,69 @@
+{"question": "How can I teach Class 1 children to measure length using their handspans?", "lang": "en", "grade": 1, "gold": ["NCERT Class 1 Joyful Mathematics, Ch 7"], "evidence": "handspan", "split": "dev"}
+{"question": "How do I introduce coins and notes to Class 1 children?", "lang": "en", "grade": 1, "gold": ["NCERT Class 1 Joyful Mathematics, Ch 12"], "evidence": "coin", "split": "held_out"}
+{"question": "What activity helps Class 1 children group objects into boxes of ten?", "lang": "en", "grade": 1, "gold": ["NCERT Class 1 Joyful Mathematics, Ch 8"], "evidence": "box", "split": "dev"}
+{"question": "How can I connect the idea of time to a child's daily routine in Class 1?", "lang": "en", "grade": 1, "gold": ["NCERT Class 1 Joyful Mathematics, Ch 10"], "evidence": "routine", "split": "held_out"}
+{"question": "How do I teach position words like inside and outside to first graders?", "lang": "en", "grade": 1, "gold": ["NCERT Class 1 Joyful Mathematics, Ch 1"], "evidence": "inside", "split": "dev"}
+{"question": "How do I teach faces, edges and corners of solid shapes such as the cone in Class 2?", "lang": "en", "grade": 2, "gold": ["NCERT Class 2 Joyful Mathematics, Ch 2"], "evidence": "corner", "split": "dev"}
+{"question": "How is the number line used to add tens and ones in Class 2?", "lang": "en", "grade": 2, "gold": ["NCERT Class 2 Joyful Mathematics, Ch 6"], "evidence": "number line", "split": "held_out"}
+{"question": "How do I introduce multiplication as repeated addition in Class 2?", "lang": "en", "grade": 2, "gold": ["NCERT Class 2 Joyful Mathematics, Ch 8"], "evidence": "multipl", "split": "dev"}
+{"question": "How can I teach days, months and the calendar in Class 2?", "lang": "en", "grade": 2, "gold": ["NCERT Class 2 Joyful Mathematics, Ch 9"], "evidence": "calendar", "split": "held_out"}
+{"question": "How can Class 2 children practise money problems with rupees?", "lang": "en", "grade": 2, "gold": ["NCERT Class 2 Joyful Mathematics, Ch 10"], "evidence": "rupee", "split": "dev"}
+{"question": "How do I help Class 2 children read a table to find the most and least liked item?", "lang": "en", "grade": 2, "gold": ["NCERT Class 2 Joyful Mathematics, Ch 11"], "evidence": "least", "split": "dev"}
+{"question": "How can Class 2 children compare which object is heavier or lighter?", "lang": "en", "grade": 2, "gold": ["NCERT Class 2 Joyful Mathematics, Ch 7"], "evidence": "heav", "split": "held_out"}
+{"question": "How do I teach place value with tens and ones in Class 2?", "lang": "en", "grade": 2, "gold": ["NCERT Class 2 Joyful Mathematics, Ch 1"], "evidence": "tens", "split": "dev"}
+{"question": "How do I teach greetings such as good morning and good night in Class 1 English?", "lang": "en", "grade": 1, "gold": ["NCERT Class 1 Mridang, Ch 2"], "evidence": "good morning", "split": "held_out"}
+{"question": "How can I use the cap-seller and the monkeys story for reading in Class 1?", "lang": "en", "grade": 1, "gold": ["NCERT Class 1 Mridang, Ch 4"], "evidence": "cap-seller", "split": "dev"}
+{"question": "Which poem can I use in Class 2 to get children talking about shapes they see in clouds?", "lang": "en", "grade": 2, "gold": ["NCERT Class 2 Mridang, Ch 8"], "evidence": "clouds", "split": "dev"}
+{"question": "How can Class 2 children introduce themselves in English, saying where they come from and what they speak?", "lang": "en", "grade": 2, "gold": ["NCERT Class 2 Mridang, Ch 13"], "evidence": "garba", "split": "held_out"}
+{"question": "How can I teach equal sharing and division with the kaju katli problem in Class 3?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Maths Mela, Ch 7"], "evidence": "kaju", "split": "dev"}
+{"question": "How do I teach halves and quarters through sharing a paratha in Class 3?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Maths Mela, Ch 8"], "evidence": "paratha", "split": "held_out"}
+{"question": "How can the Akbar and Birbal crows story help teach numbers up to 1000?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Maths Mela, Ch 9"], "evidence": "birbal", "split": "dev"}
+{"question": "How can Class 3 children measure length with handspans and double a strip?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Maths Mela, Ch 10"], "evidence": "handspan", "split": "dev"}
+{"question": "How do I teach litre and half litre to Class 3 children?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Maths Mela, Ch 11"], "evidence": "litre", "split": "held_out"}
+{"question": "How do I teach quarter past and half past on the clock in Class 3?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Maths Mela, Ch 13"], "evidence": "quarter past", "split": "dev"}
+{"question": "How can I use a mirror to teach symmetry in Class 3?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Maths Mela, Ch 14"], "evidence": "mirror", "split": "held_out"}
+{"question": "How do I teach adding and subtracting 100, 10 and 1 using saplings in Class 3?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Maths Mela, Ch 12"], "evidence": "sapling", "split": "dev"}
+{"question": "How do I teach skip counting by tens on a number line in Class 3?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Maths Mela, Ch 4"], "evidence": "skip", "split": "dev"}
+{"question": "How can rangoli and matchsticks be used to teach shapes in Class 3?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Maths Mela, Ch 5"], "evidence": "rangoli", "split": "held_out"}
+{"question": "How can I teach how a potter makes things using clay, moulds and a kiln in Class 3 EVS?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Our Wondrous World, Ch 11"], "evidence": "kiln", "split": "dev"}
+{"question": "How do I teach Class 3 children about taking charge of waste and keeping places clean?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Our Wondrous World, Ch 12"], "evidence": "waste", "split": "held_out"}
+{"question": "How do I teach where water comes from, such as rainwater and wells, in Class 3?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Our Wondrous World, Ch 7"], "evidence": "well", "split": "dev"}
+{"question": "How can I help Class 3 children understand healthy habits and exercise?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Our Wondrous World, Ch 9"], "evidence": "exercise", "split": "dev"}
+{"question": "How do I teach materials that are see-through in Class 3 EVS?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Our Wondrous World, Ch 10"], "evidence": "see-through", "split": "held_out"}
+{"question": "How can I use the story of four shapes who were best friends in Class 3 English?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Santoor, Ch 3"], "evidence": "square", "split": "dev"}
+{"question": "How can I use the paper boat story in Class 3 English?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Santoor, Ch 6"], "evidence": "paper boat", "split": "held_out"}
+{"question": "How can the story of the farmer who grew fruits be used in Class 3 English?", "lang": "en", "grade": 3, "gold": ["NCERT Class 3 Santoor, Ch 8"], "evidence": "farmer", "split": "dev"}
+{"question": "How do I explain leap years and the date 29 February in Class 4?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Math-Mela, Ch 12"], "evidence": "leap", "split": "dev"}
+{"question": "How do I teach symmetry in Class 4?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Math-Mela, Ch 11"], "evidence": "symmetr", "split": "held_out"}
+{"question": "How can the mystery matrix help Class 4 children practise multiplication?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Math-Mela, Ch 13"], "evidence": "multipl", "split": "dev"}
+{"question": "How do I teach Class 4 children to collect data and find the most liked subject?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Math-Mela, Ch 14"], "evidence": "most liked", "split": "held_out"}
+{"question": "How do I teach weight in kilograms and capacity in litres in Class 4?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Math-Mela, Ch 8"], "evidence": "litre", "split": "dev"}
+{"question": "How can sharing a sheet of paper teach halves and wholes in Class 4?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Math-Mela, Ch 5"], "evidence": "whole", "split": "dev"}
+{"question": "How can the langar for a thousand people teach grouping in Class 4?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Math-Mela, Ch 4"], "evidence": "langar", "split": "held_out"}
+{"question": "How can frog jumps help teach skip counting in Class 4?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Math-Mela, Ch 9"], "evidence": "frog", "split": "dev"}
+{"question": "How can a school trip be used for maths problems in Class 4?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Math-Mela, Ch 7"], "evidence": "mawlynnong", "split": "held_out"}
+{"question": "How do I teach how paper is made in Class 4 EVS?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Our Wonderous World, Ch 8"], "evidence": "paper", "split": "dev"}
+{"question": "How do I teach balanced food, exercise and rest in Class 4?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Our Wonderous World, Ch 5"], "evidence": "balanced", "split": "dev"}
+{"question": "How do I teach landforms, the Sun, the Moon and the stars in Class 4?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Our Wonderous World, Ch 9"], "evidence": "landform", "split": "held_out"}
+{"question": "How can I teach the story of Louis Braille and the Braille script in Class 4?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Santoor, Ch 6"], "evidence": "braille", "split": "dev"}
+{"question": "Which lesson in Class 4 English can I use to teach road safety?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Santoor, Ch 3"], "evidence": "road", "split": "held_out"}
+{"question": "How can I use the Lagori play script for reading aloud in Class 4?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Santoor, Ch 8"], "evidence": "lagori", "split": "dev"}
+{"question": "How can the folk story of Hekko from Nagaland be used in Class 4 English?", "lang": "en", "grade": 4, "gold": ["NCERT Class 4 Santoor, Ch 9"], "evidence": "nagaland", "split": "dev"}
+{"question": "How do I teach fractions to Class 5, such as comparing one half and one third?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Math-Mela, Ch 2"], "evidence": "fraction", "split": "held_out"}
+{"question": "How do I connect multiplication and division facts, like 35 divided by 7, in Class 5?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Math-Mela, Ch 9"], "evidence": "division", "split": "dev"}
+{"question": "How can a quilt with a lace border teach perimeter in Class 5?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Math-Mela, Ch 11"], "evidence": "perimeter", "split": "held_out"}
+{"question": "How do I teach time in seconds to Class 5 children?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Math-Mela, Ch 12"], "evidence": "second", "split": "dev"}
+{"question": "How do I teach directions such as east and west and reading maps in Class 5?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Math-Mela, Ch 14"], "evidence": "east", "split": "dev"}
+{"question": "How can I teach Class 5 children to read a pictograph about hours of TV?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Math-Mela, Ch 15"], "evidence": "pictograph", "split": "held_out"}
+{"question": "How do I teach distance and duration of a journey in Class 5?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Math-Mela, Ch 1"], "evidence": "duration", "split": "dev"}
+{"question": "How can the dairy farm and butter pouches be used for maths in Class 5?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Math-Mela, Ch 6"], "evidence": "butter", "split": "held_out"}
+{"question": "How do I teach weight and capacity measurement in Class 5?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Math-Mela, Ch 8"], "evidence": "capacity", "split": "dev"}
+{"question": "How does the multiplier box help Class 5 children with multiplication?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Math-Mela, Ch 13"], "evidence": "multiplier", "split": "dev"}
+{"question": "How do I teach the journey of a river in Class 5 EVS?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Our Wonderous World, Ch 2"], "evidence": "river", "split": "held_out"}
+{"question": "How can a green school project be run in Class 5?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Our Wonderous World, Ch 4"], "evidence": "green school", "split": "dev"}
+{"question": "How can weaving, nests and spider webs be used to teach patterns with threads in Class 5?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Our Wonderous World, Ch 8"], "evidence": "web", "split": "held_out"}
+{"question": "How do I teach the Blue Planet and the Earth in Class 5?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Our Wonderous World, Ch 10"], "evidence": "blue planet", "split": "dev"}
+{"question": "How can I use the water conservation story What a Tank! in Class 5 English?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Santoor, Ch 6"], "evidence": "tank", "split": "dev"}
+{"question": "How can I use the Gilli Danda story in Class 5 English?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Santoor, Ch 7"], "evidence": "gilli", "split": "held_out"}
+{"question": "How can I teach the story of the decision of the panchayat in Class 5?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Santoor, Ch 8"], "evidence": "panchayat", "split": "dev"}
+{"question": "How can I use the Glass Bangles lesson on Firozabad in Class 5?", "lang": "en", "grade": 5, "gold": ["NCERT Class 5 Santoor, Ch 10"], "evidence": "firozabad", "split": "held_out"}
