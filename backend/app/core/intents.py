@@ -239,6 +239,8 @@ _GRADE_WORDS = {
     "1": _tokens("1 १ one एक पहली first"),
     "2": _tokens("2 २ two दो दूसरी second"),
     "3": _tokens("3 ३ three तीन तीसरी third"),
+    "4": _tokens("4 ४ four चार चौथी fourth"),
+    "5": _tokens("5 ५ five पाँच पांच पाँचवीं पांचवीं पाँचवी पांचवी fifth"),
 }
 _MULTI_WORDS = frozenset(_tokens("mixed multigrade multi-grade मिली मिलीजुली मिश्रित"))
 

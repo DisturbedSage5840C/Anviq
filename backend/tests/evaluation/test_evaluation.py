@@ -37,9 +37,9 @@ def test_percentile_and_rate():
     assert rate(1, 4) == 0.25 and rate(1, 0) == 0.0
 
 
-def test_full_character_run_is_3600_turns_across_every_rule_and_style():
+def test_full_character_run_is_300_turns_per_rule_across_every_rule_and_style():
     cases = character.cases(ALL_RULES, 25, 1)
-    assert len(cases) == 3600
+    assert len(cases) == 300 * len(ALL_RULES)
     assert {c.rule_id for c in cases} == {r.id for r in ALL_RULES}
     assert {c.style for c in cases} == {s[0] for s in character.STYLES}
     assert {c.lang for c in cases} == {"hi", "en"}
@@ -81,7 +81,7 @@ def test_the_persona_option_accepts_the_three_children_and_nothing_else():
 async def test_character_harness_offline_passes_and_reports_per_rule():
     report = await character.run(character.ScriptedChild(), character.cases(ALL_RULES, 1, 1), 4)
     assert report["raw_rate"] == 1.0 and report["pass"] is True
-    assert len(report["by_malrule"]) == 12  # type: ignore[arg-type]
+    assert len(report["by_malrule"]) == len(ALL_RULES)  # type: ignore[arg-type]
 
 
 class LeakyChild:

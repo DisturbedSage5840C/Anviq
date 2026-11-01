@@ -1,4 +1,4 @@
-# Grades 1-3 Numeracy Topic Map with NIPUN LO codes, NISHTHA FLN Course 9 refs, and 3-problem misconception scenario bank (Build Plan §3.3 A, §4.1, D3 V2, D5 V4).
+# Classes 1-5 Numeracy Topic Map with NIPUN LO codes, NISHTHA FLN Course 9 refs, and 3-problem misconception scenario bank (Build Plan §3.3 A, §4.1, D3 V2, D5 V4).
 # Runtime topic definitions live in backend/app/content/topics.toml.
 
 topics:
@@ -205,3 +205,149 @@ topics:
         riya_misconception: "WP.KEYWORD_MORE_MEANS_ADD"
         riya_answer: "19"
         riya_reasoning_hi: "4 ज़्यादा बोला है तो 15 जमा 4 बराबर 19।"
+
+  - id: NUM.G4.MUL.MULTI_DIGIT
+    grade: 4
+    title_en: "multiplying a two-digit number, with carrying and the placeholder zero"
+    title_hi: "दो अंकों की संख्या का गुणा (हासिल और शून्य रखना)"
+    keywords: ["multiply", "multiplication", "times", "product", "गुणा", "गुणन"]
+    scenarios:
+      - problem: "47 × 6"
+        correct_answer: "282"
+        riya_misconception: "MUL.FORGET_CARRY"
+        riya_answer: "242"
+        riya_reasoning_hi: "6 गुणा 7 है 42, तो 2 लिखा। 6 गुणा 4 है 24, तो 242।"
+        aman_answer: "282"
+        aman_reasoning_hi: "मैंने 6 गुणा 7 किया, फिर 6 गुणा 40।"
+      - problem: "34 × 26"
+        correct_answer: "884"
+        meena_misconception: "MUL.NO_PLACEHOLDER_ZERO"
+        meena_answer: "272"
+        meena_reasoning_hi: "34 गुणा 6 है 204। 34 गुणा 2 है 68, उसे सीधे नीचे लिखा। जोड़ा तो 272।"
+        aman_answer: "884"
+        aman_reasoning_hi: "34 गुणा 6, फिर 34 गुणा 20, फिर जोड़ा।"
+      - problem: "36 × 8"
+        correct_answer: "288"
+        riya_misconception: "MUL.FORGET_CARRY"
+        riya_answer: "248"
+        riya_reasoning_hi: "8 गुणा 6 है 48, तो 8 लिखा। 8 गुणा 3 है 24, तो 248।"
+        aman_answer: "288"
+        aman_reasoning_hi: "8 गुणा 6 है 48, 4 हासिल गया।"
+
+  - id: NUM.G4.DIV.ZERO_IN_QUOTIENT
+    grade: 4
+    title_en: "dividing a three-digit number when the quotient has a zero in it"
+    title_hi: "तीन अंकों की संख्या का भाग (जब भागफल में शून्य आए)"
+    keywords: ["divide", "division", "quotient", "remainder", "भाग", "भागफल", "भाजन"]
+    scenarios:
+      - problem: "612 ÷ 6"
+        correct_answer: "102"
+        riya_misconception: "DIV.DROPS_ZERO_IN_QUOTIENT"
+        riya_answer: "12"
+        riya_reasoning_hi: "6 में 6 एक बार, फिर 12 में 6 दो बार — तो 12।"
+        aman_answer: "102"
+        aman_reasoning_hi: "102। 1 के बाद 1 बचा, उसमें 6 नहीं जाता, तो 0 लिखा।"
+      - problem: "824 ÷ 4"
+        correct_answer: "206"
+        riya_misconception: "DIV.DROPS_ZERO_IN_QUOTIENT"
+        riya_answer: "26"
+        riya_reasoning_hi: "8 में 4 दो बार, फिर 24 में 4 छह बार — तो 26।"
+        aman_answer: "206"
+        aman_reasoning_hi: "206। बीच में 0 आया क्योंकि 2 में 4 नहीं जाता।"
+      - problem: "515 ÷ 5"
+        correct_answer: "103"
+        riya_misconception: "DIV.DROPS_ZERO_IN_QUOTIENT"
+        riya_answer: "13"
+        riya_reasoning_hi: "5 में 5 एक बार, फिर 15 में 5 तीन बार — तो 13।"
+        aman_answer: "103"
+        aman_reasoning_hi: "103। 1 में 5 नहीं जाता, तो बीच में 0।"
+
+  - id: NUM.G5.FRAC.ADD_UNLIKE
+    grade: 5
+    title_en: "adding fractions with different denominators"
+    title_hi: "अलग हर वाली भिन्नों का जोड़"
+    keywords: ["fraction", "fractions", "denominator", "numerator", "भिन्न", "हर", "अंश"]
+    scenarios:
+      - problem: "1/2 + 1/3"
+        correct_answer: "5/6"
+        riya_misconception: "FRAC.ADD_ACROSS"
+        riya_answer: "2/5"
+        riya_reasoning_hi: "ऊपर 1 और 1 जोड़े तो 2, नीचे 2 और 3 जोड़े तो 5 — 2/5।"
+        meena_misconception: "FRAC.ADD_TOP_KEEP_LARGER_BOTTOM"
+        meena_answer: "2/3"
+        meena_reasoning_hi: "ऊपर 1 और 1 जोड़े तो 2, नीचे बड़ा वाला 3 रखा — 2/3।"
+      - problem: "1/3 + 1/4"
+        correct_answer: "7/12"
+        riya_misconception: "FRAC.ADD_ACROSS"
+        riya_answer: "2/7"
+        riya_reasoning_hi: "ऊपर 1 और 1 जोड़े तो 2, नीचे 3 और 4 जोड़े तो 7 — 2/7।"
+        meena_misconception: "FRAC.ADD_TOP_KEEP_LARGER_BOTTOM"
+        meena_answer: "2/4"
+        meena_reasoning_hi: "ऊपर 1 और 1 जोड़े तो 2, नीचे बड़ा वाला 4 रखा — 2/4।"
+      - problem: "2/3 + 1/6"
+        correct_answer: "5/6"
+        riya_misconception: "FRAC.ADD_ACROSS"
+        riya_answer: "3/9"
+        riya_reasoning_hi: "ऊपर 2 और 1 जोड़े तो 3, नीचे 3 और 6 जोड़े तो 9 — 3/9।"
+        meena_misconception: "FRAC.ADD_TOP_KEEP_LARGER_BOTTOM"
+        meena_answer: "3/6"
+        meena_reasoning_hi: "ऊपर 2 और 1 जोड़े तो 3, नीचे बड़ा वाला 6 रखा — 3/6।"
+
+  - id: NUM.G4.AREA.PERIMETER
+    grade: 4
+    title_en: "area of a rectangle, not its perimeter"
+    title_hi: "आयत का क्षेत्रफल (परिमाप नहीं)"
+    keywords: ["area", "perimeter", "rectangle", "क्षेत्रफल", "परिमाप", "आयत"]
+    scenarios:
+      - problem: "length 12, breadth 5"
+        correct_answer: "60"
+        riya_misconception: "AREA.ADDS_SIDES"
+        riya_answer: "17"
+        riya_reasoning_hi: "12 और 5 जोड़े तो 17।"
+        meena_misconception: "AREA.GIVES_PERIMETER"
+        meena_answer: "34"
+        meena_reasoning_hi: "चारों भुजाएँ जोड़ीं: 12, 5, 12, 5 — 34।"
+      - problem: "length 15, breadth 8"
+        correct_answer: "120"
+        riya_misconception: "AREA.ADDS_SIDES"
+        riya_answer: "23"
+        riya_reasoning_hi: "15 और 8 जोड़े तो 23।"
+        meena_misconception: "AREA.GIVES_PERIMETER"
+        meena_answer: "46"
+        meena_reasoning_hi: "चारों भुजाएँ जोड़ीं: 15, 8, 15, 8 — 46।"
+      - problem: "length 20, breadth 6"
+        correct_answer: "120"
+        riya_misconception: "AREA.ADDS_SIDES"
+        riya_answer: "26"
+        riya_reasoning_hi: "20 और 6 जोड़े तो 26।"
+        meena_misconception: "AREA.GIVES_PERIMETER"
+        meena_answer: "52"
+        meena_reasoning_hi: "चारों भुजाएँ जोड़ीं: 20, 6, 20, 6 — 52।"
+
+  - id: NUM.G4.PV.LARGE_NUMBER
+    grade: 4
+    title_en: "writing five-digit numbers that have zeros in them"
+    title_hi: "पाँच अंकों की संख्याएँ लिखना (जिनमें शून्य हो)"
+    keywords: ["five digit", "5 digit", "thousand", "thousands", "lakh", "हज़ार", "हजार", "लाख"]
+    scenarios:
+      - problem: "write 45006 (पैंतालीस हज़ार छह)"
+        correct_answer: "45006"
+        riya_misconception: "PVL.ZEROS_DROPPED"
+        riya_answer: "456"
+        riya_reasoning_hi: "पैंतालीस हज़ार छह — 45 और 6, तो 456।"
+        aman_answer: "45006"
+        aman_reasoning_hi: "45006। हज़ार के बाद तीन जगह भरीं: 0, 0, 6।"
+      - problem: "write 23040 (तेईस हज़ार चालीस)"
+        correct_answer: "23040"
+        riya_misconception: "PVL.ZEROS_DROPPED"
+        riya_answer: "2340"
+        riya_reasoning_hi: "तेईस हज़ार चालीस — 23 और 4, तो 2340।"
+        aman_answer: "23040"
+        aman_reasoning_hi: "23040। हज़ार के बाद 0, 4, 0।"
+      - problem: "write 38005 (अड़तीस हज़ार पाँच)"
+        correct_answer: "38005"
+        riya_misconception: "PVL.ZEROS_DROPPED"
+        riya_answer: "385"
+        riya_reasoning_hi: "अड़तीस हज़ार पाँच — 38 और 5, तो 385।"
+        aman_answer: "38005"
+        aman_reasoning_hi: "38005। हज़ार के बाद 0, 0, 5।"

@@ -21,6 +21,7 @@ LANGS = frozenset({"en", "hi"})
 WEEKS = frozenset({"A", "B"})
 MAX_TEXT_CHARS = 2000  # a spoken question, a child's line or a coach comment is far shorter
 MAX_COUNT = 100
+MAX_PROBLEM_NUMBER = 1_000_000  # Class 4-5 numbers reach six digits; nothing larger is ever drawn
 MAX_RAW_CHARS = 200_000  # MAX_TURNS exchanges of the longest texts is well under half of this
 _CHILD_KEYS = frozenset(persona.key for persona in PERSONAS)
 
@@ -30,7 +31,13 @@ def dump(state: RehearsalState) -> str:
     return json.dumps(
         {
             "topic_id": state.topic_id,
-            "problem": {"kind": problem.kind.value, "a": problem.a, "b": problem.b},
+            "problem": {
+                "kind": problem.kind.value,
+                "a": problem.a,
+                "b": problem.b,
+                "c": problem.c,
+                "d": problem.d,
+            },
             "primary_id": state.primary_id,
             "secondary_id": state.secondary_id,
             "move_id": state.move_id,
@@ -127,6 +134,13 @@ def _count(value: Any) -> int:
     return value
 
 
+def _problem_number(value: Any) -> int:
+    """An operand of the practice problem: a real int, never negative, never absurdly large."""
+    if type(value) is not int or not 0 <= value <= MAX_PROBLEM_NUMBER:
+        raise ValueError("not a problem number")
+    return value
+
+
 def _choice(value: Any, allowed: Any) -> Any:
     if isinstance(value, bool) or value not in allowed:
         raise ValueError("not an allowed value")
@@ -141,7 +155,14 @@ def _move(value: Any) -> int:
 
 
 def _problem(data: Any) -> Problem:
-    return Problem(Kind(_text(data["kind"])), _count(data["a"]), _count(data["b"]))
+    # `c` and `d` are absent in sessions saved before fractions existed, so they default to 0.
+    return Problem(
+        Kind(_text(data["kind"])),
+        _problem_number(data["a"]),
+        _problem_number(data["b"]),
+        _problem_number(data.get("c", 0)),
+        _problem_number(data.get("d", 0)),
+    )
 
 
 def _per_child(data: Any, convert: Callable[[Any], Any]) -> dict[str, Any]:

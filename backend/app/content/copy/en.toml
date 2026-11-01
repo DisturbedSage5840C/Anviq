@@ -4,8 +4,8 @@
 welcome = "Hello! I'm Anviq, your private coach. Practise before class here, with nobody watching."
 ask_language = "Which language would you like to use? Hindi or English?"
 language_retry = "Sorry, I didn't catch that. Please say or type 'Hindi' or 'English'."
-ask_grade = "Which class do you teach? 1, 2, 3, or mixed?"
-grade_retry = "Please tell me 1, 2, 3 or 'mixed'."
+ask_grade = "Which class do you teach? 1, 2, 3, 4, 5, or mixed?"
+grade_retry = "Please tell me 1, 2, 3, 4, 5 or 'mixed'."
 consent_notice = """Before we go on, about your data:
 • We don't keep recordings of your voice unless you ask us to. We keep the written text of it, and only for 90 days. If you say 'save my recordings', we also keep your first and latest practice recordings, encrypted, for 30 days. Say 'stop saving my recordings' and they are deleted.
 • We keep no information about children. Please don't say children's real names.
@@ -52,7 +52,7 @@ clips_off = "Okay. I'm not keeping your recordings, and I've deleted any I had."
 clips_need_consent = "I can only keep recordings after you agree to the privacy notice. Say 'withdraw consent' and read it again, then ask me again."
 
 ask_plan_topic = "What will you teach tomorrow? Tell me the topic and which class, in a sentence or two."
-ask_question_prompt = "What would you like to know? Ask me anything about teaching reading, writing or maths in classes 1 to 3."
+ask_question_prompt = "What would you like to know? Ask me anything about teaching reading, writing or maths in classes 1 to 5."
 ask_reflect_notes = "How did today's lesson go? Tell me in a sentence or two what you tried and what the children did."
 
 plan_cta = "Want to practise this with the three children? Say yes."

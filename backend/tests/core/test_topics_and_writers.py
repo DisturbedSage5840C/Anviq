@@ -60,8 +60,16 @@ def test_every_topic_with_a_rehearsal_has_a_topic_entry_and_the_reverse():
     topics = load_topics()
     assert {t.id for t in topics} == set(TOPIC_IDS)
     for topic in topics:
-        assert topic.nipun_lo.startswith("IL")
-        assert "NISHTHA FLN Course 9" in topic.nishtha_ref
+        if topic.grade <= 3:  # NIPUN and NISHTHA FLN stop at Class 3
+            assert topic.nipun_lo.startswith("IL")
+            assert "NISHTHA FLN Course 9" in topic.nishtha_ref
+        else:  # no framework reference is invented for Classes 4 and 5
+            assert topic.nipun_lo == "" and topic.nishtha_ref == ""
+
+
+def test_classes_four_and_five_have_numeracy_topics():
+    grades = {t.grade for t in load_topics()}
+    assert {4, 5} <= grades
 
 
 @pytest.mark.parametrize(

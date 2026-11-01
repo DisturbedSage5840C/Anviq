@@ -134,3 +134,34 @@ def test_teacher_text_cannot_close_its_own_tag():
 )
 def test_a_long_run_of_filler_like_characters_is_counted_quickly(text: str, expected: int):
     assert sentence_count(text) == expected
+
+
+def test_says_a_fraction_answer_only_when_the_whole_fraction_is_spoken():
+    assert says_answer("मेरा जवाब 5/6 है", "5/6")
+    assert says_answer("it is 5 / 6", "5/6")
+    assert says_answer("जवाब ५/६", "5/6")
+    assert not says_answer("मेरा जवाब 5 है", "5/6")
+    assert not says_answer("15/6", "5/6")
+    assert not says_answer("5/16", "5/6")
+
+
+def test_a_fraction_leak_needs_the_whole_fraction_and_ignores_the_problems_own_numbers():
+    assert leaks_correct_answer("so it is 5/6", "5/6", allowed={1, 2, 3})
+    assert not leaks_correct_answer("1/2 and 1/3 make 2/5", "5/6", allowed={1, 2, 3})
+    assert not leaks_correct_answer("5 pieces of 6", "5/6", allowed=set())
+    assert not leaks_correct_answer("5/6", "5/6", allowed={5, 6})
+
+
+def test_a_fraction_answer_never_raises_on_the_integer_helpers():
+    assert not says_answer("pata nahi", "3/4")
+    assert not leaks_correct_answer("pata nahi", "3/4")
+
+
+def test_a_child_reply_with_a_fraction_answer_passes_the_whole_check():
+    assert child_utterance_ok(
+        "Umm... I think it is 2/5.",
+        answer="2/5",
+        correct="5/6",
+        allowed={1, 2, 3},
+        knows_correct=False,
+    )

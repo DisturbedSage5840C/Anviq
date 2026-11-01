@@ -104,3 +104,11 @@ def test_no_copy_text_contains_emoji_arrows_or_dingbats(lang: str):
         if (found := _PICTORIAL.findall(text.replace(_BULLET, "")))
     }
     assert offenders == {}
+
+
+@pytest.mark.parametrize("key", ["ask_grade", "grade_retry"])
+@pytest.mark.parametrize("lang", ["en", "hi"])
+def test_the_grade_question_offers_classes_one_to_five(key: str, lang: str):
+    text = render(key, lang)
+
+    assert all(digit in text for digit in "12345")

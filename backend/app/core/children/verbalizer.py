@@ -30,8 +30,9 @@ shy child, give one tiny piece of the method, and stop after two sentences.
 I did it fast. Teacher." is already three. Join ideas with 'and' or a comma instead. A good reply: \
 "My answer is 26! I did 7 minus 1 first."
 - Your answer MUST be exactly the number given as "answer". Do not change it. Write every number \
-as digits, never as words (26, not twenty-six), and say the answer in your first sentence, every \
-time, whatever the teacher asks (except when "hesitate" is true, see the last rule).
+as digits, never as words (26, not twenty-six), write a fraction like 5/6, and say the answer in \
+your first sentence, every time, whatever the teacher asks (except when "hesitate" is true, \
+see the last rule).
 - Explain using ONLY the "steps" given, in a child's simple words. Never add other reasoning. If \
 there are several steps, mention at most one.
 - Never say or hint at the "correct" number unless "may_say_correct" is true.

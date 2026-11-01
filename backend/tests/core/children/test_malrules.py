@@ -1,4 +1,5 @@
 import random
+import re
 from collections.abc import Iterator
 
 import pytest
@@ -27,12 +28,23 @@ EXAMPLES = [
     ("PV.DIGIT_REVERSAL", Problem(Kind.WRITE_NUMBER, 21), "12", "21"),
     ("CMP.ONES_DIGIT_DECIDES", Problem(Kind.COMPARE, 39, 41), "39", "41"),
     ("WP.KEYWORD_MORE_MEANS_ADD", Problem(Kind.WORD_MORE_THAN, 12, 5), "17", "7"),
+    ("MUL.FORGET_CARRY", Problem(Kind.MULTIPLY, 47, 6), "242", "282"),
+    ("MUL.NO_PLACEHOLDER_ZERO", Problem(Kind.MULTIPLY, 34, 26), "272", "884"),
+    ("DIV.DROPS_ZERO_IN_QUOTIENT", Problem(Kind.DIVIDE, 612, 6), "12", "102"),
+    ("FRAC.ADD_ACROSS", Problem(Kind.ADD_FRACTIONS, 1, 2, 1, 3), "2/5", "5/6"),
+    ("FRAC.ADD_TOP_KEEP_LARGER_BOTTOM", Problem(Kind.ADD_FRACTIONS, 1, 2, 1, 3), "2/3", "5/6"),
+    ("AREA.ADDS_SIDES", Problem(Kind.AREA, 12, 5), "17", "60"),
+    ("AREA.GIVES_PERIMETER", Problem(Kind.AREA, 12, 5), "34", "60"),
+    ("PVL.ZEROS_DROPPED", Problem(Kind.WRITE_LARGE_NUMBER, 45006), "456", "45006"),
 ]
 
+RULE_COUNT = 20
+ANSWER_SHAPE = re.compile(r"^[1-9]\d*(/[1-9]\d*)?$")  # a whole number or a fraction n/d
 
-def test_there_are_twelve_unique_rules():
-    assert len(ALL_RULES) == 12
-    assert len(RULES_BY_ID) == 12
+
+def test_there_are_twenty_unique_rules():
+    assert len(ALL_RULES) == RULE_COUNT
+    assert len(RULES_BY_ID) == RULE_COUNT
 
 
 @pytest.mark.parametrize(("rule_id", "problem", "wrong", "right"), EXAMPLES)
@@ -47,16 +59,33 @@ def test_rule_reproduces_the_plan_example(rule_id: str, problem: Problem, wrong:
 
 
 def _grid(rule_id: str) -> Iterator[Problem]:
-    kind = {
-        "SUB": Kind.SUBTRACT,
-        "ADD": Kind.ADD,
-        "PV": Kind.WRITE_NUMBER,
-        "CMP": Kind.COMPARE,
-        "WP": Kind.WORD_MORE_THAN,
-    }[rule_id.split(".")[0]]
-    for a in range(1, 100):
-        for b in range(0, 100):
-            yield Problem(kind, a, b)
+    """Problems across the range each kind is taught in, so 'wherever it applies' is exhaustive."""
+    prefix = rule_id.split(".")[0]
+    if prefix == "DIV":
+        yield from (Problem(Kind.DIVIDE, a, b) for a in range(100, 2000) for b in range(2, 10))
+    elif prefix == "FRAC":
+        digits = range(1, 7)
+        yield from (
+            Problem(Kind.ADD_FRACTIONS, a, b, c, d)
+            for a in digits
+            for b in digits
+            for c in digits
+            for d in digits
+        )
+    elif prefix == "AREA":
+        yield from (Problem(Kind.AREA, a, b) for a in range(1, 31) for b in range(1, 21))
+    elif prefix == "PVL":
+        yield from (Problem(Kind.WRITE_LARGE_NUMBER, a) for a in range(1000, 100_000, 3))
+    else:
+        kind = {
+            "SUB": Kind.SUBTRACT,
+            "ADD": Kind.ADD,
+            "PV": Kind.WRITE_NUMBER,
+            "CMP": Kind.COMPARE,
+            "WP": Kind.WORD_MORE_THAN,
+            "MUL": Kind.MULTIPLY,
+        }[prefix]
+        yield from (Problem(kind, a, b) for a in range(1, 100) for b in range(0, 100))
 
 
 @pytest.mark.parametrize("rule_id", sorted(RULES_BY_ID))
@@ -67,8 +96,7 @@ def test_wherever_a_rule_applies_its_answer_is_wrong(rule_id: str):
     for problem in applicable:
         result = rule.run(problem)
         assert result.answer != problem.correct_answer(), (rule_id, problem)
-        assert result.answer.isdigit()
-        assert not result.answer.startswith("0")
+        assert ANSWER_SHAPE.match(result.answer), (rule_id, problem, result.answer)
 
 
 @pytest.mark.parametrize("rule_id", sorted(RULES_BY_ID))

@@ -34,13 +34,13 @@ _SENTENCE = re.compile(r"[^।.?!]+[।.?!]*")
 
 _REWRITE = """You prepare a primary-school teacher's question for searching the NISHTHA FLN \
 training modules, the NIPUN Bharat guidelines and the NCERT Teachers' Handbook for Classes 1-2 \
-(foundational literacy and numeracy, Grades 1-3, teaching methods, assessment, classroom \
+(literacy and numeracy for Classes 1-5, teaching methods, assessment, classroom \
 practice).
 Return:
 - hi: the question as a standalone search query in Hindi;
 - en: the same query in English;
 - in_scope: false if it is about salary, transfers, leave, posting, medical or legal advice, \
-politics, religion, content above Grade 5, or anything not about foundational teaching and \
+politics, religion, content above Class 5, or anything not about primary-school teaching and \
 learning; true otherwise.
 Write plain text only: no emoji and no markdown.
 The first line says "lang" (the language the teacher chose for replies) and sometimes "written_in" \

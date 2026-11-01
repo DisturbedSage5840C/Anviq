@@ -38,10 +38,13 @@ def _reviewed_topics() -> list[dict]:
     return _yaml("topic_map.yaml")["topics"]
 
 
+_NUMBER_COUNT = {Kind.WRITE_NUMBER: 1, Kind.WRITE_LARGE_NUMBER: 1, Kind.ADD_FRACTIONS: 4}
+
+
 def _problem(topic_id: str, statement: str) -> Problem:
     kind = _KIND_BY_TOPIC[topic_id]
     numbers = [int(n) for n in re.findall(r"\d+", statement)]
-    return Problem(kind, *numbers[: 1 if kind is Kind.WRITE_NUMBER else 2])
+    return Problem(kind, *numbers[: _NUMBER_COUNT.get(kind, 2)])
 
 
 def _scenarios() -> list[tuple[str, dict]]:

@@ -18,6 +18,7 @@ CITATION_PLACEHOLDER = ""
 
 # Python's \d matches Devanagari digits, and int() reads them, so ४५ and 45 are the same number.
 _NUMBER = re.compile(r"\d+")
+_FRACTION_ANSWER = re.compile(r"(?P<n>\d+)/(?P<d>\d+)")
 _SENTENCE_END = re.compile(r"[।.?!]+")
 # "..." is a spoken pause inside a sentence ("मुझे लगता है... 23 बड़ा है"), not the end of one.
 _PAUSE = re.compile(r"\.{2,}|…")
@@ -38,8 +39,33 @@ def numbers_in(text: str) -> frozenset[int]:
     return frozenset(int(token) for token in _NUMBER.findall(unicodedata.normalize("NFKC", text)))
 
 
+def _fraction_parts(answer: str) -> tuple[int, int] | None:
+    """(numerator, denominator) when `answer` is written "n/d", otherwise None."""
+    match = _FRACTION_ANSWER.fullmatch(answer.strip())
+    return (int(match["n"]), int(match["d"])) if match else None
+
+
+def _fraction_pattern(numerator: int, denominator: int) -> re.Pattern[str]:
+    """ "5/6" as spoken or typed: spaces around the slash are fine, "15/6" and "5/16" are not."""
+    return re.compile(rf"(?<!\d){numerator}\s*/\s*{denominator}(?!\d)")
+
+
+def _ascii_digits(text: str) -> str:
+    """Devanagari and other decimal digits as 0-9, so "\u096b/\u096c" can match "5/6"."""
+    return "".join(str(unicodedata.decimal(ch)) if ch.isdecimal() else ch for ch in text)
+
+
+def _says_fraction(utterance: str, numerator: int, denominator: int) -> bool:
+    text = _ascii_digits(unicodedata.normalize("NFKC", utterance))
+    return _fraction_pattern(numerator, denominator).search(text) is not None
+
+
 def says_answer(utterance: str, answer: str) -> bool:
-    """True when the child's words contain exactly the number `answer` (any digit script)."""
+    """True when the child's words contain exactly `answer`: a number in any digit script, or a
+    fraction written "n/d"."""
+    fraction = _fraction_parts(answer)
+    if fraction is not None:
+        return _says_fraction(utterance, *fraction)
     return int(answer) in numbers_in(utterance)
 
 
@@ -47,8 +73,15 @@ def leaks_correct_answer(utterance: str, correct: str, allowed: Collection[int] 
     """True when the child states the right answer it is not meant to know yet.
 
     A number that is part of the problem or the child's own steps may legitimately be spoken, so
-    those are passed in `allowed` and never count as a leak.
+    those are passed in `allowed` and never count as a leak. A fraction counts as spoken only as
+    "n/d"; it is not a leak when both of its parts belong to the problem.
     """
+    fraction = _fraction_parts(correct)
+    if fraction is not None:
+        numerator, denominator = fraction
+        if numerator in allowed and denominator in allowed:
+            return False
+        return _says_fraction(utterance, numerator, denominator)
     value = int(correct)
     return value not in allowed and value in numbers_in(utterance)
 

@@ -8,7 +8,18 @@ same answers the rehearsal children will give.
 import random
 from functools import cache
 
-from app.core.children.malrules import addition, comparison, place_value, subtraction, word_problem
+from app.core.children.malrules import (
+    addition,
+    area,
+    comparison,
+    division,
+    fraction_add,
+    large_number,
+    multiplication,
+    place_value,
+    subtraction,
+    word_problem,
+)
 from app.core.children.malrules.base import Malrule, MalruleResult
 from app.core.children.problem import Kind, Problem
 from app.core.planner import Misconception
@@ -19,6 +30,11 @@ ALL_RULES: tuple[Malrule, ...] = (
     *place_value.RULES,
     *comparison.RULES,
     *word_problem.RULES,
+    *multiplication.RULES,
+    *division.RULES,
+    *fraction_add.RULES,
+    *area.RULES,
+    *large_number.RULES,
 )
 RULES_BY_ID = {rule.id: rule for rule in ALL_RULES}
 MISCONCEPTIONS_PER_TOPIC = 3
@@ -32,6 +48,11 @@ _KIND_BY_TOPIC = {
     place_value.TOPIC: Kind.WRITE_NUMBER,
     comparison.TOPIC: Kind.COMPARE,
     word_problem.TOPIC: Kind.WORD_MORE_THAN,
+    multiplication.TOPIC: Kind.MULTIPLY,
+    division.TOPIC: Kind.DIVIDE,
+    fraction_add.TOPIC: Kind.ADD_FRACTIONS,
+    area.TOPIC: Kind.AREA,
+    large_number.TOPIC: Kind.WRITE_LARGE_NUMBER,
 }
 TOPIC_IDS = tuple(_KIND_BY_TOPIC)
 # Riya runs the main misconception, Meena a second one; see core/children/personas.py.
@@ -60,6 +81,22 @@ def _draw(kind: Kind, rng: random.Random) -> Problem:
         case Kind.WORD_MORE_THAN:
             a = rng.randint(6, 40)
             return Problem(kind, a, rng.randint(1, a - 1))
+        case Kind.MULTIPLY:
+            if rng.random() < 0.5:
+                return Problem(kind, rng.randint(10, 99), rng.randint(2, 9))
+            return Problem(kind, rng.randint(10, 99), rng.randint(10, 99))
+        case Kind.DIVIDE:
+            divisor = rng.randint(2, 9)
+            quotient = rng.randint(1, 9) * 100 + rng.randint(1, 9)  # a zero in the tens place
+            return Problem(kind, quotient * divisor, divisor)
+        case Kind.ADD_FRACTIONS:
+            b = rng.randint(2, 9)
+            d = rng.choice([n for n in range(2, 10) if n != b])
+            return Problem(kind, rng.randint(1, b - 1), b, rng.randint(1, d - 1), d)
+        case Kind.AREA:
+            return Problem(kind, rng.randint(3, 30), rng.randint(2, 20))
+        case Kind.WRITE_LARGE_NUMBER:
+            return Problem(kind, rng.randint(1, 999) * 1000 + rng.randint(1, 99))
     raise AssertionError(kind)  # pragma: no cover
 
 

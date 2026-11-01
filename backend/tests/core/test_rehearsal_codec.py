@@ -5,6 +5,7 @@ from dataclasses import replace
 import pytest
 
 from app.core.children.personas import ChildState
+from app.core.children.problem import Kind, Problem
 from app.core.coach import CoachVerdict
 from app.core.rehearsal import Exchange, RehearsalState, start
 from app.core.rehearsal_codec import MAX_RAW_CHARS, MAX_TEXT_CHARS, dump, load
@@ -50,6 +51,52 @@ def test_round_trips_a_rehearsal_in_progress() -> None:
     state = played()
 
     assert load(dump(state)) == state
+
+
+def test_round_trips_a_fraction_problem_keeping_all_four_numbers() -> None:
+    state = replace(fresh(), problem=Problem(Kind.ADD_FRACTIONS, 1, 2, 1, 3))
+
+    loaded = load(dump(state))
+
+    assert loaded is not None
+    assert loaded.problem == Problem(Kind.ADD_FRACTIONS, 1, 2, 1, 3)
+
+
+@pytest.mark.parametrize(
+    "problem",
+    [Problem(Kind.WRITE_LARGE_NUMBER, 456_789), Problem(Kind.DIVIDE, 1998, 9)],
+)
+def test_round_trips_problem_numbers_larger_than_a_small_count(problem: Problem) -> None:
+    state = replace(fresh(), problem=problem)
+
+    loaded = load(dump(state))
+
+    assert loaded is not None
+    assert loaded.problem == problem
+
+
+def test_load_rejects_an_absurdly_large_problem_number() -> None:
+    data = json.loads(dump(fresh()))
+    data["problem"] = {"kind": "write_large_number", "a": 10**12, "b": 0}
+
+    assert load(json.dumps(data)) is None
+
+
+def test_a_session_saved_before_c_and_d_existed_still_loads() -> None:
+    data = json.loads(dump(fresh()))
+    data["problem"] = {"kind": data["problem"]["kind"], "a": 52, "b": 17}
+
+    loaded = load(json.dumps(data))
+
+    assert loaded is not None
+    assert (loaded.problem.c, loaded.problem.d) == (0, 0)
+
+
+def test_load_rejects_a_fraction_number_that_is_not_a_small_count() -> None:
+    data = json.loads(dump(fresh()))
+    data["problem"] = {"kind": "add_fractions", "a": 1, "b": 2, "c": -1, "d": 3}
+
+    assert load(json.dumps(data)) is None
 
 
 def test_dump_is_valid_json_text() -> None:

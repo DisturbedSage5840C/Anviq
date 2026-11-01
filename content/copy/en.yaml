@@ -4,8 +4,8 @@
 welcome: "Hello! I'm Anviq, your private coach. Practise before class here, with nobody watching."
 ask_language: "Which language would you like to use? Hindi or English?"
 language_retry: "Sorry, I didn't catch that. Please say or type 'Hindi' or 'English'."
-ask_grade: "Which class do you teach? 1, 2, 3, or mixed?"
-grade_retry: "Please tell me 1, 2, 3 or 'mixed'."
+ask_grade: "Which class do you teach? 1, 2, 3, 4, 5, or mixed?"
+grade_retry: "Please tell me 1, 2, 3, 4, 5 or 'mixed'."
 consent_notice: |
   Before we go on, about your data:
   • We don't keep recordings of your voice unless you ask us to. We keep the written text of it, and only for 90 days. If you say 'save my recordings', we also keep your first and latest practice recordings, encrypted, for 30 days. Say 'stop saving my recordings' and they are deleted.

@@ -1,4 +1,4 @@
-# Numeracy topics for Grades 1-3 that Anviq can plan and rehearse (plan sections 3.3 A, 4.6).
+# Numeracy topics for Classes 1-5 that Anviq can plan and rehearse (plan sections 3.3 A, 4.6).
 # Every topic here has at least one executable misconception in core/children/malrules.
 #
 # Reviewed by Vansh: NIPUN Bharat learning-outcome codes (IL / Lakshya Class 1-3) and
@@ -69,3 +69,38 @@ title_hi = "'से ज़्यादा' वाले कहानी के �
 keywords = ["word problem", "story problem", "more than", "कहानी", "शब्द समस्या", "से ज़्यादा", "से ज्यादा", "से अधिक"]
 nipun_lo = "IL3.6"
 nishtha_ref = "NISHTHA FLN Course 9: Foundational Numeracy, Module 4, §4.2"
+
+[[topic]]
+id = "NUM.G4.MUL.MULTI_DIGIT"
+grade = 4
+title_en = "multiplying a two-digit number, with carrying and the placeholder zero"
+title_hi = "दो अंकों की संख्या का गुणा (हासिल और शून्य रखना)"
+keywords = ["multiply", "multiplication", "times", "product", "गुणा", "गुणन"]
+
+[[topic]]
+id = "NUM.G4.DIV.ZERO_IN_QUOTIENT"
+grade = 4
+title_en = "dividing a three-digit number when the quotient has a zero in it"
+title_hi = "तीन अंकों की संख्या का भाग (जब भागफल में शून्य आए)"
+keywords = ["divide", "division", "quotient", "remainder", "भाग", "भागफल", "भाजन"]
+
+[[topic]]
+id = "NUM.G5.FRAC.ADD_UNLIKE"
+grade = 5
+title_en = "adding fractions with different denominators"
+title_hi = "अलग हर वाली भिन्नों का जोड़"
+keywords = ["fraction", "fractions", "denominator", "numerator", "भिन्न", "हर", "अंश"]
+
+[[topic]]
+id = "NUM.G4.AREA.PERIMETER"
+grade = 4
+title_en = "area of a rectangle, not its perimeter"
+title_hi = "आयत का क्षेत्रफल (परिमाप नहीं)"
+keywords = ["area", "perimeter", "rectangle", "क्षेत्रफल", "परिमाप", "आयत"]
+
+[[topic]]
+id = "NUM.G4.PV.LARGE_NUMBER"
+grade = 4
+title_en = "writing five-digit numbers that have zeros in them"
+title_hi = "पाँच अंकों की संख्याएँ लिखना (जिनमें शून्य हो)"
+keywords = ["five digit", "5 digit", "thousand", "thousands", "lakh", "हज़ार", "हजार", "लाख"]
