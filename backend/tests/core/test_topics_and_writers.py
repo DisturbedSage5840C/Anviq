@@ -234,3 +234,32 @@ async def test_the_real_reflector_runs_end_to_end_with_this_writer():
     reflector = Reflector(LLMReflectionWriter(Scripted(reply), "m"))
     result = await reflector.reflect(ReflectRequest("Pinky 7 surprised me", "en", 2))
     assert "You asked how." in result.text
+
+
+async def test_plan_text_loses_emoji_and_markdown():
+    messy = _PlanOut(
+        questions=[
+            PlanQuestion("**Ask** Riya \U0001f331", "She says 45", "## Ask how") for _ in range(3)
+        ]
+    )
+    questions = await LLMPlanWriter(Scripted(messy), "m").write(_brief())
+
+    assert questions[0] == PlanQuestion("Ask Riya", "She says 45", "Ask how")
+
+
+async def test_reflection_text_loses_emoji_and_markdown():
+    scripted = Scripted(
+        _ReflectOut(strength="Nice \U0001f44d", next_step="**Wait** longer", model_example="`Why?`")
+    )
+    draft = await LLMReflectionWriter(scripted, "m").write(
+        ReflectBrief("a child surprised me", "en", 2, (), False)
+    )
+
+    assert draft == ReflectionDraft("Nice", "Wait longer", "Why?")
+
+
+def test_the_writer_prompts_ask_for_plain_text():
+    from app.core.writers import _COMMON
+
+    assert "plain text" in _COMMON.lower()
+    assert "emoji" in _COMMON.lower()

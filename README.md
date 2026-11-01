@@ -21,7 +21,7 @@ install. Each day has four steps:
 Two more things sit beside the loop. **Ask Anviq** answers a pedagogy question only from the
 NISHTHA / NIPUN / NCERT handbook source documents and cites where; if nothing supports an answer it says so instead
 of guessing. The **Day-1 / Day-14 mirror** sets a teacher's first practice question beside their
-latest and shows growth as a plant (🌱 🌿 🌳), never a score and never compared with anyone.
+latest and shows growth as a word (sprout, leaf, tree), never a score and never compared with anyone.
 
 Privacy is the design, not an add-on. Audio is not stored unless a teacher says "save my recordings"
 (then only the first and latest practice recording, encrypted, for 30 days). Phone numbers are

@@ -4,6 +4,7 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
+from app.content.copy import render
 from app.core.children.personas import ChildState
 from app.core.coach import (
     Coach,
@@ -193,14 +194,14 @@ async def test_no_extra_samples_when_no_voted_criterion_applies():
     assert len(scripted.calls) == 1
 
 
-def test_good_turn_gets_only_a_thumbs_up_and_never_a_number():
+def test_good_turn_gets_only_a_well_done_and_never_a_number():
     verdict_good = _verdict({"C1": True, "C2": True, "C3": False, "C4": False})
-    assert nudge_text(verdict_good, "en") == "👍"
+    assert nudge_text(verdict_good, "en") == render("coach_ok", "en")
 
 
-def test_weak_turn_gets_emoji_feedback_and_one_phrasing_without_digits():
+def test_weak_turn_gets_the_growth_word_feedback_and_one_phrasing_without_digits():
     text = nudge_text(_verdict({"C1": False, "C2": False, "C3": False, "C4": False}), "en")
-    assert text.startswith("🌱") and "You could say: Try this." in text
+    assert text.startswith("sprout:") and "You could say: Try this." in text
     assert not any(ch.isdigit() for ch in text)
 
 
@@ -231,3 +232,22 @@ def _verdict(criteria: dict[str, bool]):
     from app.core.coach import CoachVerdict
 
     return CoachVerdict(2, criteria, {}, "Try this.", "Good try.")
+
+
+async def test_model_emoji_and_markdown_never_reach_the_teacher():
+    reply = out(
+        {"C1": None, "C2": None, "C3": None, "C4": None},
+        phrasing="**Riya**, where did the 5 come from? \U0001f331",
+        feedback="Good effort \U0001f44d. Try asking *why*.",
+    )
+    verdict = await Coach(Scripted(reply), "m").score(REQUEST)
+
+    assert verdict.better_phrasing == "Riya, where did the 5 come from?"
+    assert verdict.feedback == "Good effort. Try asking why."
+
+
+def test_the_coach_prompt_asks_for_plain_text():
+    from app.core.coach import _INSTRUCTIONS
+
+    assert "plain text" in _INSTRUCTIONS.lower()
+    assert "emoji" in _INSTRUCTIONS.lower()

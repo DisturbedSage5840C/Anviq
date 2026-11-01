@@ -157,6 +157,49 @@ async def test_each_message_in_the_practice_is_a_turn_and_progress_is_kept(
     assert stored.rehearsal.rehearsal_json == AFTER_TURN
 
 
+async def test_a_practice_turn_speaks_its_own_text_not_the_written_one(
+    store: InMemoryTeacherStore,
+):
+    spoken = "Twenty five. Your question is at the sprout stage."
+    rehearsals = RecordingRehearsals(
+        _started(), RehearsalReply("RIYA: 25 [sprout]", AFTER_TURN, False, spoken=spoken)
+    )
+    brain = await _brain(store, rehearsals)
+    await _plan(brain)
+    await brain.respond(_say("yes"))
+
+    reply = await brain.respond(_say("Riya, what is 52 - 27?"))
+
+    assert reply.text == "RIYA: 25 [sprout]"
+    assert reply.spoken == spoken
+
+
+async def test_a_reply_with_nothing_special_to_say_leaves_the_voice_to_the_text(
+    store: InMemoryTeacherStore,
+):
+    rehearsals = RecordingRehearsals(_started())
+    brain = await _brain(store, rehearsals)
+    await _plan(brain)
+
+    reply = await brain.respond(_say("yes"))
+
+    assert reply.spoken is None
+
+
+async def test_a_spoken_override_is_joined_with_the_plain_voice_of_the_other_parts(
+    store: InMemoryTeacherStore,
+):
+    rehearsals = RecordingRehearsals(_started(), RehearsalReply("T", AFTER_TURN, False, spoken="S"))
+    brain = await _brain(store, rehearsals)
+    await _plan(brain)
+    await brain.respond(_say("yes"))
+
+    reply = await brain.respond(_say("Riya, what is 52 - 27?"))
+
+    assert reply.spoken is not None
+    assert reply.spoken.endswith("S")
+
+
 async def test_a_finished_practice_clears_its_save_and_returns_to_the_menu(
     store: InMemoryTeacherStore,
 ):

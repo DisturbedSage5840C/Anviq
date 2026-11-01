@@ -1,8 +1,9 @@
 """Mirror: on Day 14, set the teacher's Day 1 question beside today's and show the growth.
 
 Plan section 3.5. Only transcripts are compared (the opt-in voice clip is a storage concern, see
-`db/mirror_store.py`). The teacher sees 🌱 / 🌿 / 🌳 and words, never a number. Growth is
-celebrated; a flat or lower Day 14 is met with encouragement, never a verdict.
+`db/mirror_store.py`). The teacher sees sprout / leaf / tree as words (`growth_label`), never
+a number or a picture. Growth is celebrated; a flat or lower Day 14 is met with
+encouragement, never a verdict.
 
 `cycle_is_due` is where demo mode lives: with `demo_minutes` set, a "14-day" cycle lasts that many
 minutes, so a judge can watch a whole Day 1 to Day 14 arc in one sitting.
@@ -18,14 +19,14 @@ from app.content.copy import render
 from app.core.speech_budget import MIRROR_QUOTE_SECONDS, truncate_to_budget
 
 CYCLE_LENGTH = timedelta(days=14)
-LEAF_AT = 2  # criteria met for a 🌿
-TREE_AT = 3  # criteria met for a 🌳
+LEAF_AT = 2  # criteria met for a leaf
+TREE_AT = 3  # criteria met for a tree
 
 
 class Growth(StrEnum):
-    SPROUT = "🌱"
-    LEAF = "🌿"
-    TREE = "🌳"
+    SPROUT = "sprout"
+    LEAF = "leaf"
+    TREE = "tree"
 
 
 def growth_for(met_count: int) -> Growth:
@@ -34,6 +35,11 @@ def growth_for(met_count: int) -> Growth:
     if met_count >= LEAF_AT:
         return Growth.LEAF
     return Growth.SPROUT
+
+
+def growth_label(growth: Growth, lang: str) -> str:
+    """The growth level as a word in the teacher's language, for text and for the voice."""
+    return render(f"growth_{growth.name.lower()}", lang)
 
 
 @dataclass(frozen=True)
@@ -90,7 +96,10 @@ def render_mirror(diff: MirrorDiff, lang: str) -> str:
             f"{render('mirror_day1', lang)}: {quote_first}",
             f"{render('mirror_today', lang)}: {quote_latest}",
             "",
-            f"{diff.first_growth} → {diff.latest_growth}",
+            render("mirror_growth_change", lang).format(
+                first=growth_label(diff.first_growth, lang),
+                latest=growth_label(diff.latest_growth, lang),
+            ),
             message,
         )
     )

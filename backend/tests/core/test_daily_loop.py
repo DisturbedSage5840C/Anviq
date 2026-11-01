@@ -198,6 +198,14 @@ async def test_a_question_is_answered_with_its_source_line():
     assert asker.seen == [("How do I teach tens?", "en")]
 
 
+async def test_an_answer_is_spoken_without_its_source_line():
+    answer = AskReply("Use bundles.\n\nSource: NISHTHA 9", "Use bundles.", ("NISHTHA 9",), False)
+
+    reply = await _asking(FakeAsker(answer)).ask(TEACHER, "en", "How do I teach tens?")
+
+    assert reply.spoken == "Use bundles."
+
+
 async def test_a_refusal_is_passed_on_as_it_is():
     refusal = AskReply("This isn't in the modules.", "This isn't in the modules.", (), True)
 

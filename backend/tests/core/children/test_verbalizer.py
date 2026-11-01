@@ -179,3 +179,16 @@ async def _no_sleep(_: float) -> None:
 def test_child_is_found_by_name_in_either_script(text: str, expected: str | None):
     found = addressed_child(text)
     assert (found.key if found else None) == expected
+
+
+async def test_a_child_line_loses_emoji_and_markdown_before_the_checks():
+    script = Script("**जवाब** 45 है \U0001f60a")
+
+    assert await speak_checked(script, brief()) == "जवाब 45 है"
+
+
+def test_the_child_prompt_asks_for_plain_text():
+    from app.core.children.verbalizer import _RULES
+
+    assert "plain text" in _RULES.lower()
+    assert "emoji" in _RULES.lower()

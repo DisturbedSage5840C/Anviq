@@ -345,3 +345,19 @@ def test_chunk_is_frozen():
     chunk = Chunk("s", None, "", None, None, None, 1, "en", "t")
     with pytest.raises(AttributeError):
         chunk.text = "x"  # type: ignore[misc]
+
+
+async def test_an_answer_loses_emoji_and_markdown_but_keeps_its_citations():
+    model = Model(IN_SCOPE, [cite("**Use** bundles of ten \U0001f331.", 0)])
+    reply = await ask(model, Retrieval([P1], P1)).answer("q", "en")
+
+    assert reply.spoken == "Use bundles of ten."
+    assert reply.text.startswith("Use bundles of ten.")
+    assert reply.sources == (P1.label,)
+
+
+def test_the_ask_prompts_require_plain_text():
+    from app.core.ask.answer import _ANSWER
+
+    assert "plain text" in _ANSWER.lower()
+    assert "emoji" in _ANSWER.lower()

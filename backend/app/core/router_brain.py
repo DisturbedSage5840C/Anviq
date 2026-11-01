@@ -37,6 +37,7 @@ from app.core.teacher_store import (
 )
 from app.privacy.crypto import phone_hash
 from app.privacy.export import render_export
+from app.speech.prepare import to_spoken
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,28 @@ def _recording(utterance: Utterance) -> Recording | None:
     if not utterance.audio:
         return None
     return Recording(utterance.audio, utterance.audio_mime)
+
+
+class _Part(NamedTuple):
+    """One paragraph of a merged reply, with the words its voice note uses if they differ."""
+
+    text: str
+    spoken: str | None = None
+
+
+def _spoken_of(lead: str, parts: list[_Part], lang: str) -> str | None:
+    """The merged voice note, or None when no part asked for words of its own.
+
+    With none, the sender cleans the merged text, which is already right. With one, every other
+    paragraph is cleaned on its own so that the override is spoken as written.
+    """
+    if all(part.spoken is None for part in parts):
+        return None
+    pieces = [to_spoken(lead, lang)]
+    pieces += [
+        part.spoken if part.spoken is not None else to_spoken(part.text, lang) for part in parts
+    ]
+    return " ".join(piece for piece in pieces if piece)
 
 
 class RouterBrain:
@@ -105,15 +128,23 @@ class RouterBrain:
         reply = _compose(transition, lang, exports)
         wa_id = utterance.sender_wa_id
         loop_replies = await self._run_loop_effects(key, wa_id, lang, transition)
-        spoken = [r.text for r in loop_replies]
-        spoken += await self._run_rehearsal(
+        parts = [_Part(r.text, r.spoken) for r in loop_replies]
+        parts += await self._run_rehearsal(
             key, wa_id, lang, transition, slot, _recording(utterance)
         )
-        if not spoken:
+        if not parts:
             return reply
-        text = PARAGRAPH_BREAK.join(part for part in (reply.text, *spoken) if part)
+        text = PARAGRAPH_BREAK.join(part for part in (reply.text, *(p.text for p in parts)) if part)
         clips = await self._mirror_clips(key, lang, loop_replies)
-        return replace(reply, text=text, speak=True, lang=lang or UNKNOWN_LANG_TTS, clips=clips)
+        reply_lang = lang or UNKNOWN_LANG_TTS
+        return replace(
+            reply,
+            text=text,
+            speak=True,
+            lang=reply_lang,
+            clips=clips,
+            spoken=_spoken_of(reply.text, parts, reply_lang),
+        )
 
     async def _run_loop_effects(
         self, key: bytes, wa_id: str, lang: str | None, transition: Transition
@@ -195,7 +226,7 @@ class RouterBrain:
         transition: Transition,
         slot: RehearsalSlot,
         recording: Recording | None,
-    ) -> list[str]:
+    ) -> list[_Part]:
         """The children answer through the model, so this too runs after the commit."""
         effect = next((e for e in transition.effects if isinstance(e, _REHEARSAL_EFFECTS)), None)
         if effect is None:
@@ -205,8 +236,8 @@ class RouterBrain:
         clip = recording if isinstance(effect, RehearseTurn) else None
         if not await self._keep_rehearsal(key, wa_id, slot.rehearsal_json, reply, clip):
             # A newer message was answered while this one was with the model; its answer stands.
-            return [render("rehearsal_turn_failed", lang or UNKNOWN_LANG_TTS)]
-        return [reply.text]
+            return [_Part(render("rehearsal_turn_failed", lang or UNKNOWN_LANG_TTS))]
+        return [_Part(reply.text, reply.spoken)]
 
     async def _rehearse(
         self, key: bytes, lang: str, effect: RehearsalEffect, slot: RehearsalSlot

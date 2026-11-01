@@ -3,6 +3,7 @@ from dataclasses import replace
 
 import pytest
 
+from app.content.copy import render
 from app.core.children.personas import ChildState
 from app.core.children.verbalizer import ChildBrief
 from app.core.coach import CoachRequest, CoachUnavailableError, CoachVerdict
@@ -103,13 +104,13 @@ async def test_a_weak_turn_leaves_the_child_where_she_was(state: RehearsalState)
     eng, _, _ = engine(verdict(0))
     out = await eng.take_turn(state, "Riya, is it right?")
     assert out.state.states["riya"] is ChildState.CONFUSED
-    assert out.nudge and out.nudge.startswith("🌱")
+    assert out.nudge and out.nudge.startswith("sprout")
 
 
-async def test_a_good_turn_gets_a_thumbs_up_only(state: RehearsalState):
+async def test_a_good_turn_gets_a_short_well_done_only(state: RehearsalState):
     eng, _, _ = engine(verdict(4))
     out = await eng.take_turn(state, "Riya, how did you get it?")
-    assert out.nudge == "👍"
+    assert out.nudge == render("coach_ok", "en")
 
 
 async def test_aman_knows_the_answer_but_cannot_explain_until_drawn_out(state):

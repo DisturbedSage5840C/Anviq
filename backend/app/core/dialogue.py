@@ -3,6 +3,8 @@
 from dataclasses import dataclass, field
 from typing import Protocol
 
+from app.speech.prepare import to_spoken
+
 
 @dataclass(frozen=True)
 class Utterance:
@@ -32,6 +34,18 @@ class Reply:
     lang: str
     speak: bool = True
     clips: tuple[ClipAudio, ...] = ()
+    # What the voice note says when it should differ from `text`; None means "say the text,
+    # cleaned for the ear" (see app.speech.prepare).
+    spoken: str | None = None
+
+    def voice_text(self) -> str:
+        """The words for text-to-speech: the reply's own spoken form, else its text cleaned.
+
+        Empty when nothing is left to say aloud (a reply that was only a symbol).
+        """
+        if self.spoken is not None:
+            return self.spoken
+        return to_spoken(self.text, self.lang)
 
 
 class Brain(Protocol):

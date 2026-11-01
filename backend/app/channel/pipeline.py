@@ -140,8 +140,11 @@ class InboundPipeline:
     async def _deliver_voice(self, sender: str, reply: Reply) -> None:
         if not reply.speak or self._tts is None:
             return
+        words = reply.voice_text()
+        if not words:  # nothing left to say aloud once symbols and links are dropped
+            return
         try:
-            wav = await self._tts.synthesize(reply.text, reply.lang, self._voice)
+            wav = await self._tts.synthesize(words, reply.lang, self._voice)
             media_id = await self._whatsapp.upload_media(
                 await self._encode_voice(wav), OGG_OPUS_MIME
             )

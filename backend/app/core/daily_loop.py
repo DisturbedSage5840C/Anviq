@@ -36,6 +36,8 @@ class LoopReply:
     topic_id: str | None = None
     # Set when a real Day-1 / Day-14 comparison was shown, so the teacher's kept recordings follow.
     plays_clips: bool = False
+    # What the voice note says when it should differ from `text`; None means "say the text".
+    spoken: str | None = None
 
 
 class Plans(Protocol):
@@ -126,4 +128,4 @@ class PipelineDailyLoop:
         except AskUnavailableError as exc:
             logger.error("ask unavailable: %s", type(exc).__name__)
             return LoopReply(render("ask_unavailable", lang))
-        return LoopReply(reply.text)
+        return LoopReply(reply.text, spoken=reply.spoken)

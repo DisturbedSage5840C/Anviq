@@ -42,7 +42,7 @@ def _day(on: date | None) -> str:
 
 
 def _bullet(label_key: str, value: str, lang: str) -> str:
-    return f"• {render(label_key, lang)}: {value}"
+    return f"- {render(label_key, lang)}: {value}"
 
 
 def _consent_bullet(consent: ConsentRecord, lang: str) -> str:

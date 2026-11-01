@@ -73,8 +73,11 @@ class WebTurn:
     async def _speak(self, reply: Reply) -> bytes | None:
         if not reply.speak or self._tts is None:
             return None
+        words = reply.voice_text()
+        if not words:  # nothing left to say aloud once symbols and links are dropped
+            return None
         try:
-            return await self._tts.synthesize(reply.text, reply.lang, self._voice)
+            return await self._tts.synthesize(words, reply.lang, self._voice)
         except SpeechProviderError:
             logger.warning("voice reply failed; text only", exc_info=True)
             return None

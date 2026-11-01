@@ -73,7 +73,7 @@ async def test_in_week_a_the_nudge_comes_straight_away() -> None:
     assert outcome.state.awaiting_rating is False
 
 
-@pytest.mark.parametrize("rating", ["1", "🌿", "३"])
+@pytest.mark.parametrize("rating", ["1", "leaf", "३", "🌿"])
 async def test_a_rating_reveals_the_nudge_without_another_child_turn(rating: str) -> None:
     waiting = await asked_to_rate(met=1)
 
@@ -88,30 +88,30 @@ async def test_a_rating_reveals_the_nudge_without_another_child_turn(rating: str
 
 
 async def test_a_higher_rating_than_the_coachs_is_shown_beside_it() -> None:
-    waiting = await asked_to_rate(met=1)  # 🌱
+    waiting = await asked_to_rate(met=1)  # sprout
 
     outcome = await engine().take_turn(waiting, "3")
 
     assert outcome.nudge is not None
-    assert render("self_rating_higher", "en").format(mine="🌳", coach="🌱") in outcome.nudge
+    assert render("self_rating_higher", "en").format(mine="tree", coach="sprout") in outcome.nudge
 
 
 async def test_a_lower_rating_than_the_coachs_is_shown_beside_it() -> None:
-    waiting = await asked_to_rate(met=3)  # 🌳
+    waiting = await asked_to_rate(met=3)  # tree
 
     outcome = await engine().take_turn(waiting, "1")
 
     assert outcome.nudge is not None
-    assert render("self_rating_lower", "en").format(mine="🌱", coach="🌳") in outcome.nudge
+    assert render("self_rating_lower", "en").format(mine="sprout", coach="tree") in outcome.nudge
 
 
 async def test_a_matching_rating_is_said_plainly() -> None:
-    waiting = await asked_to_rate(met=2)  # 🌿
+    waiting = await asked_to_rate(met=2)  # leaf
 
     outcome = await engine().take_turn(waiting, "2")
 
     assert outcome.nudge is not None
-    assert render("self_rating_same", "en").format(mine="🌿", coach="🌿") in outcome.nudge
+    assert render("self_rating_same", "en").format(mine="leaf", coach="leaf") in outcome.nudge
 
 
 async def test_saying_something_else_skips_the_rating_and_carries_on() -> None:

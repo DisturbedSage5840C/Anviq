@@ -124,6 +124,35 @@ async def test_a_weak_question_gets_a_kind_nudge():
     assert "Try asking how." in reply.text
 
 
+async def test_the_voice_note_speaks_the_child_first_then_the_growth_part_without_labels():
+    started = await flow().begin(TEACHER, "en", TOPIC)
+
+    reply = await flow(verdict(0)).turn(TEACHER, "en", "Who can tell me?", started.rehearsal_json)
+
+    assert reply.spoken is not None
+    assert not reply.spoken.startswith(f"{RIYA.name}")
+    assert f"{RIYA.name}:" not in reply.spoken
+    assert not any(symbol in reply.spoken for symbol in ("🌱", "🌿", "🌳", "👍"))
+    assert reply.spoken.index("Try asking how.") > 0
+    assert "sprout" in reply.spoken.lower()
+
+
+async def test_a_turn_with_no_child_line_to_speak_still_has_a_spoken_form():
+    started = await flow().begin(TEACHER, "en", TOPIC)
+
+    reply = await flow().turn(TEACHER, "en", "enough", started.rehearsal_json)
+
+    assert reply.finished is True
+    assert reply.spoken is not None
+    assert reply.spoken.strip() != ""
+
+
+async def test_the_start_message_is_left_to_the_generic_voice_cleaner():
+    reply = await flow().begin(TEACHER, "en", TOPIC)
+
+    assert reply.spoken is None
+
+
 async def test_if_the_coach_is_down_the_teacher_is_told_and_can_carry_on():
     started = await flow().begin(TEACHER, "en", TOPIC)
 
@@ -245,9 +274,9 @@ async def test_replying_with_a_rating_then_shows_the_nudge_and_keeps_the_practic
         TEACHER, "en", "Who can tell me?", started.rehearsal_json
     )
 
-    reply = await faded_flow().turn(TEACHER, "en", "🌳", asked.rehearsal_json)
+    reply = await faded_flow().turn(TEACHER, "en", "tree", asked.rehearsal_json)
 
-    assert render("self_rating_higher", "en").format(mine="🌳", coach="🌱") in reply.text
+    assert render("self_rating_higher", "en").format(mine="tree", coach="sprout") in reply.text
     assert "Try asking how." in reply.text
     assert not reply.text.startswith(f"{RIYA.name}")
     saved = load(reply.rehearsal_json or "")

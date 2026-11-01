@@ -125,6 +125,17 @@ async def test_without_a_speech_to_text_provider_recordings_are_declined():
     assert reply.text == replies.VOICE_UNAVAILABLE
 
 
+async def test_the_web_voice_reads_cleaned_text_or_the_replys_own_spoken_words():
+    tts = _TTS()
+    plain = _turn(_Brain(Reply("**Hi** \U0001f331 5 × 3", "en")), tts=tts)
+    given = _turn(_Brain(Reply("Riya: 25", "en", spoken="Twenty five.")), tts=tts)
+
+    await plain.respond_to_text(SENDER, "x")
+    await given.respond_to_text(SENDER, "x")
+
+    assert tts.spoken == [("Hi 5 times 3", "en"), ("Twenty five.", "en")]
+
+
 async def test_a_text_reply_survives_a_text_to_speech_failure():
     tts = _TTS(SpeechProviderError("down"))
 

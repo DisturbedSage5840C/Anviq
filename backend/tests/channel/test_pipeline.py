@@ -61,10 +61,12 @@ class FakeSTT:
 @dataclass
 class FakeTTS:
     error: Exception | None = None
+    said: list[str] = field(default_factory=list)
 
     async def synthesize(self, text: str, lang: str, voice: Voice) -> bytes:
         if self.error is not None:
             raise self.error
+        self.said.append(text)
         return b"wav"
 
 
@@ -113,6 +115,35 @@ def _audio() -> InboundMessage:
     return InboundMessage(
         "wamid.2", SENDER, InboundKind.AUDIO, 1, media_id="m1", mime_type="audio/ogg"
     )
+
+
+async def test_the_voice_note_is_cleaned_for_the_ear_but_the_written_text_is_not():
+    written = "**Step 1** (5 × 3)\nSource: NISHTHA p.4 https://x.org"
+    whatsapp, brain = FakeWhatsApp(), RecordingBrain(Reply(written, "en"))
+    tts = FakeTTS()
+
+    await _pipeline(whatsapp, brain, tts=tts).handle(_text())
+
+    assert whatsapp.sent[0] == ("text", written)
+    assert tts.said == ["Step 1 (5 times 3)"]
+
+
+async def test_a_reply_with_its_own_spoken_words_is_voiced_as_given():
+    reply = Reply("Riya: 25 \U0001f331", "en", spoken="Twenty five. Sprout stage.")
+    whatsapp, tts = FakeWhatsApp(), FakeTTS()
+
+    await _pipeline(whatsapp, RecordingBrain(reply), tts=tts).handle(_text())
+
+    assert tts.said == ["Twenty five. Sprout stage."]
+
+
+async def test_a_reply_with_nothing_left_to_say_aloud_sends_no_voice_note():
+    whatsapp, tts = FakeWhatsApp(), FakeTTS()
+
+    await _pipeline(whatsapp, RecordingBrain(Reply("\U0001f331", "en")), tts=tts).handle(_text())
+
+    assert tts.said == []
+    assert [kind for kind, _ in whatsapp.sent] == ["text"]
 
 
 async def test_text_message_gets_a_written_and_spoken_reply():

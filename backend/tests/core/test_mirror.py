@@ -50,7 +50,7 @@ def test_a_criterion_only_in_the_later_turn_counts_as_open_or_gained_by_its_valu
     assert diff.gained == ("C5",)
 
 
-def test_the_mirror_shows_both_quotes_and_the_growth_arrow():
+def test_the_mirror_shows_both_quotes_and_the_growth_in_words():
     text = render_mirror(
         compare(_turn("Galat hai", "C1"), _turn("Show me", "C1", "C2", "C3")), "en"
     )
@@ -59,7 +59,7 @@ def test_the_mirror_shows_both_quotes_and_the_growth_arrow():
     assert render("mirror_today", "en") in text
     assert "Galat hai" in text
     assert "Show me" in text
-    assert "🌱 → 🌳" in text
+    assert "sprout to tree" in text
 
 
 def test_growth_is_celebrated_in_words_not_numbers():

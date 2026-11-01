@@ -17,6 +17,7 @@ from app.core.daily_loop import Positions
 from app.core.rehearsal import RehearsalEngine, RehearsalState, TurnOutcome, start
 from app.core.rehearsal_codec import dump, load
 from app.core.rehearsal_log import LoggedTurn
+from app.core.rehearsal_voice import spoken_turn
 from app.core.self_rating import rating_prompt
 from app.guardrails.pii import scrub
 
@@ -32,6 +33,9 @@ class RehearsalReply:
     finished: bool
     # The question the coach scored this turn, for the router to log once the turn stands.
     scored: LoggedTurn | None = None
+    # What the voice note says when it should differ from the written text; None means "read the
+    # text". A practice turn sets it so the voice speaks the child's line, then the growth note.
+    spoken: str | None = None
 
 
 class Rehearsals(Protocol):
@@ -86,6 +90,7 @@ class RehearsalFlow:
             None if outcome.finished else dump(outcome.state),
             outcome.finished,
             _logged(state, outcome),
+            spoken_turn(outcome, state.lang) or None,
         )
 
 

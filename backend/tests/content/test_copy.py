@@ -84,3 +84,23 @@ CONSENT_DIGESTS = {
 def test_consent_text_is_pinned_to_its_version(lang: str):
     digest = hashlib.sha256(render("consent_notice", lang).encode("utf-8")).hexdigest()
     assert CONSENT_DIGESTS[CONSENT_VERSION][lang] == digest
+
+
+# The consent notice keeps its "•" bullets until the v4 consent bump (CONSENT_VERSION and its
+# pinned digests would otherwise change without re-consent); the voice cleaner already drops them.
+_BULLET = "•"
+_PICTORIAL = re.compile("[\U0001f000-\U0001faff☀-➿←-⇿⬀-⯿️‍]")
+
+
+def _copy_values(lang: str) -> dict[str, str]:
+    return {key: render(key, lang) for key in sorted(required_keys())}
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_no_copy_text_contains_emoji_arrows_or_dingbats(lang: str):
+    offenders = {
+        key: found
+        for key, text in _copy_values(lang).items()
+        if (found := _PICTORIAL.findall(text.replace(_BULLET, "")))
+    }
+    assert offenders == {}
